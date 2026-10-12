@@ -1,8 +1,12 @@
 import { createSlice, createAsyncThunk, type PayloadAction } from "@reduxjs/toolkit";
+import {
+  subscribeNewsletter,
+  type NewsletterSubscriptionResult,
+} from "~/firebase";
 
 export interface NewsletterState {
   loading: boolean;
-  Data: unknown | null;
+  Data: NewsletterSubscriptionResult | null;
   error: string | null;
   success: boolean;
 }
@@ -17,12 +21,28 @@ const initialState: NewsletterState = {
 export const createNewsletter = createAsyncThunk(
   "newsletter/createNewsletter",
   async (
-    payload: { token?: string; formPayload?: FormData } = {},
+    payload: { token?: string; formPayload?: FormData; email?: string } = {},
     { rejectWithValue }
   ) => {
     try {
-      const email = payload.formPayload?.get("email");
-      return { success: true, email: email ? String(email) : "" };
+      const email =
+        payload.email ||
+        (payload.formPayload?.get("email") as string) ||
+        "";
+
+      const trimmedEmail = email.trim().toLowerCase();
+
+      if (!trimmedEmail) {
+        return rejectWithValue("Email address is required.");
+      }
+
+      const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+      if (!emailRegex.test(trimmedEmail)) {
+        return rejectWithValue("Please enter a valid email address.");
+      }
+
+      const result = await subscribeNewsletter(trimmedEmail);
+      return result;
     } catch (err: unknown) {
       const error = err as Error;
       return rejectWithValue(

@@ -11,6 +11,7 @@ import type { Route } from "./+types/root";
 import "./app.css";
 import ErrorPage from "./components/main/Utilities/ErrorPage";
 import { ReduxProvider } from "~/redux/ReduxProvider";
+import { Toaster } from "~/components/ui/sonner";
 
 export const links: Route.LinksFunction = () => [
   { rel: "preconnect", href: "https://fonts.googleapis.com" },
@@ -47,6 +48,7 @@ export default function App() {
   return (
     <ReduxProvider>
       <Outlet />
+      <Toaster position="top-right" richColors />
     </ReduxProvider>
   );
 }

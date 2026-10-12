@@ -14,10 +14,16 @@ import { Bars3Icon, XMarkIcon } from "@heroicons/react/24/outline";
 import * as Icons from "@heroicons/react/24/outline";
 
 import { ChevronDownIcon } from "@heroicons/react/20/solid";
+import { ArrowRightStartOnRectangleIcon } from "@heroicons/react/24/outline";
 import { Link } from "react-router";
 import clsx from "clsx";
+import { toast } from "sonner";
 import { useAppDispatch, useAppSelector } from "~/redux/hooks/hook";
 import { getAllCategory } from "~/redux/features/categorySlice";
+import { logoutUser } from "~/redux/features/auth/authSlice";
+import { logout } from "~/firebase";
+import { AuthModal } from "../Auth/AuthModal";
+import { UserMenu } from "../Auth/UserMenu";
 
 import { FaShirt } from "react-icons/fa6";
 import { PiPantsFill } from "react-icons/pi";
@@ -28,8 +34,17 @@ export default function Header() {
   const [scrolled, setScrolled] = useState(false);
   const [bounced, setBounced] = useState(false);
   const [hasBounced, setHasBounced] = useState(false);
+  const [authModalOpen, setAuthModalOpen] = useState(false);
+  const [authModalTab, setAuthModalTab] = useState<"login" | "signup">("login");
+
   const dispatch = useAppDispatch();
   const { loading, categoryData } = useAppSelector((state) => state.report);
+  const { user, isAuthenticated } = useAppSelector((state) => state.auth);
+
+  const handleOpenAuth = (tab: "login" | "signup") => {
+    setAuthModalTab(tab);
+    setAuthModalOpen(true);
+  };
 
   const token = "";
 
@@ -176,6 +191,30 @@ export default function Header() {
             Contact Us
           </Link>
         </PopoverGroup>
+
+        {/* Top-Right Auth Options (Desktop) */}
+        <div className="hidden lg:flex lg:flex-1 lg:justify-end lg:items-center lg:gap-x-4">
+          {isAuthenticated && user ? (
+            <UserMenu user={user} />
+          ) : (
+            <div className="flex items-center gap-x-3">
+              <button
+                type="button"
+                onClick={() => handleOpenAuth("login")}
+                className="text-sm font-semibold text-gray-700 hover:text-orange-700 transition cursor-pointer"
+              >
+                Log In
+              </button>
+              <button
+                type="button"
+                onClick={() => handleOpenAuth("signup")}
+                className="rounded-full bg-orange-700 px-4 py-2 text-sm font-semibold text-white shadow-xs hover:bg-orange-800 transition cursor-pointer"
+              >
+                Sign Up
+              </button>
+            </div>
+          )}
+        </div>
       </nav>
       <Dialog
         open={mobileMenuOpen}
@@ -203,19 +242,19 @@ export default function Header() {
             </button>
           </div>
           <div className="mt-6 flow-root">
-            <div className="-my-6 divide-y divide-white/40">
+            <div className="-my-6 divide-y divide-gray-100">
               <div className="space-y-2 py-6">
                 <Link
                   to="/"
                   onClick={() => setMobileMenuOpen(false)}
-                  className="-mx-3 block rounded-lg px-3 py-2 text-base/7 font-semibold hover:bg-white/5"
+                  className="-mx-3 block rounded-lg px-3 py-2 text-base/7 font-semibold hover:bg-gray-50"
                 >
                   Home
                 </Link>
 
                 {/* products */}
                 <Disclosure as="div" className="-mx-3">
-                  <DisclosureButton className="group flex w-full items-center justify-between rounded-lg py-2 pr-3.5 pl-3 text-base/7 font-semibold hover:bg-white/5">
+                  <DisclosureButton className="group flex w-full items-center justify-between rounded-lg py-2 pr-3.5 pl-3 text-base/7 font-semibold hover:bg-gray-50">
                     Products
                     <ChevronDownIcon
                       aria-hidden="true"
@@ -228,7 +267,7 @@ export default function Header() {
                         key={item.name}
                         as="a"
                         href={item.link}
-                        className="block rounded-lg py-2 pr-3 pl-6 text-sm/7 font-semibold hover:bg-white/5"
+                        className="block rounded-lg py-2 pr-3 pl-6 text-sm/7 font-semibold hover:bg-gray-50"
                       >
                         {item.name}
                       </DisclosureButton>
@@ -238,22 +277,103 @@ export default function Header() {
                 <Link
                   to="/about-us"
                   onClick={() => setMobileMenuOpen(false)}
-                  className="-mx-3 block rounded-lg px-3 py-2 text-base/7 font-semibold hover:bg-white/5"
+                  className="-mx-3 block rounded-lg px-3 py-2 text-base/7 font-semibold hover:bg-gray-50"
                 >
                   About Us
                 </Link>
                 <Link
                   to="/contact-us"
                   onClick={() => setMobileMenuOpen(false)}
-                  className="-mx-3 block rounded-lg px-3 py-2 text-base/7 font-semibold hover:bg-white/5"
+                  className="-mx-3 block rounded-lg px-3 py-2 text-base/7 font-semibold hover:bg-gray-50"
                 >
                   Contact Us
                 </Link>
+              </div>
+
+              {/* Mobile Auth Section */}
+              <div className="py-6">
+                {isAuthenticated && user ? (
+                  <div className="space-y-3">
+                    <div className="flex items-center gap-3 px-1">
+                      {user.photoURL ? (
+                        <img
+                          src={user.photoURL}
+                          alt={user.displayName || "User"}
+                          className="size-10 rounded-full object-cover ring-2 ring-orange-700/20"
+                        />
+                      ) : (
+                        <div className="flex size-10 items-center justify-center rounded-full bg-orange-700 text-sm font-bold text-white shadow-xs">
+                          {(user.displayName || user.email || "U")
+                            .charAt(0)
+                            .toUpperCase()}
+                        </div>
+                      )}
+                      <div className="truncate">
+                        <p className="text-sm font-semibold text-gray-900 truncate">
+                          {user.displayName || "My Account"}
+                        </p>
+                        {user.email && (
+                          <p className="text-xs text-gray-500 truncate">
+                            {user.email}
+                          </p>
+                        )}
+                      </div>
+                    </div>
+                    <button
+                      type="button"
+                      onClick={async () => {
+                        setMobileMenuOpen(false);
+                        try {
+                          await logout();
+                          dispatch(logoutUser());
+                          toast.success("Signed out successfully.");
+                        } catch (err: unknown) {
+                          const error = err as Error;
+                          toast.error(error.message || "Failed to sign out.");
+                        }
+                      }}
+                      className="-mx-3 flex w-full items-center gap-2 rounded-lg px-3 py-2.5 text-base font-semibold text-red-600 hover:bg-red-50 transition"
+                    >
+                      <ArrowRightStartOnRectangleIcon className="size-5" />
+                      <span>Sign Out</span>
+                    </button>
+                  </div>
+                ) : (
+                  <div className="space-y-3">
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setMobileMenuOpen(false);
+                        handleOpenAuth("login");
+                      }}
+                      className="-mx-3 block w-full rounded-lg px-3 py-2.5 text-center text-base font-semibold text-gray-900 hover:bg-gray-50 border border-gray-200 transition"
+                    >
+                      Log In
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setMobileMenuOpen(false);
+                        handleOpenAuth("signup");
+                      }}
+                      className="-mx-3 block w-full rounded-lg px-3 py-2.5 text-center text-base font-semibold text-white bg-orange-700 hover:bg-orange-800 shadow-xs transition"
+                    >
+                      Sign Up
+                    </button>
+                  </div>
+                )}
               </div>
             </div>
           </div>
         </DialogPanel>
       </Dialog>
+
+      {/* Authentication Modal */}
+      <AuthModal
+        isOpen={authModalOpen}
+        onClose={() => setAuthModalOpen(false)}
+        initialTab={authModalTab}
+      />
     </header>
   );
 }

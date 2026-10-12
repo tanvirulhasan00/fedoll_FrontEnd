@@ -2,7 +2,7 @@ import { configureStore } from "@reduxjs/toolkit";
 import authReducer from "./features/auth/authSlice";
 import cartReducer from "./features/cart/cartSlice";
 import companyInfoReducer from "./features/companyInfoSlice";
-import reportReducer from "./features/categorySlice";
+import categoryReducer from "./features/categorySlice";
 import newsletterReducer from "./features/newsletterSlice";
 
 export const store = configureStore({
@@ -10,7 +10,7 @@ export const store = configureStore({
     auth: authReducer,
     cart: cartReducer,
     companyInfo: companyInfoReducer,
-    report: reportReducer,
+    category: categoryReducer,
     newsletter: newsletterReducer,
   },
   middleware: (getDefaultMiddleware) =>

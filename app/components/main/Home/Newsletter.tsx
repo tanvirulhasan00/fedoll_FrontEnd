@@ -2,8 +2,11 @@ import {
   CalendarDaysIcon,
   CheckBadgeIcon,
   HandRaisedIcon,
+  XCircleIcon,
+  InformationCircleIcon,
 } from "@heroicons/react/24/outline";
 import { useEffect, useState } from "react";
+import { toast } from "sonner";
 import { Spinner } from "~/components/ui/spinner";
 import { createNewsletter } from "~/redux/features/newsletterSlice";
 import { useAppDispatch, useAppSelector } from "~/redux/hooks/hook";
@@ -14,30 +17,70 @@ export default function NewsLetter() {
   });
   const dispatch = useAppDispatch();
   const { loading, Data } = useAppSelector((state) => state.newsletter);
-  console.log("newsletter", Data);
   const token = "";
   const [show, setShow] = useState(false);
+  const [message, setMessage] = useState("");
+  const [status, setStatus] = useState<"success" | "info" | "error" | null>(
+    null
+  );
 
   useEffect(() => {
-    setTimeout(() => {
-      setShow(false);
-    }, 2000);
+    if (show) {
+      const timer = setTimeout(() => {
+        setShow(false);
+      }, 5000);
+      return () => clearTimeout(timer);
+    }
   }, [show]);
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setFormData({ ...formData, [e.target.name]: e.target.value });
   };
-  const handleSubmit = (e: React.FormEvent<HTMLFormElement>) => {
-    e.preventDefault();
-    const formPayload = new FormData();
-    Object.entries(formData).forEach(([k, v]) =>
-      formPayload.append(k, String(v ?? "")),
-    );
 
-    dispatch(createNewsletter({ token, formPayload }));
-    setFormData({ email: "" });
-    setShow(true);
+  const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
+    e.preventDefault();
+    const emailToSubmit = formData.email.trim();
+    if (!emailToSubmit) return;
+
+    const formPayload = new FormData();
+    formPayload.append("email", emailToSubmit);
+
+    try {
+      const resultAction = await dispatch(
+        createNewsletter({ token, formPayload, email: emailToSubmit })
+      );
+
+      if (createNewsletter.fulfilled.match(resultAction)) {
+        const payload = resultAction.payload;
+        if (payload?.alreadySubscribed) {
+          toast.info(payload.message || "You are already subscribed!");
+          setStatus("info");
+          setMessage(payload.message || "You are already subscribed to our newsletter!");
+        } else {
+          toast.success(payload?.message || "Thank you for subscribing!");
+          setStatus("success");
+          setMessage(payload?.message || "Thank you for subscribing to our newsletter!");
+          setFormData({ email: "" });
+        }
+        setShow(true);
+      } else if (createNewsletter.rejected.match(resultAction)) {
+        const errMsg =
+          (resultAction.payload as string) || "Failed to subscribe to newsletter.";
+        toast.error(errMsg);
+        setStatus("error");
+        setMessage(errMsg);
+        setShow(true);
+      }
+    } catch (err: unknown) {
+      const error = err as Error;
+      const errMsg = error.message || "An unexpected error occurred.";
+      toast.error(errMsg);
+      setStatus("error");
+      setMessage(errMsg);
+      setShow(true);
+    }
   };
+
   return (
     <div className="relative isolate overflow-hidden bg-white px-0 py-10 sm:py-16 lg:py-24 ">
       <div className="mx-auto ">
@@ -53,14 +96,29 @@ export default function NewsLetter() {
                 insights, helpful resources, and exclusive updates delivered
                 straight to their inbox.
               </p>
-              <div className="mt-6">
-                {show ? (
-                  <CheckBadgeIcon className="size-5 text-green-500 " />
-                ) : (
-                  ""
-                )}
-              </div>
-              <div className=" flex max-w-md gap-x-4 items-center">
+
+              {show && message && (
+                <div
+                  className={`mt-4 flex items-center gap-2 rounded-lg px-3.5 py-2.5 text-sm border transition-all duration-300 ${
+                    status === "error"
+                      ? "border-red-200 bg-red-50 text-red-800"
+                      : status === "info"
+                      ? "border-blue-200 bg-blue-50 text-blue-800"
+                      : "border-green-200 bg-green-50 text-green-800"
+                  }`}
+                >
+                  {status === "error" ? (
+                    <XCircleIcon className="size-5 text-red-600 shrink-0" />
+                  ) : status === "info" ? (
+                    <InformationCircleIcon className="size-5 text-blue-600 shrink-0" />
+                  ) : (
+                    <CheckBadgeIcon className="size-5 text-green-600 shrink-0" />
+                  )}
+                  <span className="font-medium">{message}</span>
+                </div>
+              )}
+
+              <div className="mt-6 flex max-w-md gap-x-4 items-center">
                 <label htmlFor="email" className="sr-only">
                   Email address
                 </label>
@@ -71,15 +129,24 @@ export default function NewsLetter() {
                   value={formData.email}
                   onChange={handleChange}
                   required
+                  disabled={loading}
                   placeholder="Enter your email"
                   autoComplete="email"
-                  className="min-w-0 flex-auto rounded-md bg-white/5 px-3.5 py-2 text-base border text-black outline-1 -outline-offset-1 outline-white/10 placeholder:text-gray-500 focus:outline-2 focus:-outline-offset-2 focus:outline-orange-700 sm:text-sm/6"
+                  className="min-w-0 flex-auto rounded-md bg-white px-3.5 py-2 text-base border border-gray-300 text-black outline-1 -outline-offset-1 outline-gray-300 placeholder:text-gray-400 focus:outline-2 focus:-outline-offset-2 focus:outline-orange-700 sm:text-sm/6 disabled:opacity-60 disabled:cursor-not-allowed"
                 />
                 <button
                   type="submit"
-                  className="flex-none rounded-md bg-orange-700 px-3.5 py-2.5 text-sm font-semibold text-white shadow-xs hover:bg-orange-800 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-orange-700"
+                  disabled={loading}
+                  className="flex-none rounded-md bg-orange-700 px-4 py-2.5 text-sm font-semibold text-white shadow-xs hover:bg-orange-800 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-orange-700 disabled:opacity-60 disabled:cursor-not-allowed flex items-center justify-center gap-2"
                 >
-                  {loading ? <Spinner /> : "Subscribe"}
+                  {loading ? (
+                    <>
+                      <Spinner className="size-4 text-white" />
+                      <span>Saving...</span>
+                    </>
+                  ) : (
+                    "Subscribe"
+                  )}
                 </button>
               </div>
             </div>
