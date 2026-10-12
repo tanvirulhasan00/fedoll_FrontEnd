@@ -4,5 +4,5 @@ export * from "./ReduxProvider";
 export * from "./features/auth/authSlice";
 export * from "./features/cart/cartSlice";
 export * from "./features/companyInfoSlice";
-export * from "./features/reportSlice";
+export * from "./features/categorySlice";
 export * from "./features/newsletterSlice";

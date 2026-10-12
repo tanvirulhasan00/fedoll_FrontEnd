@@ -14,6 +14,7 @@ export default function NewsLetter() {
   });
   const dispatch = useAppDispatch();
   const { loading, Data } = useAppSelector((state) => state.newsletter);
+  console.log("newsletter", Data);
   const token = "";
   const [show, setShow] = useState(false);
 

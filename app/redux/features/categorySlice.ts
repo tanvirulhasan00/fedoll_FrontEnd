@@ -8,7 +8,7 @@ export interface CategoryItem {
   icon?: string;
 }
 
-export interface ReportState {
+export interface CategoryState {
   loading: boolean;
   categoryData: CategoryItem[];
   error: string | null;
@@ -31,14 +31,14 @@ const defaultCategories: CategoryItem[] = [
   },
 ];
 
-const initialState: ReportState = {
+const initialState: CategoryState = {
   loading: false,
   categoryData: defaultCategories,
   error: null,
 };
 
-export const getAllReportCategory = createAsyncThunk(
-  "report/getAllReportCategory",
+export const getAllCategory = createAsyncThunk(
+  "category/getAllCategory",
   async (
     _params: { token?: string } | string | undefined = undefined,
     { rejectWithValue }
@@ -53,8 +53,8 @@ export const getAllReportCategory = createAsyncThunk(
   }
 );
 
-export const reportSlice = createSlice({
-  name: "report",
+export const categorySlice = createSlice({
+  name: "category",
   initialState,
   reducers: {
     setCategories: (state, action: PayloadAction<CategoryItem[]>) => {
@@ -65,20 +65,20 @@ export const reportSlice = createSlice({
   },
   extraReducers: (builder) => {
     builder
-      .addCase(getAllReportCategory.pending, (state) => {
+      .addCase(getAllCategory.pending, (state) => {
         state.loading = true;
         state.error = null;
       })
-      .addCase(getAllReportCategory.fulfilled, (state, action) => {
+      .addCase(getAllCategory.fulfilled, (state, action) => {
         state.loading = false;
         state.categoryData = action.payload;
       })
-      .addCase(getAllReportCategory.rejected, (state, action) => {
+      .addCase(getAllCategory.rejected, (state, action) => {
         state.loading = false;
         state.error = (action.payload as string) || "Failed to fetch categories";
       });
   },
 });
 
-export const { setCategories } = reportSlice.actions;
-export default reportSlice.reducer;
+export const { setCategories } = categorySlice.actions;
+export default categorySlice.reducer;

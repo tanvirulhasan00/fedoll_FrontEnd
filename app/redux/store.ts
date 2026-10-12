@@ -2,7 +2,7 @@ import { configureStore } from "@reduxjs/toolkit";
 import authReducer from "./features/auth/authSlice";
 import cartReducer from "./features/cart/cartSlice";
 import companyInfoReducer from "./features/companyInfoSlice";
-import reportReducer from "./features/reportSlice";
+import reportReducer from "./features/categorySlice";
 import newsletterReducer from "./features/newsletterSlice";
 
 export const store = configureStore({
