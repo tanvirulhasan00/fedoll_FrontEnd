@@ -16,8 +16,8 @@ import * as Icons from "@heroicons/react/24/outline";
 import { ChevronDownIcon } from "@heroicons/react/20/solid";
 import { Link } from "react-router";
 import clsx from "clsx";
-// import { useAppDispatch, useAppSelector } from "~/redux/hooks/hook";
-// import { getAllReportCategory } from "~/redux/features/reportSlice";
+import { useAppDispatch, useAppSelector } from "~/redux/hooks/hook";
+import { getAllReportCategory } from "~/redux/features/reportSlice";
 
 import { FaShirt } from "react-icons/fa6";
 import { PiPantsFill } from "react-icons/pi";
@@ -28,8 +28,8 @@ export default function Header() {
   const [scrolled, setScrolled] = useState(false);
   const [bounced, setBounced] = useState(false);
   const [hasBounced, setHasBounced] = useState(false);
-  // const dispatch = useAppDispatch();
-  // const { loading, categoryData } = useAppSelector((state) => state.report);
+  const dispatch = useAppDispatch();
+  const { loading, categoryData } = useAppSelector((state) => state.report);
 
   const token = "";
 
@@ -58,8 +58,8 @@ export default function Header() {
   };
 
   useEffect(() => {
-    // dispatch(getAllReportCategory({ token }));
-  }, []);
+    dispatch(getAllReportCategory({ token }));
+  }, [dispatch]);
 
   useEffect(() => {
     const handleScroll = () => {

@@ -5,8 +5,11 @@ import Home from "./home";
 
 export function meta({}: Route.MetaArgs) {
   return [
-    { title: "New React Router App" },
-    { name: "description", content: "Welcome to React Router!" },
+    { title: "Fedoll" },
+    {
+      name: "description",
+      content: "Fedoll - Premium E-Commerce Platform",
+    },
   ];
 }
 

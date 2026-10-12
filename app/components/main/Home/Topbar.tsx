@@ -6,23 +6,21 @@ import {
   FaLinkedinIn,
   FaInstagram,
 } from "react-icons/fa";
-// import { useAppDispatch, useAppSelector } from "~/redux/hooks/hook";
-// import { getCompanyInfo } from "~/redux/features/companyInfoSlice";
+import { useAppDispatch, useAppSelector } from "~/redux/hooks/hook";
+import { getCompanyInfo } from "~/redux/features/companyInfoSlice";
 import { Link } from "react-router";
 import { Separator } from "~/components/ui/separator";
 import { Skeleton } from "~/components/ui/skeleton";
 
 const Topbar = () => {
-  // const dispatch = useAppDispatch();
-  // const { loading, data } = useAppSelector((state) => state.companyInfo);
-  // const token = "";
-  // const id = 1;
-  const data: any = [];
-  const loading = false;
+  const dispatch = useAppDispatch();
+  const { loading, data } = useAppSelector((state) => state.companyInfo);
+  const token = "";
+  const id = 1;
 
-  // useEffect(() => {
-  //   dispatch(getCompanyInfo({ token, id }));
-  // }, [dispatch]);
+  useEffect(() => {
+    dispatch(getCompanyInfo({ token, id }));
+  }, [dispatch]);
 
   return (
     <div className="w-full bg-orange-700 text-gray-100 text-xs sm:text-sm ">

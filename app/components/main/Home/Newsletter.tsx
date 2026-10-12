@@ -5,17 +5,16 @@ import {
 } from "@heroicons/react/24/outline";
 import { useEffect, useState } from "react";
 import { Spinner } from "~/components/ui/spinner";
-// import { createNewsletter } from "~/redux/features/newsletterSlice";
-// import { useAppDispatch, useAppSelector } from "~/redux/hooks/hook";
+import { createNewsletter } from "~/redux/features/newsletterSlice";
+import { useAppDispatch, useAppSelector } from "~/redux/hooks/hook";
 
 export default function NewsLetter() {
   const [formData, setFormData] = useState({
     email: "",
   });
-  // const dispatch = useAppDispatch();
-  // const { loading, Data } = useAppSelector((state) => state.newsletter);
+  const dispatch = useAppDispatch();
+  const { loading, Data } = useAppSelector((state) => state.newsletter);
   const token = "";
-  const loading = false;
   const [show, setShow] = useState(false);
 
   useEffect(() => {
@@ -34,7 +33,7 @@ export default function NewsLetter() {
       formPayload.append(k, String(v ?? "")),
     );
 
-    // dispatch(createNewsletter({ token, formPayload }));
+    dispatch(createNewsletter({ token, formPayload }));
     setFormData({ email: "" });
     setShow(true);
   };
