@@ -38,7 +38,8 @@ export default function Header() {
   const [authModalTab, setAuthModalTab] = useState<"login" | "signup">("login");
 
   const dispatch = useAppDispatch();
-  const { loading, categoryData } = useAppSelector((state) => state.report);
+  const { loading, categoryData } = useAppSelector((state) => state.category);
+  console.log("categoryData", categoryData);
   const { user, isAuthenticated } = useAppSelector((state) => state.auth);
 
   const handleOpenAuth = (tab: "login" | "signup") => {
@@ -48,33 +49,29 @@ export default function Header() {
 
   const token = "";
 
-  const productCategory = [
-    {
-      id: 1,
-      name: "Upper Outwear",
-      description: "Get a better upper body outfit",
-      link: "/upper-outwears",
-      icon: FaShirt,
-    },
-    {
-      id: 2,
-      name: "Lower Outwear",
-      description: "Get a better upper body outfit",
-      link: "/lower-outwears",
-      icon: PiPantsFill,
-    },
-  ];
+  const iconMap: Record<string, React.ElementType> = {
+    FaShirt,
+    PiPantsFill,
+  };
 
-  const getIcon = (name: string): React.ElementType => {
-    return (
-      (Icons as Record<string, React.ElementType>)[name] ||
-      Icons.QuestionMarkCircleIcon
-    );
+  const getCategoryIcon = (icon?: unknown): React.ElementType => {
+    if (icon && (typeof icon === "function" || typeof icon === "object")) {
+      return icon as React.ElementType;
+    }
+    if (typeof icon === "string") {
+      if (iconMap[icon]) return iconMap[icon];
+      if ((Icons as Record<string, React.ElementType>)[icon]) {
+        return (Icons as Record<string, React.ElementType>)[icon];
+      }
+    }
+    return FaShirt;
   };
 
   useEffect(() => {
     dispatch(getAllCategory({ token }));
   }, [dispatch]);
+
+ 
 
   useEffect(() => {
     const handleScroll = () => {
@@ -146,32 +143,35 @@ export default function Header() {
               className="absolute left-1/2 z-10 mt-3 w-screen max-w-md -translate-x-1/2 overflow-hidden rounded-3xl bg-gray-200 outline-1 -outline-offset-1 outline-white/10 transition data-closed:translate-y-1 data-closed:opacity-0 data-enter:duration-200 data-enter:ease-out data-leave:duration-150 data-leave:ease-in"
             >
               <div className="p-4 max-h-[12.5rem] overflow-auto">
-                {!productCategory ? (
+                {!categoryData || loading ? (
                   <SkeletonCategoryItem />
                 ) : (
-                  productCategory?.map((item) => {
+                  categoryData?.map((item) => {
+                    const IconComponent = getCategoryIcon(item.icon);
                     return (
                       <div
-                        key={item.name}
+                        key={item.id ?? item.name}
                         className="group relative flex items-center gap-x-6 rounded-lg p-4 text-sm/6 hover:bg-white/40"
                       >
                         <div className="flex size-11 flex-none items-center justify-center rounded-lg bg-gray-700 group-hover:shadow-2xl">
-                          <item.icon
+                          <IconComponent
                             aria-hidden="true"
                             className="size-6 text-gray-400 group-hover:text-white"
                           />
                         </div>
                         <div className="flex-auto">
                           <Link
-                            to={item.link}
+                            to={item.link || "#"}
                             className="block font-semibold text-black"
                           >
                             {item.name}
                             <span className="absolute inset-0" />
                           </Link>
-                          <p className="mt-1 text-gray-500">
-                            {item.description}
-                          </p>
+                          {item.description && (
+                            <p className="mt-1 text-gray-500">
+                              {item.description}
+                            </p>
+                          )}
                         </div>
                       </div>
                     );
@@ -262,11 +262,12 @@ export default function Header() {
                     />
                   </DisclosureButton>
                   <DisclosurePanel className="mt-2 space-y-2">
-                    {productCategory?.map((item) => (
+                    {categoryData?.map((item) => (
                       <DisclosureButton
-                        key={item.name}
-                        as="a"
-                        href={item.link}
+                        key={item.id ?? item.name}
+                        as={Link}
+                        to={item.link || "#"}
+                        onClick={() => setMobileMenuOpen(false)}
                         className="block rounded-lg py-2 pr-3 pl-6 text-sm/7 font-semibold hover:bg-gray-50"
                       >
                         {item.name}
