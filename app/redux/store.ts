@@ -5,6 +5,7 @@ import companyInfoReducer from "./features/companyInfoSlice";
 import categoryReducer from "./features/categorySlice";
 import newsletterReducer from "./features/newsletterSlice";
 import blogReducer from "./features/blogSlice";
+import homeReducer from "./features/homeSlice";
 
 export const store = configureStore({
   reducer: {
@@ -14,6 +15,7 @@ export const store = configureStore({
     category: categoryReducer,
     newsletter: newsletterReducer,
     blogs: blogReducer,
+    home: homeReducer,
   },
   middleware: (getDefaultMiddleware) =>
     getDefaultMiddleware({

@@ -7,3 +7,4 @@ export * from "./features/companyInfoSlice";
 export * from "./features/categorySlice";
 export * from "./features/newsletterSlice";
 export * from "./features/blogSlice";
+export * from "./features/homeSlice";

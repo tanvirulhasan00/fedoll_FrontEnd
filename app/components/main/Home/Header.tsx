@@ -10,7 +10,7 @@ import {
   PopoverGroup,
   PopoverPanel,
 } from "@headlessui/react";
-import { Bars3Icon, XMarkIcon } from "@heroicons/react/24/outline";
+import { Bars3Icon, XMarkIcon, ShoppingBagIcon } from "@heroicons/react/24/outline";
 import * as Icons from "@heroicons/react/24/outline";
 
 import { ChevronDownIcon } from "@heroicons/react/20/solid";
@@ -24,6 +24,8 @@ import { logoutUser } from "~/redux/features/auth/authSlice";
 import { logout } from "~/firebase";
 import { AuthModal } from "../Auth/AuthModal";
 import { UserMenu } from "../Auth/UserMenu";
+import { openCart } from "~/redux/features/cart/cartSlice";
+import CartDrawer from "../Cart/CartDrawer";
 
 import { FaShirt } from "react-icons/fa6";
 import { PiPantsFill } from "react-icons/pi";
@@ -39,8 +41,8 @@ export default function Header() {
 
   const dispatch = useAppDispatch();
   const { loading, categoryData } = useAppSelector((state) => state.category);
-  console.log("categoryData", categoryData);
   const { user, isAuthenticated } = useAppSelector((state) => state.auth);
+  const { totalQuantity } = useAppSelector((state) => state.cart);
 
   const handleOpenAuth = (tab: "login" | "signup") => {
     setAuthModalTab(tab);
@@ -113,7 +115,20 @@ export default function Header() {
             <img alt="" src="/fedoll-logo.svg" className="h-8 w-auto" />
           </Link>
         </div>
-        <div className="flex lg:hidden">
+        <div className="flex items-center gap-2 lg:hidden">
+          <button
+            type="button"
+            onClick={() => dispatch(openCart())}
+            className="relative p-2 text-gray-700 hover:text-orange-700 transition cursor-pointer"
+            title="Shopping Bag"
+          >
+            <ShoppingBagIcon className="size-6" />
+            {totalQuantity > 0 && (
+              <span className="absolute top-0.5 right-0.5 flex size-4 items-center justify-center rounded-full bg-orange-700 text-[10px] font-bold text-white shadow-xs">
+                {totalQuantity}
+              </span>
+            )}
+          </button>
           <button
             type="button"
             onClick={() => setMobileMenuOpen(true)}
@@ -193,7 +208,21 @@ export default function Header() {
         </PopoverGroup>
 
         {/* Top-Right Auth Options (Desktop) */}
-        <div className="hidden lg:flex lg:flex-1 lg:justify-end lg:items-center lg:gap-x-4">
+        <div className="hidden lg:flex lg:flex-1 lg:justify-end lg:items-center lg:gap-x-5">
+          <button
+            type="button"
+            onClick={() => dispatch(openCart())}
+            className="relative p-2 text-gray-700 hover:text-orange-700 transition cursor-pointer group"
+            title="Shopping Bag"
+          >
+            <ShoppingBagIcon className="size-6 text-gray-800 group-hover:text-orange-700 transition" />
+            {totalQuantity > 0 && (
+              <span className="absolute -top-1 -right-1 flex size-5 items-center justify-center rounded-full bg-orange-700 text-[11px] font-bold text-white shadow-xs animate-in zoom-in-75">
+                {totalQuantity}
+              </span>
+            )}
+          </button>
+
           {isAuthenticated && user ? (
             <UserMenu user={user} />
           ) : (
@@ -382,6 +411,9 @@ export default function Header() {
         onClose={() => setAuthModalOpen(false)}
         initialTab={authModalTab}
       />
+
+      {/* Slide-over Cart Drawer */}
+      <CartDrawer />
     </header>
   );
 }

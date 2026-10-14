@@ -15,12 +15,14 @@ export interface CartState {
   items: CartItem[];
   totalQuantity: number;
   totalAmount: number;
+  isCartOpen: boolean;
 }
 
 const initialState: CartState = {
   items: [],
   totalQuantity: 0,
   totalAmount: 0,
+  isCartOpen: false,
 };
 
 const calculateTotals = (items: CartItem[]) => {
@@ -37,7 +39,12 @@ export const cartSlice = createSlice({
   initialState,
   reducers: {
     addToCart: (state, action: PayloadAction<CartItem>) => {
-      const existing = state.items.find((item) => item.id === action.payload.id);
+      const existing = state.items.find(
+        (item) =>
+          item.id === action.payload.id &&
+          item.size === action.payload.size &&
+          item.color === action.payload.color
+      );
       if (existing) {
         existing.quantity += action.payload.quantity || 1;
       } else {
@@ -49,6 +56,7 @@ export const cartSlice = createSlice({
       const totals = calculateTotals(state.items);
       state.totalQuantity = totals.totalQuantity;
       state.totalAmount = totals.totalAmount;
+      state.isCartOpen = true; // Automatically open cart drawer on add
     },
     removeFromCart: (state, action: PayloadAction<string | number>) => {
       state.items = state.items.filter((item) => item.id !== action.payload);
@@ -77,9 +85,26 @@ export const cartSlice = createSlice({
       state.totalQuantity = 0;
       state.totalAmount = 0;
     },
+    openCart: (state) => {
+      state.isCartOpen = true;
+    },
+    closeCart: (state) => {
+      state.isCartOpen = false;
+    },
+    toggleCart: (state) => {
+      state.isCartOpen = !state.isCartOpen;
+    },
   },
 });
 
-export const { addToCart, removeFromCart, updateQuantity, clearCart } =
-  cartSlice.actions;
+export const {
+  addToCart,
+  removeFromCart,
+  updateQuantity,
+  clearCart,
+  openCart,
+  closeCart,
+  toggleCart,
+} = cartSlice.actions;
+
 export default cartSlice.reducer;
