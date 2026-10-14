@@ -17,14 +17,14 @@ export default function JournalPreviewSection() {
         <div>
           <div className="inline-flex items-center gap-1.5 text-xs font-bold uppercase tracking-widest text-orange-700 mb-2">
             <BookOpenIcon className="size-4" />
-            Editorial Publications
+            Style & Care Guides
           </div>
           <h2 className="text-3xl sm:text-4xl font-bold tracking-tight text-gray-900">
-            From The Fedoll Journal
+            Fedoll Style Journal
           </h2>
           <p className="mt-2 text-sm text-gray-500 max-w-md">
-            Insights on contemporary tailoring, sustainable textile chemistry,
-            and timeless wardrobe preservation from our atelier.
+            Helpful tips on styling, caring for clothes in Bangladeshi weather,
+            and picking the right everyday wardrobe essentials.
           </p>
         </div>
 
@@ -32,7 +32,7 @@ export default function JournalPreviewSection() {
           to="/blogs"
           className="inline-flex items-center gap-1.5 text-sm font-semibold text-orange-700 hover:text-orange-800 transition"
         >
-          <span>View All Journal Stories</span>
+          <span>Read All Guides</span>
           <ArrowRightIcon className="size-4" />
         </Link>
       </div>

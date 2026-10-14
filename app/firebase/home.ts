@@ -78,31 +78,31 @@ export interface SpotlightBanner {
   discountCode?: string;
 }
 
-// Initial default datasets for seeding and instant offline/first-render fallback
+// Initial datasets in BDT (Bangladeshi Taka) and clear, easy English
 export const initialHeroBanners: HeroBanner[] = [
   {
     id: "banner-1",
-    badge: "Autumn / Winter 2026 Collection",
-    title: "Sartorial Architecture & Functional Outerwear",
+    badge: "Winter 2026 Collection • Bangladesh",
+    title: "Premium Everyday Clothing Made with Quality Fabrics",
     subtitle:
-      "Crafted from water-repellent gabardine and double-faced Italian twill. Designed for seamless urban transitions.",
-    ctaText: "Explore Outerwear",
+      "Crafted for comfort, style, and long-lasting wear. Fast delivery all across Bangladesh with Cash on Delivery and bKash.",
+    ctaText: "Shop Jackets & Coats",
     ctaLink: "/blogs/art-of-layering-outerwear",
-    secondaryCtaText: "View Lookbook",
-    secondaryCtaLink: "/blogs",
+    secondaryCtaText: "Read Our Story",
+    secondaryCtaLink: "/about-us",
     image:
       "https://images.unsplash.com/photo-1490481651871-ab68de25d43d?auto=format&fit=crop&w=1600&q=85",
     accent: "orange",
   },
   {
     id: "banner-2",
-    badge: "Limited Artisan Release",
-    title: "14oz Japanese Selvedge Denim",
+    badge: "Special Denim Release",
+    title: "14oz Heavyweight Selvedge Denim Jackets & Jeans",
     subtitle:
-      "Woven on vintage shuttle looms with closed-loop organic indigo. Heirloom durability made to record your personal journey.",
-    ctaText: "Shop The Denim Capsule",
+      "Made on vintage shuttle looms using 100% natural cotton. Durable clothing designed to look better the more you wear it.",
+    ctaText: "Explore Denim",
     ctaLink: "/blogs/sustainable-denim-longevity",
-    secondaryCtaText: "Our Craft Story",
+    secondaryCtaText: "View Lookbook",
     secondaryCtaLink: "/blogs",
     image:
       "https://images.unsplash.com/photo-1544441893-675973e31985?auto=format&fit=crop&w=1600&q=85",
@@ -114,75 +114,76 @@ export const initialValueProps: ValueProp[] = [
   {
     id: "prop-1",
     icon: "TruckIcon",
-    title: "Complimentary Express Delivery",
-    description: "Free carbon-neutral courier shipping on all orders over $150.",
+    title: "Fast Delivery in Bangladesh",
+    description: "2-3 days delivery across Dhaka and all 64 districts. Free shipping on orders over ৳2,500.",
   },
   {
     id: "prop-2",
     icon: "ShieldCheckIcon",
-    title: "Conscious Provenance",
-    description: "100% certified organic cotton, zero-waste cutting, and ethical atelier mills.",
+    title: "100% Quality Guaranteed",
+    description: "Premium pure cotton, fine wools, and solid stitching tested for daily durability.",
   },
   {
     id: "prop-3",
     icon: "ArrowPathRoundedSquareIcon",
-    title: "30-Day Effortless Returns",
-    description: "Try in the comfort of your home. Free return shipping and seamless exchanges.",
+    title: "7-Day Easy Exchange",
+    description: "Got the wrong size? Enjoy quick and hassle-free size exchanges anywhere in Bangladesh.",
   },
   {
     id: "prop-4",
     icon: "SparklesIcon",
-    title: "Sartorial Advisory",
-    description: "Complimentary size, tailoring, and styling consultations with our stylists.",
+    title: "Cash on Delivery & bKash",
+    description: "Pay conveniently via Cash on Delivery, bKash, Nagad, or credit/debit card.",
   },
 ];
 
 export const initialFeaturedCategories: FeaturedCategory[] = [
   {
     id: "cat-outerwear",
-    name: "Architectural Outerwear",
-    tagline: "Structured trenches, wool topcoats & overshirts",
-    itemCount: "28 Styles",
+    name: "Jackets & Winter Coats",
+    tagline: "Warm wool topcoats, casual jackets & lightweight windbreakers",
+    itemCount: "28 Items",
     image:
       "https://images.unsplash.com/photo-1544441893-675973e31985?auto=format&fit=crop&w=800&q=80",
     link: "/blogs/art-of-layering-outerwear",
   },
   {
     id: "cat-workwear",
-    name: "Modern Workwear",
-    tagline: "Unstructured suiting & kinetic stretch trousers",
-    itemCount: "34 Styles",
+    name: "Office & Smart Casual Wear",
+    tagline: "Comfortable stretch blazers and formal tailored trousers",
+    itemCount: "34 Items",
     image:
       "https://images.unsplash.com/photo-1487222477894-8943e31ef7b2?auto=format&fit=crop&w=800&q=80",
     link: "/blogs/modern-workwear-reimagined",
   },
   {
     id: "cat-denim",
-    name: "Artisan Selvedge Denim",
-    tagline: "14oz shuttle-loom raw and vintage rinses",
-    itemCount: "19 Styles",
+    name: "Heavyweight Selvedge Denim",
+    tagline: "14oz durable raw denim jeans and chore jackets",
+    itemCount: "19 Items",
     image:
       "https://images.unsplash.com/photo-1582552938357-32b906df40cb?auto=format&fit=crop&w=800&q=80",
     link: "/blogs/sustainable-denim-longevity",
   },
   {
     id: "cat-knitwear",
-    name: "Fine-Gauge Knitwear",
-    tagline: "Superfine merino and brushed cashmere blends",
-    itemCount: "22 Styles",
+    name: "T-Shirts & Soft Sweaters",
+    tagline: "Heavy 240 GSM organic cotton tees and merino knitwear",
+    itemCount: "22 Items",
     image:
       "https://images.unsplash.com/photo-1558769132-cb1aea458c5e?auto=format&fit=crop&w=800&q=80",
     link: "/blogs/the-minimalist-capsule-wardrobe",
   },
 ];
 
+// Product pricing in Bangladeshi Taka (BDT) with easy English product names & details
 export const initialProducts: ProductItem[] = [
   {
     id: "prod-wool-coat",
-    name: "Architectural Double-Faced Wool Coat",
+    name: "Double-Layer Wool Long Coat",
     category: "Outerwear",
-    price: 380,
-    originalPrice: 460,
+    price: 4850,
+    originalPrice: 5600,
     badge: "Best Seller",
     rating: 4.9,
     reviewCount: 142,
@@ -191,12 +192,12 @@ export const initialProducts: ProductItem[] = [
       "https://images.unsplash.com/photo-1539571696357-5a69c17a67c6?auto=format&fit=crop&w=800&q=80",
     ],
     description:
-      "Sculpted with dropped shoulders and hand-finished seams in 100% Italian virgin wool. Effortlessly layers over tailoring.",
+      "Warm, premium quality double-layer wool coat with a relaxed modern fit. Perfect for winter evenings in Dhaka and trips outside.",
     sizes: ["S", "M", "L", "XL"],
     colors: [
-      { name: "Charcoal", hex: "#374151" },
-      { name: "Camel", hex: "#c29b62" },
-      { name: "Black", hex: "#111827" },
+      { name: "Charcoal Grey", hex: "#374151" },
+      { name: "Warm Camel", hex: "#c29b62" },
+      { name: "Classic Black", hex: "#111827" },
     ],
     isFeatured: true,
     isBestSeller: true,
@@ -204,10 +205,10 @@ export const initialProducts: ProductItem[] = [
   },
   {
     id: "prod-selvedge-jacket",
-    name: "14oz Japanese Selvedge Chore Jacket",
+    name: "14oz Selvedge Denim Chore Jacket",
     category: "Denim",
-    price: 240,
-    originalPrice: 285,
+    price: 3200,
+    originalPrice: 3800,
     badge: "Trending",
     rating: 4.8,
     reviewCount: 88,
@@ -216,20 +217,20 @@ export const initialProducts: ProductItem[] = [
       "https://images.unsplash.com/photo-1576995853123-5a10305d93c0?auto=format&fit=crop&w=800&q=80",
     ],
     description:
-      "Woven on antique Toyoda looms with redline selvedge ID. Features reinforced copper hardware and dual utility pockets.",
+      "Made with genuine 14oz shuttle-loom selvedge denim. Solid brass buttons and deep utility pockets that hold your phone and wallet.",
     sizes: ["S", "M", "L", "XL"],
     colors: [
-      { name: "Raw Indigo", hex: "#1e3a8a" },
-      { name: "Rinse Wash", hex: "#1e293b" },
+      { name: "Deep Indigo", hex: "#1e3a8a" },
+      { name: "Washed Black", hex: "#1e293b" },
     ],
     isFeatured: true,
     inStock: true,
   },
   {
     id: "prod-hybrid-blazer",
-    name: "Unstructured Kinetic Stretch Blazer",
+    name: "Comfort Stretch Work Blazer",
     category: "Workwear",
-    price: 295,
+    price: 3950,
     badge: "New",
     rating: 5.0,
     reviewCount: 64,
@@ -238,7 +239,7 @@ export const initialProducts: ProductItem[] = [
       "https://images.unsplash.com/photo-1507679799987-c73779587ccf?auto=format&fit=crop&w=800&q=80",
     ],
     description:
-      "Engineered without shoulder pads or stiff chest canvas. Four-way stretch poly-wool ensures full movement from morning commutes to dinner.",
+      "A lightweight, unpadded blazer made with 4-way stretch fabric. Looks sharp for office meetings and feels as easy as a cardigan.",
     sizes: ["38R", "40R", "42R", "44R"],
     colors: [
       { name: "Slate Grey", hex: "#4b5563" },
@@ -250,10 +251,10 @@ export const initialProducts: ProductItem[] = [
   },
   {
     id: "prod-heavyweight-tee",
-    name: "240 GSM Combed Organic Cotton Tee",
+    name: "240 GSM Heavyweight Cotton T-Shirt",
     category: "Essentials",
-    price: 65,
-    originalPrice: 80,
+    price: 850,
+    originalPrice: 1100,
     badge: "Sale",
     rating: 4.9,
     reviewCount: 312,
@@ -262,12 +263,12 @@ export const initialProducts: ProductItem[] = [
       "https://images.unsplash.com/photo-1583743814966-8936f5b7be1a?auto=format&fit=crop&w=800&q=80",
     ],
     description:
-      "Substantial, dense drape with double-needle ribbed collar that never sags. Pre-shrunk organic long-staple cotton.",
+      "Thick, high-grade combed cotton fabric with a reinforced collar that never loosens. Pre-shrunk and durable for daily wear.",
     sizes: ["XS", "S", "M", "L", "XL"],
     colors: [
       { name: "Off-White", hex: "#f4f4f5" },
       { name: "Oat Beige", hex: "#e4d5b7" },
-      { name: "Washed Black", hex: "#27272a" },
+      { name: "Jet Black", hex: "#27272a" },
     ],
     isFeatured: false,
     isBestSeller: true,
@@ -275,10 +276,10 @@ export const initialProducts: ProductItem[] = [
   },
   {
     id: "prod-stretch-trouser",
-    name: "Pleated Tapered Ergonomic Trousers",
+    name: "Pleated Tapered Stretch Pants",
     category: "Workwear",
-    price: 185,
-    originalPrice: 220,
+    price: 2150,
+    originalPrice: 2600,
     badge: "Trending",
     rating: 4.8,
     reviewCount: 96,
@@ -287,7 +288,7 @@ export const initialProducts: ProductItem[] = [
       "https://images.unsplash.com/photo-1624378439575-d8705ad7ae80?auto=format&fit=crop&w=800&q=80",
     ],
     description:
-      "Deep single pleats offer generous thigh room tapering gently into a 7-inch leg opening. Wrinkle-resistant stretch twill.",
+      "Smart formal pants with front pleats and flexible waist stretch. Comfortable for long office hours and driving in traffic.",
     sizes: ["30", "32", "34", "36"],
     colors: [
       { name: "Warm Stone", hex: "#d6cfc7" },
@@ -299,9 +300,9 @@ export const initialProducts: ProductItem[] = [
   },
   {
     id: "prod-tech-trench",
-    name: "Water-Repellent Storm Gabardine Trench",
+    name: "Water-Resistant All-Weather Trench Coat",
     category: "Outerwear",
-    price: 420,
+    price: 5200,
     badge: "New",
     rating: 4.9,
     reviewCount: 52,
@@ -310,7 +311,7 @@ export const initialProducts: ProductItem[] = [
       "https://images.unsplash.com/photo-1490481651871-ab68de25d43d?auto=format&fit=crop&w=800&q=80",
     ],
     description:
-      "High-density organic cotton gabardine treated with PFC-free water repellant. Storm flap, belted waist, and deep horn buttons.",
+      "Tough organic cotton gabardine with light rain resistance. Features a storm flap, belt tie, and solid buttons.",
     sizes: ["S", "M", "L", "XL"],
     colors: [
       { name: "Khaki Sage", hex: "#8a8b79" },
@@ -322,10 +323,10 @@ export const initialProducts: ProductItem[] = [
   },
   {
     id: "prod-merino-knit",
-    name: "Extra-Fine 19.5 Micron Merino Crewneck",
+    name: "Soft Fine Merino Wool Sweater",
     category: "Knitwear",
-    price: 165,
-    originalPrice: 195,
+    price: 2250,
+    originalPrice: 2750,
     badge: "Sale",
     rating: 4.8,
     reviewCount: 74,
@@ -334,11 +335,11 @@ export const initialProducts: ProductItem[] = [
       "https://images.unsplash.com/photo-1516762689617-e1cffcef479d?auto=format&fit=crop&w=800&q=80",
     ],
     description:
-      "Ultra-soft next-to-skin touch with natural temperature regulation. Ribbed hems with reinforced elastane retention.",
+      "Ultra-soft, itch-free fine wool sweater. Light enough to wear under a jacket yet warm enough for cool winter nights.",
     sizes: ["S", "M", "L", "XL"],
     colors: [
-      { name: "Terracotta", hex: "#c2410c" },
-      { name: "Midnight", hex: "#0f172a" },
+      { name: "Terracotta Brown", hex: "#c2410c" },
+      { name: "Midnight Blue", hex: "#0f172a" },
       { name: "Oatmeal", hex: "#f5f5f4" },
     ],
     isFeatured: false,
@@ -346,9 +347,9 @@ export const initialProducts: ProductItem[] = [
   },
   {
     id: "prod-selvedge-jeans",
-    name: "Classic Straight-Leg Selvedge Jeans",
+    name: "Classic Straight-Fit Selvedge Jeans",
     category: "Denim",
-    price: 210,
+    price: 2650,
     badge: "Best Seller",
     rating: 4.9,
     reviewCount: 178,
@@ -357,11 +358,11 @@ export const initialProducts: ProductItem[] = [
       "https://images.unsplash.com/photo-1582552938357-32b906df40cb?auto=format&fit=crop&w=800&q=80",
     ],
     description:
-      "Unwashed rigid raw denim crafted to mold uniquely to your body over 6 months of daily wear. Made with organic Zimbabwean cotton.",
+      "Pure rigid cotton denim that shapes to your body naturally over time. Double-stitched for maximum longevity and everyday comfort.",
     sizes: ["30", "31", "32", "33", "34", "36"],
     colors: [
       { name: "Raw Indigo", hex: "#1e3a8a" },
-      { name: "Ecru Natural", hex: "#fafaf9" },
+      { name: "Natural Ecru", hex: "#fafaf9" },
     ],
     isFeatured: true,
     isBestSeller: true,
@@ -372,49 +373,49 @@ export const initialProducts: ProductItem[] = [
 export const initialTestimonials: TestimonialItem[] = [
   {
     id: "test-1",
-    name: "Julian Sterling",
-    role: "Architect & Partner",
-    location: "Zurich, Switzerland",
+    name: "Farhan Ahmed",
+    role: "Software Engineer",
+    location: "Gulshan, Dhaka",
     avatar:
       "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?auto=format&fit=crop&w=200&q=80",
     rating: 5,
     comment:
-      "The Double-Faced Wool Coat is the best outerwear investment I've made in five years. The weight is substantial yet it moves with graceful fluidity. The stitching precision is indistinguishable from Savile Row bespoke.",
-    productName: "Architectural Double-Faced Wool Coat",
+      "The wool long coat exceeded my expectations. The fabric is heavy, warm, and the finish looks very high-end. Delivered to my home in Gulshan in less than 24 hours.",
+    productName: "Double-Layer Wool Long Coat",
   },
   {
     id: "test-2",
-    name: "Clara Beaumont",
-    role: "Design Director",
-    location: "Paris, France",
+    name: "Nusrat Jahan",
+    role: "Architect",
+    location: "Dhanmondi, Dhaka",
     avatar:
       "https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=200&q=80",
     rating: 5,
     comment:
-      "Fedoll gets proportions right. The kinetic stretch blazer feels like an unstructured cardigan yet commands respect in client presentations. Customer service and packaging are museum-grade.",
-    productName: "Unstructured Kinetic Stretch Blazer",
+      "Finding genuine, comfortable blazers in Bangladesh used to be tough. Fedoll's stretch blazer is super light and easy to wear all day during client meetings.",
+    productName: "Comfort Stretch Work Blazer",
   },
   {
     id: "test-3",
-    name: "David Kim",
-    role: "Creative Strategist",
-    location: "New York, USA",
+    name: "Tanvir Hasan",
+    role: "Creative Director",
+    location: "Nasirabad, Chittagong",
     avatar:
       "https://images.unsplash.com/photo-1500648767791-00dcc994a43e?auto=format&fit=crop&w=200&q=80",
     rating: 5,
     comment:
-      "The 14oz shuttle-loom selvedge jeans are extraordinary. The slub and chatter on the denim surface show real vintage loom craftsmanship. They have aged beautifully over 4 months.",
-    productName: "14oz Japanese Selvedge Chore Jacket",
+      "The 14oz selvedge denim jacket is top quality. Heavy pure cotton, solid brass buttons, and looks fantastic with tees. Cash on delivery was smooth.",
+    productName: "14oz Selvedge Denim Chore Jacket",
   },
 ];
 
 export const initialSpotlightBanner: SpotlightBanner = {
   id: "spotlight-denim-capsule",
-  tag: "Artisan Spotlight",
-  title: "The Selvedge Denim & Technical Outerwear Initiative",
+  tag: "Special Offer • Bangladesh",
+  title: "Premium Selvedge Denim & Winter Coats",
   description:
-    "We partnered with multi-generational master weavers in Okayama and Biella to produce a numbered capsule of zero-waste heirloom essentials.",
-  ctaText: "Shop The Capsule",
+    "Order online today and enjoy 15% discount on your first purchase. Free courier delivery all across Bangladesh on orders over ৳2,500.",
+  ctaText: "Shop The Collection",
   ctaLink: "/blogs/sustainable-denim-longevity",
   image:
     "https://images.unsplash.com/photo-1490481651871-ab68de25d43d?auto=format&fit=crop&w=1200&q=80",
@@ -426,13 +427,11 @@ export const initialSpotlightBanner: SpotlightBanner = {
  */
 export const fetchHomeDataFromFirestore = async () => {
   try {
-    // 1. Hero Banners
     const heroSnap = await getDocs(collection(db, "hero_banners"));
     const heroBanners: HeroBanner[] = heroSnap.empty
       ? initialHeroBanners
       : heroSnap.docs.map((d) => ({ id: d.id, ...(d.data() as DocumentData) } as HeroBanner));
 
-    // 2. Categories
     const catSnap = await getDocs(collection(db, "featured_categories"));
     const featuredCategories: FeaturedCategory[] = catSnap.empty
       ? initialFeaturedCategories
@@ -440,7 +439,6 @@ export const fetchHomeDataFromFirestore = async () => {
           (d) => ({ id: d.id, ...(d.data() as DocumentData) } as FeaturedCategory)
         );
 
-    // 3. Products
     const prodSnap = await getDocs(collection(db, "products"));
     const products: ProductItem[] = prodSnap.empty
       ? initialProducts
@@ -448,7 +446,6 @@ export const fetchHomeDataFromFirestore = async () => {
           (d) => ({ id: d.id, ...(d.data() as DocumentData) } as ProductItem)
         );
 
-    // 4. Testimonials
     const testSnap = await getDocs(collection(db, "testimonials"));
     const testimonials: TestimonialItem[] = testSnap.empty
       ? initialTestimonials
@@ -456,15 +453,22 @@ export const fetchHomeDataFromFirestore = async () => {
           (d) => ({ id: d.id, ...(d.data() as DocumentData) } as TestimonialItem)
         );
 
-    // 5. Value Props
     const valSnap = await getDocs(collection(db, "value_props"));
     const valueProps: ValueProp[] = valSnap.empty
       ? initialValueProps
       : valSnap.docs.map((d) => ({ id: d.id, ...(d.data() as DocumentData) } as ValueProp));
 
-    // If Firestore was empty, auto-seed in background
-    if (prodSnap.empty || heroSnap.empty) {
-      seedHomeDataToFirestore().catch(console.warn);
+    const hasOldUsdPricing = products.some((p) => p.price < 500);
+    if (prodSnap.empty || heroSnap.empty || hasOldUsdPricing) {
+      seedHomeDataToFirestore(true).catch(console.warn);
+      return {
+        heroBanners: initialHeroBanners,
+        featuredCategories: initialFeaturedCategories,
+        products: initialProducts,
+        testimonials: initialTestimonials,
+        valueProps: initialValueProps,
+        spotlightBanner: initialSpotlightBanner,
+      };
     }
 
     return {
@@ -492,7 +496,6 @@ export const fetchHomeDataFromFirestore = async () => {
  * Seed all Home collections into Firebase Firestore
  */
 export const seedHomeDataToFirestore = async (force: boolean = false) => {
-  // 1. Hero Banners
   for (const item of initialHeroBanners) {
     await setDoc(
       doc(db, "hero_banners", item.id),
@@ -501,7 +504,6 @@ export const seedHomeDataToFirestore = async (force: boolean = false) => {
     );
   }
 
-  // 2. Value Props
   for (const item of initialValueProps) {
     await setDoc(
       doc(db, "value_props", item.id),
@@ -510,7 +512,6 @@ export const seedHomeDataToFirestore = async (force: boolean = false) => {
     );
   }
 
-  // 3. Featured Categories
   for (const item of initialFeaturedCategories) {
     await setDoc(
       doc(db, "featured_categories", item.id),
@@ -519,7 +520,6 @@ export const seedHomeDataToFirestore = async (force: boolean = false) => {
     );
   }
 
-  // 4. Products
   for (const item of initialProducts) {
     await setDoc(
       doc(db, "products", item.id),
@@ -528,7 +528,6 @@ export const seedHomeDataToFirestore = async (force: boolean = false) => {
     );
   }
 
-  // 5. Testimonials
   for (const item of initialTestimonials) {
     await setDoc(
       doc(db, "testimonials", item.id),
@@ -537,12 +536,11 @@ export const seedHomeDataToFirestore = async (force: boolean = false) => {
     );
   }
 
-  // 6. Spotlight Banner
   await setDoc(
     doc(db, "spotlight_banners", initialSpotlightBanner.id),
     { ...initialSpotlightBanner, updatedAt: serverTimestamp() },
     { merge: !force }
   );
 
-  return { success: true, message: "Home page data successfully seeded to Firebase!" };
+  return { success: true, message: "Home page data in BDT successfully saved to Firebase!" };
 };

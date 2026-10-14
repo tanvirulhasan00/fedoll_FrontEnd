@@ -90,6 +90,7 @@ export const aboutSlice = createSlice({
       })
       .addCase(seedAboutData.fulfilled, (state) => {
         state.syncing = false;
+        state.data = initialAboutData;
       })
       .addCase(seedAboutData.rejected, (state) => {
         state.syncing = false;

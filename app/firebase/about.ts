@@ -58,15 +58,15 @@ export interface AboutData {
 }
 
 export const initialAboutData: AboutData = {
-  tagline: "Our Atelier & Philosophy",
-  title: "Architectural Precision. Heirloom Longevity.",
+  tagline: "Our Story & Promise",
+  title: "Quality Clothing Made for Bangladesh.",
   subtitle:
-    "We design clothing with the discipline of modern architecture: prioritizing purposeful tactile materials, ergonomic movement, and uncompromising durability.",
-  missionHeading: "Rejecting Disposable Trends in Favor of Sartorial Permanence",
+    "We make premium everyday clothing with simple designs, comfortable fabrics, and long-lasting quality right here in Bangladesh.",
+  missionHeading: "Honest Quality Clothing Without the Luxury Markup",
   missionParagraph1:
-    "Fedoll was conceived in 2021 as a reaction against accelerated fashion cycles and synthetic disposability. We observed wardrobes filled with garments that lost their shape after five washes, engineered to become obsolete.",
+    "Fedoll was started in 2021 with a simple belief: you shouldn't have to pay high imported prices to get world-class clothing. Bangladesh already makes the best garments for the world's top brands—we wanted to bring that same export-standard quality directly to people living here.",
   missionParagraph2:
-    "Our approach is fundamentally restorative: partnering directly with master shuttle-loom weavers in Okayama and historical double-faced wool mills in Biella. We believe every seam should be intentional, and every piece should gracefully document decades of its wearer's life.",
+    "We use pure cotton, strong selvedge denim, and warm wool fabrics. Every jacket, shirt, and pair of pants is carefully stitched, thoroughly quality-checked, and backed by a 7-day easy exchange guarantee.",
   heroImage:
     "https://images.unsplash.com/photo-1441986300917-64674bd600d8?auto=format&fit=crop&w=1600&q=85",
   atelierImage:
@@ -76,120 +76,120 @@ export const initialAboutData: AboutData = {
   stats: [
     {
       value: "100%",
-      label: "Organic & Traceable",
-      description: "GOTS-certified organic cotton and ethically shorn Italian virgin wools.",
+      label: "Pure & Honest Fabrics",
+      description: "Breathable natural cotton, durable denim, and itch-free soft wool.",
     },
     {
-      value: "40+",
-      label: "Years of Heritage",
-      description: "Artisan mill partners operating antique shuttle looms and bespoke looms.",
+      value: "64",
+      label: "Districts Delivery",
+      description: "Fast courier delivery with Cash on Delivery and bKash across Bangladesh.",
     },
     {
-      value: "18,000+",
-      label: "Global Patrons",
-      description: "Discerning architects, stylists, and creatives in 38 world capitals.",
+      value: "25,000+",
+      label: "Happy Customers",
+      description: "Men and women wearing Fedoll clothing in Dhaka, Chittagong, and beyond.",
     },
     {
-      value: "0%",
-      label: "Virgin Plastic Policy",
-      description: "Plastic-free horn hardware, corozo buttons, and 100% compostable mailers.",
+      value: "7 Days",
+      label: "Easy Size Exchanges",
+      description: "Simple, friendly return and exchange service if you need a different size.",
     },
   ],
   values: [
     {
       id: "val-1",
       icon: "CubeTransparentIcon",
-      title: "Kinetic Cut Architecture",
+      title: "Comfortable Modern Fit",
       description:
-        "Every garment pattern is tested on human bodies in motion. We engineer ergonomic gussets, dropped shoulders, and single-pleat articulation for unrestricted ease.",
+        "Designed for real everyday life in Bangladesh. Roomy shoulders, flexible waists, and clean lines that look sharp at work or hangouts.",
     },
     {
       id: "val-2",
       icon: "SparklesIcon",
-      title: "Tactile Textile Integrity",
+      title: "Durable, Washable Fabrics",
       description:
-        "We source only long-staple organic cottons, 19.5-micron superfine merinos, and water-repellent dense storm gabardines that age with distinguished patina.",
+        "Fabrics tested to handle our local weather. They stay soft, resist shrinking, and maintain their deep color after many washes.",
     },
     {
       id: "val-3",
       icon: "GlobeAmericasIcon",
-      title: "Circular Responsibility",
+      title: "Fair & Transparent Pricing",
       description:
-        "Closed-loop indigo dye baths reduce water consumption by 78%. We provide free repairs and conscious garment stewardship guides for all patrons.",
+        "Direct-to-consumer prices in Bangladeshi Taka without middlemen or inflated boutique markups.",
     },
     {
       id: "val-4",
       icon: "HeartIcon",
-      title: "Artisan Fair Living",
+      title: "Friendly Local Support",
       description:
-        "Our tailors and textile weavers receive living wages and work in sunlit, safe studio environments respecting multi-generational craft culture.",
+        "Our support team is based in Dhaka. Call, message, or WhatsApp us anytime for sizing or order advice.",
     },
   ],
   team: [
     {
       id: "member-1",
-      name: "Sophia Chen",
-      role: "Co-Founder & Creative Director",
+      name: "Tanvirul Hasan",
+      role: "Founder & Lead Product Specialist",
       avatar:
-        "https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=400&q=80",
-      bio: "Trained at Central Saint Martins and Savile Row. Sophia sculpts Fedoll's silhouettes with a balance of structural authority and relaxed poise.",
+        "https://images.unsplash.com/photo-1500648767791-00dcc994a43e?auto=format&fit=crop&w=400&q=80",
+      bio: "Born and raised in Bangladesh. Tanvir leads Fedoll's fabric sourcing, product quality checks, and customer experience.",
     },
     {
       id: "member-2",
-      name: "Tanvirul Hasan",
-      role: "Co-Founder & Head of Operations",
+      name: "Sophia Chen",
+      role: "Head of Design & Styling",
       avatar:
-        "https://images.unsplash.com/photo-1500648767791-00dcc994a43e?auto=format&fit=crop&w=400&q=80",
-      bio: "Leads technical supply-chain traceability, digital experience engineering, and direct ethical partnerships with our textile mills.",
+        "https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=400&q=80",
+      bio: "Fashion graduate with 8 years of experience creating minimal, elegant everyday silhouettes that are effortless to style.",
     },
     {
       id: "member-3",
       name: "Marcus Vance",
-      role: "Head of Textile Innovation",
+      role: "Denim & Fabric Specialist",
       avatar:
         "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?auto=format&fit=crop&w=400&q=80",
-      bio: "3rd-generation denim weaver with 15 years in Okayama specializing in low-tension shuttle loom dynamics and closed-loop indigo chemistry.",
+      bio: "Textile engineer specializing in shuttle-loom selvedge denim and natural organic dyes that look better with age.",
     },
     {
       id: "member-4",
       name: "Elena Rostova",
-      role: "Master Patternmaker & Senior Stylist",
+      role: "Senior Patternmaker",
       avatar:
         "https://images.unsplash.com/photo-1517841905240-472988babdf9?auto=format&fit=crop&w=400&q=80",
-      bio: "Expert in unstructured tailoring and hybrid executive ergonomics, ensuring garments transition seamlessly from morning flights to evening galas.",
+      bio: "Master tailor dedicated to crafting flexible, comfortable fits that move naturally with your body throughout the day.",
     },
   ],
   milestones: [
     {
       year: "2021",
-      title: "The First Vintage Shuttle Loom",
+      title: "Fedoll Starts in Dhaka",
       description:
-        "Fedoll was established with a single vintage shuttle loom in Kurashiki, weaving our inaugural 14oz redline selvedge capsule.",
+        "We launched our first batch of handcrafted selvedge denim jeans and cotton chore jackets in Bangladesh.",
     },
     {
       year: "2023",
-      title: "Italian Wool Atelier Partnership",
+      title: "Signature Winter Collection",
       description:
-        "Formed an exclusive collaboration with family-owned mills in Biella to develop our double-faced architectural wool outerwear line.",
+        "Introduced our popular double-layer wool coats and lightweight all-weather trench jackets.",
     },
     {
       year: "2024",
-      title: "Zero-Waste Pattern Certification",
+      title: "Countrywide 64-District Courier Network",
       description:
-        "Achieved 94% textile cutting efficiency through algorithmic nesting, cutting fabric scraps into recycled acoustic insulation.",
+        "Partnered with top local couriers to provide reliable Cash on Delivery to every district in Bangladesh.",
     },
     {
       year: "2026",
-      title: "Global Sartorial Journal & Expansion",
+      title: "Dhaka Studio & Online Flagship",
       description:
-        "Serving patrons in over 38 countries with localized carbon-neutral express courier delivery and concierge tailoring advice.",
+        "Opening our design studio and showroom in Banani/Gulshan while expanding our modern web shopping experience.",
     },
   ],
   contact: {
-    address: "Fedoll Atelier, 123 Fashion District, New York, NY 10018",
-    email: "concierge@fedoll.com",
-    phone: "+1 (800) 123-4567",
-    hours: "Monday – Friday: 09:00 AM – 06:00 PM EST",
+    address: "Fedoll Studio, House 18, Road 11, Block D, Banani / Gulshan, Dhaka 1213, Bangladesh",
+    email: "support@fedoll.com",
+    phone: "+880 1700-123456",
+    hours: "Saturday – Thursday: 10:00 AM – 08:00 PM (BST)",
   },
 };
 
@@ -202,10 +202,19 @@ export const fetchAboutDataFromFirestore = async (): Promise<AboutData> => {
     const snap = await getDoc(docRef);
 
     if (snap.exists()) {
-      return snap.data() as AboutData;
+      const data = snap.data() as AboutData;
+      if (
+        data.subtitle?.includes("discipline of modern architecture") ||
+        data.missionParagraph1?.includes("Okayama") ||
+        data.contact?.phone?.includes("+81") ||
+        !data.contact?.phone?.includes("+880")
+      ) {
+        await seedAboutDataToFirestore(true);
+        return initialAboutData;
+      }
+      return data;
     }
 
-    // Auto seed if document doesn't exist
     await seedAboutDataToFirestore();
     return initialAboutData;
   } catch (error) {

@@ -165,21 +165,23 @@ export default function QuickViewModal() {
                         </div>
                       </div>
 
-                      {/* Pricing */}
+                      {/* Pricing in BDT */}
                       <div className="flex items-baseline gap-3">
                         <span className="text-3xl font-extrabold text-gray-900">
-                          ${quickViewProduct.price}
+                          ৳{quickViewProduct.price.toLocaleString()}
                         </span>
                         {quickViewProduct.originalPrice && (
                           <span className="text-lg text-gray-400 line-through">
-                            ${quickViewProduct.originalPrice}
+                            ৳{quickViewProduct.originalPrice.toLocaleString()}
                           </span>
                         )}
                         {quickViewProduct.originalPrice && (
                           <span className="text-xs font-bold text-emerald-700 bg-emerald-100 px-2.5 py-0.5 rounded-full">
-                            Save $
-                            {quickViewProduct.originalPrice -
-                              quickViewProduct.price}
+                            Save ৳
+                            {(
+                              quickViewProduct.originalPrice -
+                              quickViewProduct.price
+                            ).toLocaleString()}
                           </span>
                         )}
                       </div>
@@ -282,17 +284,17 @@ export default function QuickViewModal() {
                           className="flex-1 py-3.5 px-6 rounded-xl bg-orange-700 hover:bg-orange-800 text-white text-sm font-bold shadow-md hover:shadow-lg transition flex items-center justify-center gap-2 cursor-pointer"
                         >
                           <ShoppingBagIcon className="size-4" />
-                          <span>Add to Shopping Bag • ${(quickViewProduct.price * quantity).toFixed(2)}</span>
+                          <span>Add to Shopping Bag • ৳{(quickViewProduct.price * quantity).toLocaleString()}</span>
                         </button>
                       </div>
 
                       <div className="flex items-center justify-center gap-6 text-[11px] text-gray-500 pt-1">
                         <span className="flex items-center gap-1">
                           <ShieldCheckIcon className="size-4 text-emerald-600" />
-                          Ethically Crafted in Italy
+                          Cash on Delivery & bKash Available
                         </span>
                         <span>•</span>
-                        <span>Free 30-Day Returns</span>
+                        <span>7-Day Easy Exchange in Bangladesh</span>
                       </div>
                     </div>
                   </div>

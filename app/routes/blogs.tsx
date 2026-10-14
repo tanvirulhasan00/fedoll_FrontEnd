@@ -28,11 +28,11 @@ import { toast } from "sonner";
 
 export function meta({}: Route.MetaArgs) {
   return [
-    { title: "The Journal | Fedoll - Editorial Fashion & Style" },
+    { title: "Style & Care Guides | Fedoll Bangladesh" },
     {
       name: "description",
       content:
-        "Explore thoughtful articles on contemporary tailoring, sustainable denim, outerwear layering, and minimalist wardrobe essentials by Fedoll.",
+        "Read helpful fashion advice, clothing care tips for Bangladeshi weather, and everyday style guides by Fedoll.",
     },
   ];
 }
@@ -115,18 +115,17 @@ export default function BlogsPage() {
               <div className="max-w-2xl">
                 <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-orange-100 text-orange-800 text-xs font-semibold uppercase tracking-wider mb-4">
                   <SparklesIcon className="size-4 text-orange-600" />
-                  Fedoll Editorial Journal
+                  Fedoll Fashion Journal
                 </div>
                 <h1 className="text-4xl sm:text-5xl lg:text-6xl font-bold tracking-tight text-gray-900">
-                  Refined Sartorial <br />
+                  Everyday Style <br />
                   <span className="text-orange-700 italic font-serif">
-                    Perspectives
+                    & Care Guides
                   </span>
                 </h1>
                 <p className="mt-4 text-base sm:text-lg text-gray-600 leading-relaxed">
-                  Curated essays on technical garment architecture, sustainable
-                  textile innovation, and mindful wardrobe curations straight from
-                  our atelier.
+                  Simple, practical styling tips, weather-friendly clothing care guides,
+                  and smart wardrobe essentials made for life in Bangladesh.
                 </p>
               </div>
 
@@ -436,7 +435,7 @@ export default function BlogsPage() {
           )}
         </section>
 
-        {/* Editorial Standards Banner */}
+        {/* Quality Promises Banner */}
         <section className="bg-stone-900 text-white py-16">
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
             <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
@@ -445,10 +444,10 @@ export default function BlogsPage() {
                   <CheckBadgeIcon className="size-6" />
                 </div>
                 <div>
-                  <h4 className="text-base font-bold">Uncompromising Quality</h4>
+                  <h4 className="text-base font-bold">100% Export Quality</h4>
                   <p className="mt-1 text-sm text-stone-400 leading-relaxed">
-                    Every garment analysis is vetted by our master tailors and
-                    textile engineers before publication.
+                    Every garment is crafted using export-grade cotton, strong stitching,
+                    and premium dyes that do not fade easily.
                   </p>
                 </div>
               </div>
@@ -458,10 +457,10 @@ export default function BlogsPage() {
                   <SparklesIcon className="size-6" />
                 </div>
                 <div>
-                  <h4 className="text-base font-bold">Sustainable Integrity</h4>
+                  <h4 className="text-base font-bold">Made for BD Weather</h4>
                   <p className="mt-1 text-sm text-stone-400 leading-relaxed">
-                    Transparent reporting on closed-loop dyeing, organic fibers,
-                    and circular manufacturing pipelines.
+                    Designed specifically for high humidity, heat, and mild winters
+                    across Dhaka and other districts.
                   </p>
                 </div>
               </div>
@@ -471,10 +470,10 @@ export default function BlogsPage() {
                   <HeartIcon className="size-6" />
                 </div>
                 <div>
-                  <h4 className="text-base font-bold">Heirloom Wardrobes</h4>
+                  <h4 className="text-base font-bold">Nationwide Support</h4>
                   <p className="mt-1 text-sm text-stone-400 leading-relaxed">
-                    Style guides focused on lasting decades rather than micro-trend
-                    disposability.
+                    Easy exchanges, fast doorstep delivery across all 64 districts,
+                    and friendly local customer service.
                   </p>
                 </div>
               </div>

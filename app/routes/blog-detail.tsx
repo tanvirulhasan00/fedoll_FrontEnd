@@ -28,11 +28,11 @@ import { toast } from "sonner";
 
 export function meta({ params }: Route.MetaArgs) {
   return [
-    { title: "Article | Fedoll Journal" },
+    { title: "Style Guide | Fedoll Bangladesh" },
     {
       name: "description",
       content:
-        "Deep-dive sartorial insight from the Fedoll design studio and textile atelier.",
+        "Practical clothing styling tips and garment care advice from Fedoll Bangladesh.",
     },
   ];
 }
@@ -454,7 +454,7 @@ export default function BlogDetailPage() {
                         Continue Reading
                       </h2>
                       <p className="text-sm text-gray-500 mt-1">
-                        More thoughtful perspectives from our editorial journal
+                        More helpful styling and care guides from Fedoll
                       </p>
                     </div>
 

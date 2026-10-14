@@ -5,26 +5,26 @@ const GALLERY_ITEMS = [
   {
     image:
       "https://images.unsplash.com/photo-1515886657613-9f3515b0c78f?auto=format&fit=crop&w=600&q=80",
-    tag: "@elena.atelier",
-    look: "Trench Gabardine & Pleated Chino",
+    tag: "@tanvir.dhaka",
+    look: "Casual Oxford Shirt & Chino Pants",
   },
   {
     image:
       "https://images.unsplash.com/photo-1529139574466-a303027c1d8b?auto=format&fit=crop&w=600&q=80",
-    tag: "@marcus.vance",
-    look: "14oz Selvedge Chore Jacket",
+    tag: "@zainab.style",
+    look: "Export Quality Cotton Jacket",
   },
   {
     image:
       "https://images.unsplash.com/photo-1488161628813-04466f872be2?auto=format&fit=crop&w=600&q=80",
-    tag: "@julian_sterling",
-    look: "Double-Faced Italian Wool Topcoat",
+    tag: "@fahim_bd",
+    look: "Classic Denim Trucker Jacket",
   },
   {
     image:
       "https://images.unsplash.com/photo-1492562080023-ab3db95bfbce?auto=format&fit=crop&w=600&q=80",
-    tag: "@amara.style",
-    look: "Merino Turtleneck & Straight Selvedge",
+    tag: "@sara.daily",
+    look: "Comfort Fit Heavyweight Hoodie",
   },
 ];
 
@@ -39,10 +39,10 @@ export default function CommunityGallery() {
               #FedollStyle
             </div>
             <h2 className="text-2xl sm:text-3xl font-bold tracking-tight text-gray-900">
-              Styled in the Wild
+              Fedoll Community Style
             </h2>
             <p className="mt-1 text-xs sm:text-sm text-gray-500">
-              Tag @fedoll on Instagram to be featured in our community archive.
+              Tag @fedoll on Instagram or Facebook to get featured on our website.
             </p>
           </div>
 

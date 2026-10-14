@@ -24,11 +24,11 @@ import { toast } from "sonner";
 
 export function meta({}: Route.MetaArgs) {
   return [
-    { title: "About Us | Fedoll - Architectural Sartorial Atelier" },
+    { title: "About Us | Fedoll Bangladesh" },
     {
       name: "description",
       content:
-        "Learn about Fedoll's mission, heirloom tailoring principles, Okayama shuttle-loom denim, and Biella double-faced wool craftsmanship.",
+        "Learn about Fedoll Bangladesh, our export-quality clothing crafted in Dhaka, and our commitment to comfortable, long-lasting fashion.",
     },
   ];
 }
@@ -80,12 +80,12 @@ export default function AboutUsPage() {
               <div className="max-w-3xl">
                 <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-orange-100 text-orange-800 text-xs font-semibold uppercase tracking-wider mb-4">
                   <BuildingLibraryIcon className="size-4 text-orange-700" />
-                  {data?.tagline || "Our Atelier & Philosophy"}
+                  {data?.tagline || "Our Brand Story"}
                 </div>
                 <h1 className="text-4xl sm:text-5xl lg:text-6xl font-bold tracking-tight text-gray-900 leading-tight">
-                  Architectural Precision. <br />
+                  Export Quality Clothes. <br />
                   <span className="text-orange-700 italic font-serif">
-                    Heirloom Longevity.
+                    Crafted in Bangladesh.
                   </span>
                 </h1>
                 <p className="mt-6 text-base sm:text-lg text-gray-600 leading-relaxed max-w-2xl">
@@ -123,7 +123,7 @@ export default function AboutUsPage() {
               />
               <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent" />
               <div className="absolute bottom-6 left-6 text-white text-xs sm:text-sm font-medium">
-                The Okayama Shuttle Loom Studio & Biella Wool Atelier
+                Fedoll Studio & Workshop, Dhaka, Bangladesh
               </div>
             </div>
           </div>
@@ -149,15 +149,15 @@ export default function AboutUsPage() {
               <div className="pt-4 flex items-center gap-6">
                 <div className="border-l-2 border-orange-700 pl-4">
                   <p className="text-2xl font-bold text-gray-900">2021</p>
-                  <p className="text-xs text-gray-500">Founded in Okayama</p>
-                </div>
-                <div className="border-l-2 border-orange-700 pl-4">
-                  <p className="text-2xl font-bold text-gray-900">0%</p>
-                  <p className="text-xs text-gray-500">Synthetic Fillers</p>
+                  <p className="text-xs text-gray-500">Founded in Dhaka</p>
                 </div>
                 <div className="border-l-2 border-orange-700 pl-4">
                   <p className="text-2xl font-bold text-gray-900">100%</p>
-                  <p className="text-xs text-gray-500">Conscious Provenance</p>
+                  <p className="text-xs text-gray-500">Export Grade Cotton</p>
+                </div>
+                <div className="border-l-2 border-orange-700 pl-4">
+                  <p className="text-2xl font-bold text-gray-900">64</p>
+                  <p className="text-xs text-gray-500">Districts Delivery</p>
                 </div>
               </div>
             </div>
@@ -208,14 +208,13 @@ export default function AboutUsPage() {
         <section className="py-16 sm:py-24 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="text-center max-w-2xl mx-auto mb-16">
             <span className="text-xs font-bold uppercase tracking-widest text-orange-700">
-              Our Foundations
+              Our Promises
             </span>
             <h2 className="text-3xl sm:text-4xl font-bold tracking-tight text-gray-900 mt-2">
-              Four Tenets of Fedoll Craftsmanship
+              What We Stand For
             </h2>
             <p className="mt-2 text-sm text-gray-500">
-              How our design philosophy governs every pattern cut, fabric grain,
-              and stitch.
+              Honest quality, comfortable fabrics, and dependable service for everyone in Bangladesh.
             </p>
           </div>
 
@@ -246,10 +245,10 @@ export default function AboutUsPage() {
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
             <div className="text-center max-w-2xl mx-auto mb-14">
               <span className="text-xs font-bold uppercase tracking-widest text-orange-700">
-                The Journey
+                Our Journey
               </span>
               <h2 className="text-3xl sm:text-4xl font-bold tracking-tight text-gray-900 mt-2">
-                Milestones in Sartorial Precision
+                How Fedoll Grew in Bangladesh
               </h2>
             </div>
 
@@ -279,15 +278,15 @@ export default function AboutUsPage() {
           <div className="flex flex-col md:flex-row md:items-end md:justify-between gap-4 mb-14">
             <div>
               <span className="text-xs font-bold uppercase tracking-widest text-orange-700">
-                The Craftsmen & Leadership
+                Our Team
               </span>
               <h2 className="text-3xl sm:text-4xl font-bold tracking-tight text-gray-900 mt-2">
-                Stewards of the Fedoll Atelier
+                The People Behind Fedoll
               </h2>
             </div>
             <p className="text-sm text-gray-500 max-w-md">
-              Bringing together patternmakers, denim historians, and supply-chain
-              pioneers committed to circular longevity.
+              A dedicated team of Bangladeshi fashion designers, skilled master tailors,
+              and garment craftsmen based in Dhaka.
             </p>
           </div>
 
@@ -328,15 +327,14 @@ export default function AboutUsPage() {
             <div className="grid grid-cols-1 lg:grid-cols-12 gap-10 items-center">
               <div className="lg:col-span-6 space-y-4">
                 <span className="text-xs font-bold uppercase tracking-widest text-orange-400">
-                  Visit & Consult
+                  Visit Us or Call
                 </span>
                 <h2 className="text-3xl sm:text-4xl font-bold tracking-tight">
-                  Our Flagship Atelier & Advisory Concierge
+                  Our Dhaka Studio & Customer Support
                 </h2>
                 <p className="text-stone-300 text-sm leading-relaxed max-w-lg">
-                  Whether you are seeking bespoke sizing consultation, fabric care
-                  advice, or an in-person atelier appointment, our stylists are
-                  at your service.
+                  Have questions about sizes, fabrics, or doorstep delivery?
+                  Contact us or visit our studio in Banani, Dhaka. We are always happy to help.
                 </p>
 
                 <div className="pt-4 space-y-3 text-xs text-stone-300">
@@ -374,13 +372,13 @@ export default function AboutUsPage() {
                   <div className="absolute inset-0 bg-black/40 flex items-center justify-center p-6 text-center">
                     <div className="space-y-3">
                       <p className="text-sm font-bold text-white uppercase tracking-wider">
-                        Explore Our Finished Collections
+                        Explore Our Collections
                       </p>
                       <Link
                         to="/"
                         className="inline-flex items-center gap-2 px-6 py-3 rounded-full bg-orange-700 hover:bg-orange-800 text-white font-bold text-xs tracking-wide shadow-lg transition cursor-pointer"
                       >
-                        <span>Shop The Storefront</span>
+                        <span>Browse All Products</span>
                         <ArrowRightIcon className="size-4" />
                       </Link>
                     </div>

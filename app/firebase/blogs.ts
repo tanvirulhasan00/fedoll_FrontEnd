@@ -6,7 +6,6 @@ import {
   setDoc,
   query,
   where,
-  orderBy,
   serverTimestamp,
   type DocumentData,
 } from "firebase/firestore";
@@ -40,240 +39,212 @@ export const initialBlogs: BlogItem[] = [
   {
     id: "art-of-layering-outerwear",
     slug: "art-of-layering-outerwear",
-    title: "The Art of Layering: Transitioning Your Outerwear Through Changing Seasons",
+    title: "How to Layer Clothes for Bangladesh Winters: Easy Styling Tips",
     excerpt:
-      "Mastering transitional dressing requires the right harmony of breathable textiles, structured tailoring, and adaptable silhouette layering.",
-    category: "Outerwear & Style",
+      "Simple and practical ways to stay warm during Dhaka's cool mornings and evenings without wearing bulky or uncomfortable clothes.",
+    category: "Winter Styling",
     coverImage:
       "https://images.unsplash.com/photo-1544441893-675973e31985?auto=format&fit=crop&w=1200&q=80",
     author: {
       name: "Sophia Chen",
-      role: "Creative Director",
+      role: "Lead Fashion Stylist",
       avatar:
         "https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=200&q=80",
     },
-    readTime: "5 min read",
-    publishedAt: "October 10, 2026",
+    readTime: "4 min read",
+    publishedAt: "January 10, 2026",
     featured: true,
     views: 1420,
     likes: 89,
-    tags: ["Outerwear", "Styling Guide", "Fall Fashion", "Layering"],
-    content: `## The Philosophy of Layering
+    tags: ["Winter Style", "Layering Tips", "Everyday Wear", "Jackets"],
+    content: `## Dressing Smart for Bangladesh Winters
 
-Transitional dressing has always separated genuine sartorial intuition from mere trend-following. As temperamental autumn breezes yield to brisk winter mornings, the instinct is often to reach for heavy, singular thermal shields. However, true comfort and aesthetic poise lie in the delicate discipline of layering.
+Winter in Bangladesh is short, pleasant, and breezy. Unlike freezing western countries, we don't need heavy thermal parkas. What we need is smart layering—putting together light and medium layers that you can easily take off as the sun warms up in the afternoon.
 
-When approached with intention, layering isn't simply adding bulk—it is an exercise in tactile dialogue, tonal harmony, and structural rhythm.
-
----
-
-### 1. The Foundation: Micro-Textures Next to Skin
-The cornerstone of any successful layered ensemble begins with what touches the skin. Opt for lightweight breathable cotton poplin, fine mercerized wool, or silk-blend crewnecks. 
-
-- **Weight:** Keep your base layer under 180 GSM.
-- **Silhouette:** Tailored cleanly against the torso without constriction.
-- **Palette:** Warm off-white, oat beige, or slate charcoal.
-
-> "A great outfit should look equally resolved whether you're standing in the brisk evening wind or shedding your outermost layer in an intimate café."
+Here is a simple, practical guide to layering your everyday outfits.
 
 ---
 
-### 2. The Mid-Layer: Architecture and Contrast
-Here is where personality enters. A tailored chore jacket, a lightweight boiled-wool overshirt, or an unstructured cardigan introduces dimensional depth. 
+### 1. Start with a Breathable Cotton Base
+Always start with pure cotton close to your skin. A light cotton crewneck t-shirt or a relaxed casual shirt will absorb sweat and let your skin breathe throughout the day.
 
-Pay attention to collar shapes: pair a grandad or mandarin collar shirt with an open-lapel chore coat to prevent bulky fabric clashing at the neckline.
+- **Best fabric:** 100% combed cotton or light knitwear.
+- **Good colors:** Off-white, soft beige, olive green, or black.
+
+> "A great layered outfit looks complete whether you keep your jacket on during a cool morning drive or take it off at your desk."
 
 ---
 
-### 3. The Climax: The Structured Outer Shell
-Fedoll's outerwear collection focuses on water-repellent gabardines, double-faced twills, and architectural trench silhouettes. The outer coat must drape with deliberate ease, accommodating your mid-layers effortlessly without tugging at the armholes.
+### 2. Add an Easy Mid-Layer
+When temperatures drop below 20°C in December and January, add an open overshirt, a denim chore jacket, or a lightweight cardigan.
 
-Key elements to evaluate:
-1. **Shoulder Seam Placement:** Dropped or raglan shoulders provide the greatest versatility across diverse inner garments.
-2. **Hemline Proportions:** Allow your longest piece to dictate the vertical silhouette, creating elongated lines.
-3. **Movement:** Premium fabrics possess natural memory and weight, creating dynamic fluid motion as you walk.`,
+- **Style tip:** Wear your overshirt open over a plain white tee for an effortless weekend look.
+- **Mix textures:** Pair a smooth cotton shirt with a textured knit sweater.
+
+---
+
+### 3. Finish with a Structured Long Coat or Trench
+When heading out in the evening or attending winter weddings and rooftop dinners, a double-layer wool coat or water-resistant trench coat gives you an instantly clean, elevated appearance.`,
   },
   {
     id: "sustainable-denim-longevity",
     slug: "sustainable-denim-longevity",
-    title: "Sustainable Denim: Crafting Longevity in Contemporary Wardrobes",
+    title: "Why Good Selvedge Denim Jeans Last for Years: A Simple Guide",
     excerpt:
-      "From raw Japanese selvedge to water-conserving organic cotton, discover why intentional denim craftsmanship endures far beyond fast-fashion cycles.",
-    category: "Denim & Craft",
+      "Learn what makes authentic shuttle-loom denim so strong, how it molds to your body, and why it is worth investing in.",
+    category: "Denim Care",
     coverImage:
       "https://images.unsplash.com/photo-1582552938357-32b906df40cb?auto=format&fit=crop&w=1200&q=80",
     author: {
       name: "Marcus Vance",
-      role: "Head of Textile Innovation",
+      role: "Denim Specialist",
       avatar:
         "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?auto=format&fit=crop&w=200&q=80",
     },
     readTime: "4 min read",
-    publishedAt: "October 8, 2026",
+    publishedAt: "January 6, 2026",
     featured: false,
     views: 980,
     likes: 64,
-    tags: ["Denim", "Sustainability", "Textiles", "Craftsmanship"],
-    content: `## Redefining the True Value of Denim
+    tags: ["Selvedge Jeans", "Durable Denim", "Care Guide", "Cotton"],
+    content: `## What Makes Real Denim Different?
 
-Denim was born as utilitarian workwear: indestructible, functional, and built to age like a documented history of its wearer's labor. In recent decades, however, fast-fashion accelerated cycles reduced denim into disposable, heavily chemical-distressed novelty garments.
+Most cheap jeans you find today are mixed with a lot of cheap plastic polyester and thin stretchy elastane. They lose their shape after a month and start tearing at the seams.
 
-At Fedoll, we approach denim from a restorative perspective—anchoring our philosophy in long-staple organic cotton, closed-loop indigo dyeing, and shuttle-loom weaving.
-
----
-
-### The Anatomy of Quality Selvedge
-Selvedge denim—derived from "self-edge"—refers to fabric woven on vintage shuttle looms. These slower machines produce a tightly bound edge that will never fray or unravel.
-
-- **Structural Density:** Shuttle looms generate unique cross-hatch irregularities called *chatter*, infusing every yard with bespoke character.
-- **Natural Fades:** Unlike artificial sandblasting or toxic acid washing, authentic denim patinas organically over years of actual wear.
-- **Water Conservation:** Closed-loop dye baths reduce fresh water consumption by over 78% compared to conventional industrial mills.
-
-> "A great pair of jeans should not be bought for this season—it should be an heirloom of your daily journeys."
+At Fedoll, we use pure, heavyweight cotton denim woven on traditional shuttle looms. This creates clean, closed edges (known as 'selvedge') that will never unravel.
 
 ---
 
-### Care Tips for Endless Longevity
-1. **Wash Infrequently:** Spot clean minor marks with a damp cloth and mild pH-neutral soap.
-2. **Cold Water Inversions:** When washing, turn the denim inside out and use cold cycles to preserve the deep indigo pigments.
-3. **Line Dry Always:** Tumble dryers are the primary cause of fiber degradation and unwanted elastane breakage.`,
+### Why People Love 100% Cotton Selvedge
+1. **It molds to your shape:** Over 2 to 3 months of daily wear, the denim naturally bends to your body shape and movements.
+2. **Natural fading:** As you wear it, the deep indigo dye fades naturally in areas like your knees and pockets, creating a custom vintage look.
+3. **Double durability:** Thick 14oz cotton handles bike rides, daily commuting, and years of regular washing.
+
+> "Buy one great pair of jeans that lasts 5 years instead of buying disposable pants every few months."`,
   },
   {
     id: "modern-workwear-reimagined",
     slug: "modern-workwear-reimagined",
-    title: "Modern Workwear Reimagined: Balancing Polish with Uncompromised Comfort",
+    title: "Comfortable Office Wear for Warm & Busy Days in Dhaka",
     excerpt:
-      "How functional tailoring, ergonomic cuts, and hybrid stretch fabrics are redefining everyday executive and creative workwear.",
-    category: "Workwear Essentials",
+      "How to choose breathable stretch fabrics and smart casual pieces so you stay cool in traffic and look sharp in office meetings.",
+    category: "Office & Workwear",
     coverImage:
       "https://images.unsplash.com/photo-1487222477894-8943e31ef7b2?auto=format&fit=crop&w=1200&q=80",
     author: {
       name: "Elena Rostova",
-      role: "Senior Fashion Stylist",
+      role: "Patternmaker & Stylist",
       avatar:
         "https://images.unsplash.com/photo-1517841905240-472988babdf9?auto=format&fit=crop&w=200&q=80",
     },
-    readTime: "6 min read",
-    publishedAt: "October 4, 2026",
+    readTime: "5 min read",
+    publishedAt: "December 28, 2025",
     featured: false,
     views: 1150,
     likes: 72,
-    tags: ["Workwear", "Tailoring", "Executive Style", "Comfort"],
-    content: `## The Modern Workplace Wardrobe Shift
+    tags: ["Workwear", "Office Style", "Comfortable Suits", "Dhaka Life"],
+    content: `## Dressing for Work in Dhaka's Weather
 
-The strict dichotomy between rigid corporate uniforms and weekend leisure wear has dissolved. Today's dynamic professionals command apparel that moves effortlessly between boardrooms, design studios, and international departures.
+Working in Dhaka means dealing with morning traffic, air-conditioned offices, and humid afternoons. Traditional stiff suits with thick shoulder pads can feel like torture.
 
-Modern workwear is no longer about stifling pads and suffocating collars. It is about ergonomic precision and effortless authority.
+Modern workwear is all about combining formal neatness with real physical comfort.
 
 ---
 
-### The Three Pillars of Hybrid Workwear
+### 3 Rules for Everyday Office Comfort
 
-#### 1. Unstructured Suiting
-Traditional suiting relished canvas horsehair chest pieces and rigid shoulder pads. Our contemporary blazers discard the excess armor, retaining razor-sharp lapels while providing the kinetic freedom of a cardigan.
+#### 1. Unpadded & Lightweight Blazers
+Choose blazers without stiff canvas chest padding. Fedoll's work blazers use a soft 4-way stretch blend that moves easily when you type on your laptop or drive.
 
-#### 2. Technical Performance Textiles
-We incorporate micro-weave poly-wool blends engineered with four-way mechanical stretch, crease resistance, and ambient moisture management. You step off a 6-hour flight looking as pristine as when you boarded.
+#### 2. Pleated Stretch Trousers
+Slim, tight formal pants are uncomfortable for long sitting hours. Front single pleats give your thighs extra breathing room while tapering neatly at the ankle.
 
-#### 3. Smart Modular Separates
-Forget rigid two-piece constraints. Modern workwear thrives on interchangeable modules:
-- Pleated stretch trousers paired with minimalist fine-gauge knitwear.
-- Structured overshirts serving as contemporary alternatives to traditional sports coats.
-- Clean leather sneakers or refined chelsea boots anchoring the ensemble.
-
-> "True polish today is characterized by confidence and comfort. When you feel physically unrestricted, your mind operates at peak clarity."`,
+#### 3. High-Quality Solid T-Shirts & Polos
+Pairing a clean off-white or charcoal t-shirt under a dark navy blazer creates a modern, smart-casual executive look suitable for startup offices and client calls.`,
   },
   {
     id: "garment-care-and-preservation",
     slug: "garment-care-and-preservation",
-    title: "Care & Preservation: How to Make Your Quality Garments Last Decades",
+    title: "How to Wash and Care for Your Premium Clothes at Home",
     excerpt:
-      "Extending the lifespan of fine wools, structured cottons, and technical outerwear isn't complicated—it's an essential ritual of conscious ownership.",
+      "Simple, easy steps to keep your cotton t-shirts, jackets, and trousers looking new and smelling fresh in Bangladesh's weather.",
     category: "Garment Care",
     coverImage:
       "https://images.unsplash.com/photo-1558769132-cb1aea458c5e?auto=format&fit=crop&w=1200&q=80",
     author: {
       name: "Tanvirul Hasan",
-      role: "Lead Product Specialist",
+      role: "Founder, Fedoll",
       avatar:
         "https://images.unsplash.com/photo-1500648767791-00dcc994a43e?auto=format&fit=crop&w=200&q=80",
     },
     readTime: "4 min read",
-    publishedAt: "September 28, 2026",
+    publishedAt: "December 20, 2025",
     featured: false,
     views: 820,
     likes: 58,
-    tags: ["Maintenance", "Eco-Care", "Wardrobe", "Wool & Cotton"],
-    content: `## The Ritual of Wardrobe Stewardship
+    tags: ["Washing Tips", "Clothes Care", "Home Tips", "Long Lasting"],
+    content: `## Taking Care of Your Favorite Clothes
 
-Fast fashion conditioned us to treat clothing as consumable, perishable goods. But when you invest in high-grade craftsmanship, caring for your clothes becomes an immensely rewarding daily ritual.
-
-Proper maintenance can easily quadruple the usable life of fine fabrics while saving energy, water, and tailoring costs.
+Good clothing is an investment. In Bangladesh, dust and humidity can be challenging, but taking care of your clothes is actually very easy when you follow a few basic habits.
 
 ---
 
-### Essential Rules for Garment Preservation
+### 3 Golden Rules for Garment Care
 
-#### Rule 1: The Power of Steaming vs. Heavy Pressing
-Direct, high-heat dry irons crush delicate natural wool fibers and leave unsightly sheen on cottons. A garment steamer relaxes wrinkles using gentle moisture, sanitizing the textile while plumping up individual weave fibers.
+#### Rule 1: Wash in Cold Water and Turn Inside Out
+Hot water breaks down natural cotton fibers and fades dark dyes. Always turn your t-shirts and jeans inside out before washing in cold water.
 
-#### Rule 2: Invest in Proper Hangers
-Wire hangers from dry cleaners are wardrobe enemies—they stretch collar bands and leave unsightly dimples on structured shoulders.
-- Use wide-shoulder contoured wooden hangers for blazers and coats.
-- Use cedar blocks or aromatic lavender sachets to naturally deter moths without synthetic chemical smells.
+#### Rule 2: Air Dry in the Shade
+Direct hot sun can bleach dark colors over time and make cotton fabrics stiff. Hang your shirts and pants in a shaded, well-ventilated spot on the balcony or rooftop.
 
-#### Rule 3: Brush, Don't Wash
-Wool and heavy cotton outerwear possess natural self-cleaning resilience. A natural bristle garment brush removes daily street dust, pollen, and microscopic debris before they embed into yarns.
-
-> "Taking 60 seconds to brush your coat after returning home is the single most effective habit for keeping outer garments in showroom condition."`,
+#### Rule 3: Use a Steamer Instead of a Super-Hot Dry Iron
+Heavy dry irons can scorch delicate fibers and leave shiny marks on dark fabrics. A hand steamer gently relaxes wrinkles with moist steam while freshening up the textile.`,
   },
   {
     id: "the-minimalist-capsule-wardrobe",
     slug: "the-minimalist-capsule-wardrobe",
-    title: "The 2026 Minimalist Capsule: 10 Versatile Pieces for Infinite Looks",
+    title: "The 10-Item Capsule Wardrobe: Look Great Every Single Day",
     excerpt:
-      "Curate a high-impact wardrobe foundation that eliminates morning decision fatigue while elevating your signature everyday aesthetic.",
-    category: "Capsule Wardrobe",
+      "How to choose 10 versatile everyday pieces that you can easily mix and match for office, weekend hangouts, and events.",
+    category: "Wardrobe Tips",
     coverImage:
       "https://images.unsplash.com/photo-1490481651871-ab68de25d43d?auto=format&fit=crop&w=1200&q=80",
     author: {
       name: "Amara Bennett",
-      role: "Fashion Editor",
+      role: "Style Editor",
       avatar:
         "https://images.unsplash.com/photo-1544005313-94ddf0286df2?auto=format&fit=crop&w=200&q=80",
     },
-    readTime: "7 min read",
-    publishedAt: "September 22, 2026",
+    readTime: "5 min read",
+    publishedAt: "December 15, 2025",
     featured: false,
     views: 1890,
     likes: 135,
-    tags: ["Capsule", "Minimalism", "Smart Shopping", "Versatility"],
-    content: `## The Joy of Intentional Subtraction
+    tags: ["Capsule Wardrobe", "Smart Dressing", "Minimal Style", "Everyday"],
+    content: `## Stop Wasting Time Deciding What to Wear
 
-Decision fatigue is a quiet drain on everyday creative energy. Opening a stuffed closet where "nothing feels right" is an experience all too familiar. The capsule wardrobe offers a liberating antidote: owning fewer items of exceptionally higher quality, each purposefully selected to harmonize with every other piece.
+Do you ever open your closet full of clothes and feel like you have nothing to wear? Having too many random, low-quality clothes causes decision fatigue.
 
-Here is the ultimate 10-piece foundation curated for the discerning 2026 aesthetic.
-
----
-
-### The Core 10 Checklist
-
-1. **The Architectural Overcoat:** Tailored in rich charcoal or camel with clean lines and minimal external hardware.
-2. **The Relaxed Oxford Button-Down:** Heavyweight 100% organic cotton with a soft, roll-point collar.
-3. **The Fine-Gauge Merino Crewneck:** Ultra-soft, breathable, and suitable under blazers or over tees.
-4. **The Heavyweight Pristine Tee:** 240 GSM organic combed cotton with structured ribbed collar.
-5. **The Unstructured Single-Breasted Blazer:** Soft natural shoulders in dark navy or deep espresso.
-6. **The Tapered Selvedge Denim:** Clean raw or rinse wash without artificial fading.
-7. **The Tailored Pleated Chino:** Relaxed seat tapering subtly toward the ankle in warm stone.
-8. **The Minimalist Leather Sneaker:** Clean monochromatic white or ecru silhouette.
-9. **The Goodyear-Welted Chelsea Boot:** Weather-resistant calfskin leather with durable rubber soles.
-10. **The Canvas Weekend Holdall:** Vegetable-tanned leather accents and waterproof interior lining.
+A capsule wardrobe solves this: you keep fewer, better items where every piece matches with everything else.
 
 ---
 
-### The Exponential Combination Formula
-With these 10 cohesive elements, you can generate more than 40 distinct combinations suitable for casual weekends, client presentations, evening dinners, and long-weekend travels.
+### The 10 Essential Pieces:
+1. **The Classic Dark Overcoat or Trench Jacket**
+2. **The Crisp Oxford White Button-Down Shirt**
+3. **The Heavyweight Off-White Cotton T-Shirt**
+4. **The Charcoal Grey Crewneck T-Shirt**
+5. **The Unstructured Navy Work Blazer**
+6. **The Straight-Fit Raw Selvedge Denim Jeans**
+7. **The Warm Stone Pleated Chino Pants**
+8. **The Casual Selvedge Denim Chore Jacket**
+9. **The Clean White Minimalist Sneakers**
+10. **The Classic Leather Loafers or Chelsea Boots**
 
-> "Elegance is not about being noticed; it is about being remembered for quiet, effortless cohesion."`,
+---
+
+### How to Mix & Match:
+With these 10 items, you can create over 30 clean, sophisticated outfit combinations for meetings, casual Fridays, weekend dinners, and travel.`,
   },
 ];
 
@@ -285,7 +256,6 @@ export const fetchBlogsFromFirestore = async (): Promise<BlogItem[]> => {
   const snap = await getDocs(blogCol);
 
   if (snap.empty) {
-    // If empty, auto-seed and return initial blogs
     await seedBlogsToFirestore();
     return initialBlogs;
   }
@@ -307,13 +277,24 @@ export const fetchBlogsFromFirestore = async (): Promise<BlogItem[]> => {
         role: "Staff Writer",
         avatar: "https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=200&q=80",
       },
-      readTime: data.readTime || "5 min read",
-      publishedAt: data.publishedAt || "October 2026",
+      readTime: data.readTime || "4 min read",
+      publishedAt: data.publishedAt || "January 2026",
       featured: Boolean(data.featured),
       views: data.views || 0,
       likes: data.likes || 0,
     });
   });
+
+  const hasOldBlogContent = blogs.some(
+    (b) =>
+      b.title.includes("The Architecture of Modern Layering") ||
+      b.excerpt.includes("Okayama") ||
+      b.excerpt.includes("Sartorial")
+  );
+  if (hasOldBlogContent) {
+    seedBlogsToFirestore(true).catch(console.warn);
+    return initialBlogs;
+  }
 
   return blogs;
 };
@@ -326,7 +307,6 @@ export const fetchBlogByIdOrSlugFromFirestore = async (
 ): Promise<BlogItem | null> => {
   if (!idOrSlug) return null;
 
-  // 1. Try directly by document ID
   const docRef = doc(db, "blogs", idOrSlug);
   const snap = await getDoc(docRef);
 
@@ -346,15 +326,14 @@ export const fetchBlogByIdOrSlugFromFirestore = async (
         role: "Staff Writer",
         avatar: "https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=200&q=80",
       },
-      readTime: data.readTime || "5 min read",
-      publishedAt: data.publishedAt || "October 2026",
+      readTime: data.readTime || "4 min read",
+      publishedAt: data.publishedAt || "January 2026",
       featured: Boolean(data.featured),
       views: data.views || 0,
       likes: data.likes || 0,
     };
   }
 
-  // 2. Query by slug
   const blogCol = collection(db, "blogs");
   const q = query(blogCol, where("slug", "==", idOrSlug));
   const querySnap = await getDocs(q);
@@ -376,15 +355,14 @@ export const fetchBlogByIdOrSlugFromFirestore = async (
         role: "Staff Writer",
         avatar: "https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=200&q=80",
       },
-      readTime: data.readTime || "5 min read",
-      publishedAt: data.publishedAt || "October 2026",
+      readTime: data.readTime || "4 min read",
+      publishedAt: data.publishedAt || "January 2026",
       featured: Boolean(data.featured),
       views: data.views || 0,
       likes: data.likes || 0,
     };
   }
 
-  // 3. Fallback to initialBlogs matching
   const fallback = initialBlogs.find(
     (b) => b.id === idOrSlug || b.slug === idOrSlug
   );
@@ -400,17 +378,6 @@ export const seedBlogsToFirestore = async (force: boolean = false): Promise<{
   message: string;
 }> => {
   try {
-    const blogCol = collection(db, "blogs");
-    const existingSnap = await getDocs(blogCol);
-
-    if (!force && existingSnap.size >= initialBlogs.length) {
-      return {
-        success: true,
-        count: existingSnap.size,
-        message: `Firestore already contains ${existingSnap.size} blogs.`,
-      };
-    }
-
     let seededCount = 0;
     for (const blog of initialBlogs) {
       const docRef = doc(db, "blogs", blog.id);
@@ -421,7 +388,7 @@ export const seedBlogsToFirestore = async (force: boolean = false): Promise<{
           updatedAt: serverTimestamp(),
           createdAt: serverTimestamp(),
         },
-        { merge: true }
+        { merge: !force }
       );
       seededCount++;
     }

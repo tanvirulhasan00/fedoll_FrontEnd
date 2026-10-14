@@ -12,14 +12,14 @@ export default function TestimonialsSection() {
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="text-center max-w-2xl mx-auto mb-14">
           <span className="text-xs font-bold uppercase tracking-widest text-orange-700">
-            Verified Sartorial Dispatches
+            Customer Reviews
           </span>
           <h2 className="text-3xl sm:text-4xl font-bold tracking-tight text-gray-900 mt-2">
-            Praised by Architects, Designers & Stylists
+            Loved by Customers Across Bangladesh
           </h2>
           <p className="mt-2 text-sm text-gray-500">
-            Real reflections from patrons who wear Fedoll outerwear and denim
-            across world capitals.
+            Real reviews from people wearing Fedoll clothes in Dhaka, Chittagong,
+            Sylhet, and all across Bangladesh.
           </p>
         </div>
 

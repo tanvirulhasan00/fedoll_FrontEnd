@@ -13,15 +13,15 @@ export default function FeaturedCategories() {
       <div className="flex flex-col md:flex-row md:items-end md:justify-between gap-4 mb-12">
         <div>
           <span className="text-xs font-bold uppercase tracking-widest text-orange-700">
-            Sartorial Divisions
+            Shop By Category
           </span>
           <h2 className="text-3xl sm:text-4xl font-bold tracking-tight text-gray-900 mt-2">
-            Curated Wardrobe Categories
+            Explore Our Collections
           </h2>
         </div>
         <p className="text-sm text-gray-500 max-w-md">
-          Explore specialized capsule divisions engineered for tactile elegance,
-          enduring craftsmanship, and effortless daily movement.
+          Discover premium, comfortable clothing designed for Bangladeshi weather,
+          everyday comfort, and long-lasting style.
         </p>
       </div>
 

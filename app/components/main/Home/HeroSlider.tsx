@@ -100,21 +100,21 @@ export default function HeroSlider() {
           </div>
         </div>
 
-        {/* Floating Spec Highlights */}
+        {/* Floating Highlights */}
         <div className="hidden xl:flex absolute right-8 bottom-16 bg-white/10 backdrop-blur-md border border-white/15 rounded-2xl p-4 gap-6 text-white text-xs">
           <div>
-            <p className="text-orange-400 font-bold uppercase tracking-wider text-[10px]">Fabric</p>
-            <p className="font-semibold mt-0.5">Italian Double-Faced Twill</p>
+            <p className="text-orange-400 font-bold uppercase tracking-wider text-[10px]">Quality</p>
+            <p className="font-semibold mt-0.5">100% Export Quality Cotton</p>
           </div>
           <div className="w-px bg-white/20" />
           <div>
-            <p className="text-orange-400 font-bold uppercase tracking-wider text-[10px]">Provenance</p>
-            <p className="font-semibold mt-0.5">Biella & Okayama Mills</p>
+            <p className="text-orange-400 font-bold uppercase tracking-wider text-[10px]">Crafted In</p>
+            <p className="font-semibold mt-0.5">Dhaka, Bangladesh</p>
           </div>
           <div className="w-px bg-white/20" />
           <div>
-            <p className="text-orange-400 font-bold uppercase tracking-wider text-[10px]">Eco Standard</p>
-            <p className="font-semibold mt-0.5">Zero-Waste Certified</p>
+            <p className="text-orange-400 font-bold uppercase tracking-wider text-[10px]">Delivery</p>
+            <p className="font-semibold mt-0.5">Cash on Delivery Across BD</p>
           </div>
         </div>
       </div>

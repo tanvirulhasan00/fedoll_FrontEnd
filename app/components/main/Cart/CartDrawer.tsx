@@ -36,7 +36,8 @@ export default function CartDrawer() {
   const [promoCode, setPromoCode] = useState("");
   const [discountPercent, setDiscountPercent] = useState(0);
 
-  const freeShippingThreshold = 150;
+  // Free shipping threshold in BDT
+  const freeShippingThreshold = 2500;
   const remainingForFreeShipping = Math.max(
     0,
     freeShippingThreshold - totalAmount
@@ -59,10 +60,9 @@ export default function CartDrawer() {
     }
   };
 
-  const discountAmount = Number(
-    ((totalAmount * discountPercent) / 100).toFixed(2)
-  );
-  const finalTotal = Math.max(0, totalAmount - discountAmount);
+  const discountAmount = Math.round((totalAmount * discountPercent) / 100);
+  const shippingCost = remainingForFreeShipping === 0 ? 0 : 70;
+  const finalTotal = Math.max(0, totalAmount - discountAmount + shippingCost);
 
   return (
     <Transition show={isCartOpen} as={React.Fragment}>
@@ -101,7 +101,7 @@ export default function CartDrawer() {
                     <div className="flex items-center gap-2.5">
                       <ShoppingBagIcon className="size-6 text-orange-700" />
                       <DialogTitle className="text-lg font-bold text-gray-900">
-                        Your Shopping Bag ({totalQuantity})
+                        Shopping Bag ({totalQuantity})
                       </DialogTitle>
                     </div>
                     <button
@@ -113,21 +113,21 @@ export default function CartDrawer() {
                     </button>
                   </div>
 
-                  {/* Free Shipping Progress Indicator */}
+                  {/* Free Shipping Progress Indicator (in BDT) */}
                   <div className="px-6 py-3.5 bg-stone-50 border-b border-stone-200/80">
                     <div className="flex items-center justify-between text-xs text-gray-700 mb-1.5 font-medium">
                       <span>
                         {remainingForFreeShipping === 0 ? (
                           <span className="text-emerald-700 font-bold flex items-center gap-1">
-                            <SparklesIcon className="size-3.5" /> Free Express Delivery unlocked!
+                            <SparklesIcon className="size-3.5" /> Free Courier Delivery in Bangladesh unlocked!
                           </span>
                         ) : (
                           <>
                             Add{" "}
                             <strong className="text-orange-700">
-                              ${remainingForFreeShipping.toFixed(2)}
+                              ৳{remainingForFreeShipping.toLocaleString()}
                             </strong>{" "}
-                            more for Free Express Courier
+                            more for Free Delivery
                           </>
                         )}
                       </span>
@@ -154,14 +154,14 @@ export default function CartDrawer() {
                           Your shopping bag is empty
                         </h4>
                         <p className="mt-1 text-xs text-gray-500 max-w-xs mx-auto">
-                          Explore our collection of tailored outerwear, selvedge denim, and minimalist workwear.
+                          Check out our new jackets, selvedge denim jeans, and comfortable office wear.
                         </p>
                         <button
                           type="button"
                           onClick={() => dispatch(closeCart())}
                           className="mt-6 px-5 py-2.5 rounded-full bg-gray-900 text-white text-xs font-semibold hover:bg-black transition cursor-pointer"
                         >
-                          Discover The Collection
+                          Continue Shopping
                         </button>
                       </div>
                     ) : (
@@ -250,7 +250,7 @@ export default function CartDrawer() {
                               </div>
 
                               <span className="text-sm font-bold text-gray-900">
-                                ${(item.price * item.quantity).toFixed(2)}
+                                ৳{(item.price * item.quantity).toLocaleString()}
                               </span>
                             </div>
                           </div>
@@ -270,7 +270,7 @@ export default function CartDrawer() {
                             type="text"
                             value={promoCode}
                             onChange={(e) => setPromoCode(e.target.value)}
-                            placeholder="Promo code (FEDOLL2026)"
+                            placeholder="Discount code (FEDOLL2026)"
                             className="w-full pl-9 pr-3 py-1.5 text-xs bg-white border border-gray-200 rounded-lg uppercase tracking-wider focus:outline-none focus:ring-1 focus:ring-orange-600"
                           />
                         </div>
@@ -282,33 +282,30 @@ export default function CartDrawer() {
                         </button>
                       </form>
 
-                      {/* Financial Totals */}
+                      {/* Financial Totals in BDT */}
                       <div className="space-y-1.5 text-xs text-gray-600">
                         <div className="flex justify-between">
                           <span>Subtotal</span>
                           <span className="font-semibold text-gray-900">
-                            ${totalAmount.toFixed(2)}
+                            ৳{totalAmount.toLocaleString()}
                           </span>
                         </div>
                         {discountPercent > 0 && (
                           <div className="flex justify-between text-emerald-700 font-semibold">
                             <span>Discount ({discountPercent}%)</span>
-                            <span>-${discountAmount.toFixed(2)}</span>
+                            <span>-৳{discountAmount.toLocaleString()}</span>
                           </div>
                         )}
                         <div className="flex justify-between">
-                          <span>Estimated Courier Shipping</span>
+                          <span>Courier Delivery (Bangladesh)</span>
                           <span className="font-semibold text-gray-900">
-                            {remainingForFreeShipping === 0 ? "FREE" : "$15.00"}
+                            {remainingForFreeShipping === 0 ? "FREE" : "৳70 (Dhaka) / ৳130"}
                           </span>
                         </div>
                         <div className="pt-2 border-t border-gray-200 flex justify-between text-sm font-bold text-gray-900">
-                          <span>Total</span>
+                          <span>Total to Pay</span>
                           <span className="text-base text-orange-700">
-                            ${(
-                              finalTotal +
-                              (remainingForFreeShipping === 0 ? 0 : 15)
-                            ).toFixed(2)}
+                            ৳{finalTotal.toLocaleString()}
                           </span>
                         </div>
                       </div>
@@ -318,19 +315,19 @@ export default function CartDrawer() {
                         <button
                           type="button"
                           onClick={() => {
-                            toast.success("Proceeding to secure checkout!");
+                            toast.success("Proceeding to Cash on Delivery / bKash checkout!");
                             dispatch(closeCart());
                           }}
                           className="w-full py-3.5 px-4 rounded-xl bg-orange-700 hover:bg-orange-800 text-white text-sm font-bold shadow-md hover:shadow-lg transition flex items-center justify-center gap-2 cursor-pointer"
                         >
-                          <span>Secure Checkout</span>
+                          <span>Order with Cash on Delivery / bKash</span>
                           <ArrowRightIcon className="size-4" />
                         </button>
 
                         <div className="flex items-center justify-between text-[11px] text-gray-500 pt-1">
                           <span className="flex items-center gap-1">
                             <ShieldCheckIcon className="size-3.5 text-emerald-600" />
-                            256-Bit SSL Encrypted
+                            Cash on Delivery & bKash Supported
                           </span>
                           <button
                             type="button"

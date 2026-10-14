@@ -78,14 +78,13 @@ export default function ProductShowcase() {
         <div>
           <div className="inline-flex items-center gap-1.5 text-xs font-bold uppercase tracking-widest text-orange-700 mb-2">
             <SparklesIcon className="size-4" />
-            Curated Atelier Collection
+            Everyday Quality Clothing
           </div>
           <h2 className="text-3xl sm:text-4xl font-bold tracking-tight text-gray-900">
-            Essential Wardrobe Pieces
+            Featured Products
           </h2>
           <p className="mt-2 text-sm text-gray-500 max-w-xl">
-            Engineered with organic fibers, precise tailored drapes, and
-            timeless silhouettes crafted to transition effortlessly across seasons.
+            Comfortable everyday clothing made with pure cotton, durable selvedge denim, and warm winter fabrics. Cash on delivery available across Bangladesh.
           </p>
         </div>
 
@@ -222,14 +221,14 @@ export default function ProductShowcase() {
                 </div>
 
                 <div className="pt-3 border-t border-gray-100 flex items-center justify-between">
-                  {/* Pricing */}
+                  {/* Pricing in BDT */}
                   <div className="flex items-baseline gap-2">
                     <span className="text-base font-bold text-gray-900">
-                      ${product.price}
+                      ৳{product.price.toLocaleString()}
                     </span>
                     {hasDiscount && (
                       <span className="text-xs text-gray-400 line-through">
-                        ${product.originalPrice}
+                        ৳{product.originalPrice?.toLocaleString()}
                       </span>
                     )}
                   </div>
