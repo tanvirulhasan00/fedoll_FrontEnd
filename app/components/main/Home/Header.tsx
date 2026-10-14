@@ -276,6 +276,13 @@ export default function Header() {
                   </DisclosurePanel>
                 </Disclosure>
                 <Link
+                  to="/blogs"
+                  onClick={() => setMobileMenuOpen(false)}
+                  className="-mx-3 block rounded-lg px-3 py-2 text-base/7 font-semibold hover:bg-gray-50"
+                >
+                  Blogs
+                </Link>
+                <Link
                   to="/about-us"
                   onClick={() => setMobileMenuOpen(false)}
                   className="-mx-3 block rounded-lg px-3 py-2 text-base/7 font-semibold hover:bg-gray-50"
