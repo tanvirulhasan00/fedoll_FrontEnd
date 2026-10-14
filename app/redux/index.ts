@@ -8,3 +8,4 @@ export * from "./features/categorySlice";
 export * from "./features/newsletterSlice";
 export * from "./features/blogSlice";
 export * from "./features/homeSlice";
+export * from "./features/aboutSlice";
