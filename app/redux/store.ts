@@ -8,6 +8,7 @@ import blogReducer from "./features/blogSlice";
 import homeReducer from "./features/homeSlice";
 import aboutReducer from "./features/aboutSlice";
 import contactReducer from "./features/contactSlice";
+import productReducer from "./features/productSlice";
 
 export const store = configureStore({
   reducer: {
@@ -20,6 +21,7 @@ export const store = configureStore({
     home: homeReducer,
     about: aboutReducer,
     contact: contactReducer,
+    products: productReducer,
   },
   middleware: (getDefaultMiddleware) =>
     getDefaultMiddleware({

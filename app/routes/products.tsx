@@ -1,0 +1,692 @@
+import React, { useEffect, useMemo, useState } from "react";
+import { Link, useSearchParams } from "react-router";
+import type { Route } from "./+types/products";
+import Topbar from "~/components/main/Home/Topbar";
+import Header from "~/components/main/Home/Header";
+import Footer from "~/components/main/Home/Footer";
+import QuickViewModal from "~/components/main/Home/QuickViewModal";
+import { useAppDispatch, useAppSelector } from "~/redux/hooks/hook";
+import {
+  fetchProducts,
+  fetchProductCategories,
+  seedProducts,
+  setProductCategory,
+  setProductSearchQuery,
+  setSortBy,
+  setOnlyInStock,
+  resetProductFilters,
+} from "~/redux/features/productSlice";
+import { setQuickViewProduct, toggleWishlist } from "~/redux/features/homeSlice";
+import { addToCart } from "~/redux/features/cart/cartSlice";
+import {
+  MagnifyingGlassIcon,
+  XMarkIcon,
+  FunnelIcon,
+  ArrowPathIcon,
+  EyeIcon,
+  ShoppingBagIcon,
+  SparklesIcon,
+  ShieldCheckIcon,
+  TruckIcon,
+  ArrowRightIcon,
+} from "@heroicons/react/24/outline";
+import {
+  StarIcon as StarSolidIcon,
+  HeartIcon as HeartSolidIcon,
+} from "@heroicons/react/24/solid";
+import { HeartIcon } from "@heroicons/react/24/outline";
+import { toast } from "sonner";
+import { Spinner } from "~/components/ui/spinner";
+
+export function meta({}: Route.MetaArgs) {
+  return [
+    { title: "Products & Collections | Fedoll Bangladesh" },
+    {
+      name: "description",
+      content:
+        "Explore Fedoll's complete collection of export-quality garments: selvedge denim jackets, double-layer wool coats, stretch workwear, and heavy combed cotton essentials in Bangladesh.",
+    },
+    {
+      name: "keywords",
+      content:
+        "Fedoll products, Bangladesh clothing shop, selvedge denim, wool coats Dhaka, workwear blazers, casual shirts Bangladesh",
+    },
+  ];
+}
+
+const CATEGORY_TABS = [
+  "All",
+  "Outerwear",
+  "Workwear",
+  "Denim",
+  "Knitwear",
+  "Essentials",
+  "Shirts",
+  "Trousers",
+];
+
+export default function ProductsPage() {
+  const dispatch = useAppDispatch();
+  const [searchParams, setSearchParams] = useSearchParams();
+
+  const {
+    items: products,
+    selectedCategory,
+    searchQuery,
+    sortBy,
+    onlyInStock,
+    loading,
+    syncing,
+  } = useAppSelector((state) => state.products);
+
+  const { wishlistIds } = useAppSelector((state) => state.home);
+
+  const [localSearch, setLocalSearch] = useState(searchQuery);
+  const [maxPrice, setMaxPrice] = useState<number>(10000);
+  const [showFiltersMobile, setShowFiltersMobile] = useState(false);
+
+  // Sync category param from URL on initial load and URL changes
+  useEffect(() => {
+    const categoryParam = searchParams.get("category");
+    if (categoryParam) {
+      dispatch(setProductCategory(categoryParam));
+    }
+    const searchParam = searchParams.get("search");
+    if (searchParam) {
+      dispatch(setProductSearchQuery(searchParam));
+      setLocalSearch(searchParam);
+    }
+  }, [searchParams, dispatch]);
+
+  useEffect(() => {
+    dispatch(fetchProducts());
+    dispatch(fetchProductCategories());
+  }, [dispatch]);
+
+  const handleCategoryChange = (cat: string) => {
+    dispatch(setProductCategory(cat));
+    setSearchParams((prev) => {
+      const updated = new URLSearchParams(prev);
+      if (cat === "All") {
+        updated.delete("category");
+      } else {
+        updated.set("category", cat);
+      }
+      return updated;
+    });
+  };
+
+  const handleSearchSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    dispatch(setProductSearchQuery(localSearch));
+    setSearchParams((prev) => {
+      const updated = new URLSearchParams(prev);
+      if (localSearch.trim()) {
+        updated.set("search", localSearch.trim());
+      } else {
+        updated.delete("search");
+      }
+      return updated;
+    });
+  };
+
+  const handleClearSearch = () => {
+    setLocalSearch("");
+    dispatch(setProductSearchQuery(""));
+    setSearchParams((prev) => {
+      const updated = new URLSearchParams(prev);
+      updated.delete("search");
+      return updated;
+    });
+  };
+
+  const handleSyncFirebase = async () => {
+    try {
+      await dispatch(seedProducts(true)).unwrap();
+      toast.success("Products synchronized with Cloud Firestore!");
+    } catch (err: unknown) {
+      const error = err as Error;
+      toast.error(error.message || "Failed to sync products with Firebase");
+    }
+  };
+
+  const handleQuickAdd = (e: React.MouseEvent, product: (typeof products)[0]) => {
+    e.preventDefault();
+    e.stopPropagation();
+
+    dispatch(
+      addToCart({
+        id: product.id,
+        name: product.name,
+        price: product.price,
+        image: product.images[0],
+        quantity: 1,
+        size: product.sizes[0] || "M",
+        color: product.colors[0]?.name || "Standard",
+        category: product.category,
+      })
+    );
+    toast.success(`Added ${product.name} to your shopping bag!`);
+  };
+
+  const handleWishlist = (e: React.MouseEvent, id: string) => {
+    e.preventDefault();
+    e.stopPropagation();
+    dispatch(toggleWishlist(id));
+    const isSaved = wishlistIds.includes(id);
+    if (isSaved) {
+      toast.info("Removed from saved items");
+    } else {
+      toast.success("Saved to your wishlist!");
+    }
+  };
+
+  // Filter and sort products in memory
+  const filteredProducts = useMemo(() => {
+    let result = [...products];
+
+    // Category filter
+    if (selectedCategory !== "All") {
+      result = result.filter(
+        (p) => p.category?.toLowerCase() === selectedCategory.toLowerCase()
+      );
+    }
+
+    // Search query filter
+    if (searchQuery.trim()) {
+      const q = searchQuery.toLowerCase().trim();
+      result = result.filter(
+        (p) =>
+          p.name.toLowerCase().includes(q) ||
+          p.description.toLowerCase().includes(q) ||
+          p.category.toLowerCase().includes(q)
+      );
+    }
+
+    // In stock filter
+    if (onlyInStock) {
+      result = result.filter((p) => p.inStock);
+    }
+
+    // Price range filter
+    result = result.filter((p) => p.price <= maxPrice);
+
+    // Sorting
+    switch (sortBy) {
+      case "price-asc":
+        result.sort((a, b) => a.price - b.price);
+        break;
+      case "price-desc":
+        result.sort((a, b) => b.price - a.price);
+        break;
+      case "rating":
+        result.sort((a, b) => b.rating - a.rating);
+        break;
+      case "newest":
+        result.sort((a, b) => (b.isNewArrival ? 1 : 0) - (a.isNewArrival ? 1 : 0));
+        break;
+      case "featured":
+      default:
+        result.sort((a, b) => (b.isFeatured ? 1 : 0) - (a.isFeatured ? 1 : 0));
+        break;
+    }
+
+    return result;
+  }, [products, selectedCategory, searchQuery, onlyInStock, maxPrice, sortBy]);
+
+  // Compute category counts
+  const categoryCounts = useMemo(() => {
+    const counts: Record<string, number> = { All: products.length };
+    for (const p of products) {
+      counts[p.category] = (counts[p.category] || 0) + 1;
+    }
+    return counts;
+  }, [products]);
+
+  return (
+    <div className="min-h-screen bg-white text-gray-900 flex flex-col font-sans selection:bg-orange-500 selection:text-white">
+      {/* Navigation Layer */}
+      <Topbar />
+      <Header />
+
+      <main className="flex-1">
+        {/* Breadcrumb Navigation */}
+        <div className="bg-stone-50 border-b border-stone-200/60 py-3">
+          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <nav className="flex items-center gap-2 text-xs text-gray-500" aria-label="Breadcrumb">
+              <Link to="/" className="hover:text-orange-700 transition">
+                Home
+              </Link>
+              <span>/</span>
+              <span className="text-gray-400">Collections</span>
+              <span>/</span>
+              <span className="font-medium text-gray-900">
+                {selectedCategory === "All" ? "All Products" : selectedCategory}
+              </span>
+            </nav>
+          </div>
+        </div>
+
+        {/* Page Hero Header */}
+        <section className="relative overflow-hidden bg-gradient-to-b from-stone-50 via-orange-50/15 to-white border-b border-stone-200/60 py-12 sm:py-16">
+          <div className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div className="flex flex-col md:flex-row md:items-end md:justify-between gap-6">
+              <div>
+                <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-orange-100 text-orange-800 text-xs font-semibold uppercase tracking-wider mb-3">
+                  <SparklesIcon className="size-3.5 text-orange-700" />
+                  Export Quality Garments
+                </div>
+                <h1 className="text-3xl sm:text-5xl font-bold tracking-tight text-gray-900">
+                  {selectedCategory === "All" ? (
+                    <>
+                      Explore All Collections. <br />
+                      <span className="text-orange-700 italic font-serif">
+                        Made for Everyday Living.
+                      </span>
+                    </>
+                  ) : (
+                    <>
+                      {selectedCategory} Collection. <br />
+                      <span className="text-orange-700 italic font-serif">
+                        Crafted in Bangladesh.
+                      </span>
+                    </>
+                  )}
+                </h1>
+                <p className="mt-4 text-sm sm:text-base text-gray-600 max-w-2xl leading-relaxed">
+                  Crafted with heavy 14oz shuttle-loom selvedge denim, pure double-layer wool,
+                  and 240 GSM combed cotton. Shipped anywhere in Bangladesh with Cash on Delivery.
+                </p>
+              </div>
+
+              {/* Live Firestore Connection Status & Sync */}
+              <div className="flex flex-col items-start md:items-end gap-2 shrink-0">
+                <div className="inline-flex items-center gap-2 text-xs font-medium text-emerald-800 bg-emerald-50 border border-emerald-200 px-3 py-1.5 rounded-full shadow-2xs">
+                  <span className="size-2 rounded-full bg-emerald-500 animate-pulse" />
+                  <span>Cloud Firestore Sync</span>
+                </div>
+                <button
+                  type="button"
+                  onClick={handleSyncFirebase}
+                  disabled={syncing || loading}
+                  className="inline-flex items-center gap-1.5 text-xs font-medium text-gray-700 bg-white border border-gray-300 hover:border-orange-500 hover:text-orange-700 px-3 py-1.5 rounded-lg shadow-2xs transition disabled:opacity-50 cursor-pointer"
+                  title="Resync products directly with Firebase Firestore"
+                >
+                  <ArrowPathIcon
+                    className={`size-3.5 ${syncing ? "animate-spin text-orange-600" : ""}`}
+                  />
+                  <span>{syncing ? "Syncing..." : "Sync Products"}</span>
+                </button>
+              </div>
+            </div>
+
+            {/* Category Filter Pills */}
+            <div className="mt-10 flex items-center gap-2 overflow-x-auto pb-2 scrollbar-none">
+              {CATEGORY_TABS.map((cat) => {
+                const isActive = selectedCategory === cat;
+                const count = categoryCounts[cat] || 0;
+                return (
+                  <button
+                    key={cat}
+                    type="button"
+                    onClick={() => handleCategoryChange(cat)}
+                    className={`inline-flex items-center gap-2 whitespace-nowrap px-4 py-2.5 rounded-full text-xs font-semibold transition cursor-pointer ${
+                      isActive
+                        ? "bg-orange-700 text-white shadow-md shadow-orange-700/20"
+                        : "bg-white text-gray-700 border border-stone-200/80 hover:bg-stone-50 hover:text-orange-700"
+                    }`}
+                  >
+                    <span>{cat}</span>
+                    <span
+                      className={`text-[10px] px-1.5 py-0.5 rounded-full font-bold ${
+                        isActive
+                          ? "bg-white/20 text-white"
+                          : "bg-stone-100 text-gray-500"
+                      }`}
+                    >
+                      {count}
+                    </span>
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+        </section>
+
+        {/* Product Catalog Body */}
+        <section className="py-12 bg-white">
+          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            {/* Search, Sort, and Filter Controls Bar */}
+            <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4 pb-8 border-b border-stone-200/80">
+              {/* Search Form */}
+              <form onSubmit={handleSearchSubmit} className="relative w-full md:w-80">
+                <input
+                  type="text"
+                  placeholder="Search denim, coats, blazers..."
+                  value={localSearch}
+                  onChange={(e) => setLocalSearch(e.target.value)}
+                  className="w-full pl-10 pr-9 py-2.5 rounded-xl border border-gray-300 text-sm placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-orange-600 focus:border-orange-600 transition"
+                />
+                <MagnifyingGlassIcon className="absolute left-3.5 top-3 size-4 text-gray-400" />
+                {localSearch && (
+                  <button
+                    type="button"
+                    onClick={handleClearSearch}
+                    className="absolute right-3 top-3 text-gray-400 hover:text-gray-600"
+                  >
+                    <XMarkIcon className="size-4" />
+                  </button>
+                )}
+              </form>
+
+              {/* Sort & Filter Controls */}
+              <div className="flex flex-wrap items-center gap-3">
+                <div className="flex items-center gap-2 text-xs font-medium text-gray-700">
+                  <span className="text-gray-400">Sort by:</span>
+                  <select
+                    value={sortBy}
+                    onChange={(e) => dispatch(setSortBy(e.target.value as any))}
+                    className="px-3 py-2 rounded-xl border border-gray-300 bg-white text-xs font-semibold text-gray-800 focus:outline-none focus:ring-2 focus:ring-orange-600 cursor-pointer"
+                  >
+                    <option value="featured">Featured / Best</option>
+                    <option value="price-asc">Price: Low to High</option>
+                    <option value="price-desc">Price: High to Low</option>
+                    <option value="rating">Highest Rated</option>
+                    <option value="newest">New Arrivals</option>
+                  </select>
+                </div>
+
+                {/* In Stock Toggle */}
+                <label className="inline-flex items-center gap-2 text-xs font-semibold text-gray-700 cursor-pointer px-3 py-2 rounded-xl border border-gray-200 hover:bg-stone-50 select-none">
+                  <input
+                    type="checkbox"
+                    checked={onlyInStock}
+                    onChange={(e) => dispatch(setOnlyInStock(e.target.checked))}
+                    className="rounded text-orange-700 focus:ring-orange-500 accent-orange-700"
+                  />
+                  <span>In Stock Only</span>
+                </label>
+
+                {/* Price Filter Selector */}
+                <div className="flex items-center gap-2 text-xs text-gray-600">
+                  <span className="text-gray-400">Max:</span>
+                  <select
+                    value={maxPrice}
+                    onChange={(e) => setMaxPrice(Number(e.target.value))}
+                    className="px-2.5 py-2 rounded-xl border border-gray-300 bg-white text-xs font-semibold text-gray-800 focus:outline-none cursor-pointer"
+                  >
+                    <option value={10000}>All Prices</option>
+                    <option value={2000}>Under ৳2,000</option>
+                    <option value={3500}>Under ৳3,500</option>
+                    <option value={5000}>Under ৳5,000</option>
+                  </select>
+                </div>
+
+                {/* Reset Filters */}
+                {(selectedCategory !== "All" || searchQuery || onlyInStock || maxPrice < 10000) && (
+                  <button
+                    type="button"
+                    onClick={() => {
+                      dispatch(resetProductFilters());
+                      setLocalSearch("");
+                      setMaxPrice(10000);
+                      setSearchParams({});
+                    }}
+                    className="inline-flex items-center gap-1 text-xs font-semibold text-orange-700 hover:underline cursor-pointer"
+                  >
+                    <XMarkIcon className="size-3.5" />
+                    <span>Reset</span>
+                  </button>
+                )}
+              </div>
+            </div>
+
+            {/* Results Count Summary */}
+            <div className="pt-6 pb-4 flex items-center justify-between text-xs text-gray-500">
+              <p>
+                Showing{" "}
+                <span className="font-bold text-gray-900">{filteredProducts.length}</span> items
+                {selectedCategory !== "All" && (
+                  <span>
+                    {" "}
+                    in <span className="font-semibold text-orange-700">{selectedCategory}</span>
+                  </span>
+                )}
+              </p>
+              <span className="text-gray-400">All prices in Bangladeshi Taka (৳ BDT)</span>
+            </div>
+
+            {/* Products Grid */}
+            {filteredProducts.length === 0 ? (
+              /* Empty State */
+              <div className="py-20 text-center space-y-4 max-w-md mx-auto">
+                <div className="size-16 mx-auto rounded-full bg-stone-100 flex items-center justify-center text-gray-400">
+                  <MagnifyingGlassIcon className="size-8" />
+                </div>
+                <h3 className="text-xl font-bold text-gray-900">No products found</h3>
+                <p className="text-sm text-gray-500">
+                  We couldn&apos;t find any garments matching your selected filters. Try broadening
+                  your search or switching categories.
+                </p>
+                <button
+                  type="button"
+                  onClick={() => {
+                    dispatch(resetProductFilters());
+                    setLocalSearch("");
+                    setMaxPrice(10000);
+                    setSearchParams({});
+                  }}
+                  className="px-6 py-2.5 rounded-full bg-orange-700 hover:bg-orange-800 text-white text-xs font-semibold shadow-xs transition cursor-pointer"
+                >
+                  Clear All Filters
+                </button>
+              </div>
+            ) : (
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6 pt-4">
+                {filteredProducts.map((product) => {
+                  const isWishlisted = wishlistIds.includes(product.id);
+                  const hasDiscount =
+                    product.originalPrice && product.originalPrice > product.price;
+
+                  return (
+                    <div
+                      key={product.id}
+                      className="group flex flex-col rounded-2xl bg-white border border-gray-200/80 overflow-hidden shadow-xs hover:shadow-xl transition-all duration-300"
+                    >
+                      {/* Product Card Image */}
+                      <div className="relative aspect-4/5 overflow-hidden bg-stone-100">
+                        <Link
+                          to={`/products/${product.id}`}
+                          className="block w-full h-full cursor-pointer"
+                        >
+                          <img
+                            src={product.images[0]}
+                            alt={product.name}
+                            className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
+                          />
+
+                          {/* Secondary Hover Image */}
+                          {product.images[1] && (
+                            <img
+                              src={product.images[1]}
+                              alt={product.name}
+                              className="absolute inset-0 w-full h-full object-cover opacity-0 group-hover:opacity-100 transition-opacity duration-500"
+                            />
+                          )}
+                        </Link>
+
+                        {/* Badges */}
+                        {product.badge && (
+                          <div className="absolute top-3 left-3 pointer-events-none">
+                            <span
+                              className={`text-[10px] font-extrabold uppercase px-2.5 py-1 rounded-full shadow-xs ${
+                                product.badge === "Sale"
+                                  ? "bg-rose-600 text-white"
+                                  : product.badge === "Best Seller"
+                                  ? "bg-stone-900 text-white"
+                                  : "bg-orange-700 text-white"
+                              }`}
+                            >
+                              {product.badge}
+                            </span>
+                          </div>
+                        )}
+
+                        {/* Wishlist Button */}
+                        <button
+                          type="button"
+                          onClick={(e) => handleWishlist(e, product.id)}
+                          className="absolute top-3 right-3 size-8 rounded-full bg-white/90 backdrop-blur-xs flex items-center justify-center text-gray-700 hover:text-rose-600 hover:scale-110 transition shadow-xs cursor-pointer z-10"
+                          title="Save to wishlist"
+                        >
+                          {isWishlisted ? (
+                            <HeartSolidIcon className="size-4 text-rose-600" />
+                          ) : (
+                            <HeartIcon className="size-4" />
+                          )}
+                        </button>
+
+                        {/* Hover Action Bar */}
+                        <div className="absolute inset-x-3 bottom-3 flex gap-2 opacity-0 group-hover:opacity-100 translate-y-2 group-hover:translate-y-0 transition-all duration-300 z-10">
+                          <button
+                            type="button"
+                            onClick={(e) => {
+                              e.preventDefault();
+                              e.stopPropagation();
+                              dispatch(setQuickViewProduct(product));
+                            }}
+                            className="flex-1 py-2 px-3 rounded-xl bg-white/95 backdrop-blur-xs text-gray-900 text-xs font-bold hover:bg-white flex items-center justify-center gap-1.5 shadow-md hover:shadow-lg transition cursor-pointer"
+                          >
+                            <EyeIcon className="size-4 text-gray-600" />
+                            <span>Quick View</span>
+                          </button>
+
+                          <button
+                            type="button"
+                            onClick={(e) => handleQuickAdd(e, product)}
+                            className="size-9 rounded-xl bg-orange-700 hover:bg-orange-800 text-white flex items-center justify-center shadow-md transition cursor-pointer shrink-0"
+                            title="Quick Add to Bag"
+                          >
+                            <ShoppingBagIcon className="size-4" />
+                          </button>
+                        </div>
+                      </div>
+
+                      {/* Product Info */}
+                      <div className="p-5 flex-1 flex flex-col justify-between space-y-3">
+                        <div>
+                          <div className="flex items-center justify-between text-xs text-gray-500 mb-1">
+                            <span className="font-semibold text-orange-700 uppercase tracking-wider text-[11px]">
+                              {product.category}
+                            </span>
+                            <div className="flex items-center gap-1">
+                              <StarSolidIcon className="size-3.5 text-amber-500 fill-current" />
+                              <span className="font-bold text-gray-700">
+                                {product.rating}
+                              </span>
+                              <span className="text-gray-400">({product.reviewCount})</span>
+                            </div>
+                          </div>
+
+                          <Link
+                            to={`/products/${product.id}`}
+                            className="block text-sm font-bold text-gray-900 hover:text-orange-700 transition line-clamp-1"
+                          >
+                            {product.name}
+                          </Link>
+
+                          <p className="mt-1 text-xs text-gray-500 line-clamp-2 leading-relaxed">
+                            {product.description}
+                          </p>
+                        </div>
+
+                        <div className="pt-3 border-t border-gray-100 flex items-center justify-between">
+                          <div className="flex items-baseline gap-2">
+                            <span className="text-base font-bold text-gray-900">
+                              ৳{product.price.toLocaleString()}
+                            </span>
+                            {hasDiscount && (
+                              <span className="text-xs text-gray-400 line-through">
+                                ৳{product.originalPrice?.toLocaleString()}
+                              </span>
+                            )}
+                          </div>
+
+                          {/* Color Swatch Dots */}
+                          <div className="flex items-center gap-1">
+                            {product.colors.slice(0, 3).map((c) => (
+                              <span
+                                key={c.name}
+                                className="size-3 rounded-full border border-gray-300"
+                                style={{ backgroundColor: c.hex }}
+                                title={c.name}
+                              />
+                            ))}
+                            {product.colors.length > 3 && (
+                              <span className="text-[10px] text-gray-400 font-semibold pl-0.5">
+                                +{product.colors.length - 3}
+                              </span>
+                            )}
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            )}
+          </div>
+        </section>
+
+        {/* Fedoll Customer Guarantees Strip */}
+        <section className="py-12 bg-stone-50 border-t border-stone-200/60">
+          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-8 text-center sm:text-left">
+              <div className="flex flex-col sm:flex-row items-center sm:items-start gap-4">
+                <div className="size-12 rounded-2xl bg-orange-100 text-orange-700 flex items-center justify-center shrink-0">
+                  <TruckIcon className="size-6" />
+                </div>
+                <div>
+                  <h4 className="text-sm font-bold text-gray-900">Delivery in 64 Districts</h4>
+                  <p className="text-xs text-gray-500 mt-1 leading-relaxed">
+                    Doorstep courier delivery across Dhaka and all districts in Bangladesh with Cash on Delivery &amp; bKash.
+                  </p>
+                </div>
+              </div>
+
+              <div className="flex flex-col sm:flex-row items-center sm:items-start gap-4">
+                <div className="size-12 rounded-2xl bg-orange-100 text-orange-700 flex items-center justify-center shrink-0">
+                  <ShieldCheckIcon className="size-6" />
+                </div>
+                <div>
+                  <h4 className="text-sm font-bold text-gray-900">7-Day Easy Size Exchange</h4>
+                  <p className="text-xs text-gray-500 mt-1 leading-relaxed">
+                    Wrong size? Message our Dhaka support team for a seamless size exchange without hassle.
+                  </p>
+                </div>
+              </div>
+
+              <div className="flex flex-col sm:flex-row items-center sm:items-start gap-4">
+                <div className="size-12 rounded-2xl bg-orange-100 text-orange-700 flex items-center justify-center shrink-0">
+                  <SparklesIcon className="size-6" />
+                </div>
+                <div>
+                  <h4 className="text-sm font-bold text-gray-900">100% Export-Grade Fabrics</h4>
+                  <p className="text-xs text-gray-500 mt-1 leading-relaxed">
+                    Solid selvedge denim, combed ring-spun cotton, and natural wool tested for longevity.
+                  </p>
+                </div>
+              </div>
+            </div>
+          </div>
+        </section>
+      </main>
+
+      {/* Quick View Modal */}
+      <QuickViewModal />
+
+      {/* Global Footer */}
+      <Footer />
+    </div>
+  );
+}

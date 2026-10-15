@@ -1,4 +1,5 @@
 import React, { useMemo } from "react";
+import { Link } from "react-router";
 import { useAppDispatch, useAppSelector } from "~/redux/hooks/hook";
 import {
   setActiveProductTab,
@@ -12,6 +13,7 @@ import {
   EyeIcon,
   ShoppingBagIcon,
   SparklesIcon,
+  ArrowRightIcon,
 } from "@heroicons/react/24/outline";
 import {
   HeartIcon as HeartSolidIcon,
@@ -124,24 +126,29 @@ export default function ProductShowcase() {
             >
               {/* Product Card Image Container */}
               <div className="relative aspect-4/5 overflow-hidden bg-stone-100">
-                <img
-                  src={product.images[0]}
-                  alt={product.name}
-                  className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
-                />
-
-                {/* Secondary Image on Hover if available */}
-                {product.images[1] && (
+                <Link
+                  to={`/products/${product.id}`}
+                  className="block w-full h-full cursor-pointer"
+                >
                   <img
-                    src={product.images[1]}
+                    src={product.images[0]}
                     alt={product.name}
-                    className="absolute inset-0 w-full h-full object-cover opacity-0 group-hover:opacity-100 transition-opacity duration-500"
+                    className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
                   />
-                )}
+
+                  {/* Secondary Image on Hover if available */}
+                  {product.images[1] && (
+                    <img
+                      src={product.images[1]}
+                      alt={product.name}
+                      className="absolute inset-0 w-full h-full object-cover opacity-0 group-hover:opacity-100 transition-opacity duration-500"
+                    />
+                  )}
+                </Link>
 
                 {/* Badge (Sale, Best Seller, New) */}
                 {product.badge && (
-                  <div className="absolute top-3 left-3">
+                  <div className="absolute top-3 left-3 pointer-events-none">
                     <span
                       className={`text-[10px] font-extrabold uppercase px-2.5 py-1 rounded-full shadow-xs ${
                         product.badge === "Sale"
@@ -174,7 +181,11 @@ export default function ProductShowcase() {
                 <div className="absolute inset-x-3 bottom-3 flex gap-2 opacity-0 group-hover:opacity-100 translate-y-2 group-hover:translate-y-0 transition-all duration-300 z-10">
                   <button
                     type="button"
-                    onClick={() => dispatch(setQuickViewProduct(product))}
+                    onClick={(e) => {
+                      e.preventDefault();
+                      e.stopPropagation();
+                      dispatch(setQuickViewProduct(product));
+                    }}
                     className="flex-1 py-2 px-3 rounded-xl bg-white/95 backdrop-blur-xs text-gray-900 text-xs font-bold hover:bg-white flex items-center justify-center gap-1.5 shadow-md hover:shadow-lg transition cursor-pointer"
                   >
                     <EyeIcon className="size-4 text-gray-600" />
@@ -208,12 +219,12 @@ export default function ProductShowcase() {
                     </div>
                   </div>
 
-                  <h3
-                    onClick={() => dispatch(setQuickViewProduct(product))}
-                    className="text-sm font-bold text-gray-900 group-hover:text-orange-700 transition cursor-pointer line-clamp-1"
+                  <Link
+                    to={`/products/${product.id}`}
+                    className="block text-sm font-bold text-gray-900 group-hover:text-orange-700 transition line-clamp-1"
                   >
                     {product.name}
-                  </h3>
+                  </Link>
 
                   <p className="mt-1 text-xs text-gray-500 line-clamp-2 leading-relaxed">
                     {product.description}
@@ -254,6 +265,17 @@ export default function ProductShowcase() {
             </div>
           );
         })}
+      </div>
+
+      {/* View All Products CTA Button */}
+      <div className="mt-12 text-center">
+        <Link
+          to="/products"
+          className="inline-flex items-center gap-2 px-8 py-3.5 rounded-full bg-stone-900 hover:bg-orange-700 text-white text-sm font-semibold shadow-md hover:shadow-lg transition-all duration-300"
+        >
+          <span>Explore All Products</span>
+          <ArrowRightIcon className="size-4" />
+        </Link>
       </div>
 
       {/* Quick View Modal */}

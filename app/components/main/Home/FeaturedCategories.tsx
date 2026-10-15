@@ -8,6 +8,20 @@ export default function FeaturedCategories() {
 
   if (!featuredCategories || featuredCategories.length === 0) return null;
 
+  const getCategoryLink = (cat: { id: string; name: string; link?: string }) => {
+    if (cat.link && !cat.link.startsWith("/blogs")) {
+      return cat.link;
+    }
+    const map: Record<string, string> = {
+      "cat-outerwear": "/products?category=Outerwear",
+      "cat-workwear": "/products?category=Workwear",
+      "cat-denim": "/products?category=Denim",
+      "cat-knitwear": "/products?category=Knitwear",
+      "cat-essentials": "/products?category=Essentials",
+    };
+    return map[cat.id] || `/products?category=${encodeURIComponent(cat.name)}`;
+  };
+
   return (
     <section className="py-16 sm:py-24 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
       <div className="flex flex-col md:flex-row md:items-end md:justify-between gap-4 mb-12">
@@ -29,7 +43,7 @@ export default function FeaturedCategories() {
         {featuredCategories.map((cat) => (
           <Link
             key={cat.id}
-            to={cat.link}
+            to={getCategoryLink(cat)}
             className="group relative rounded-2xl overflow-hidden bg-stone-100 shadow-xs hover:shadow-xl transition-all duration-500 h-[380px] flex flex-col justify-end p-6 border border-gray-200/80"
           >
             {/* Background Image with Zoom */}

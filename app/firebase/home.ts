@@ -37,24 +37,7 @@ export interface FeaturedCategory {
   link: string;
 }
 
-export interface ProductItem {
-  id: string;
-  name: string;
-  category: "Outerwear" | "Workwear" | "Denim" | "Knitwear" | "Essentials";
-  price: number;
-  originalPrice?: number;
-  badge?: "New" | "Sale" | "Best Seller" | "Trending" | "Limited";
-  rating: number;
-  reviewCount: number;
-  images: string[];
-  description: string;
-  sizes: string[];
-  colors: { name: string; hex: string }[];
-  isFeatured?: boolean;
-  isNewArrival?: boolean;
-  isBestSeller?: boolean;
-  inStock: boolean;
-}
+import type { ProductItem } from "./products";
 
 export interface TestimonialItem {
   id: string;
@@ -87,7 +70,7 @@ export const initialHeroBanners: HeroBanner[] = [
     subtitle:
       "Crafted for comfort, style, and long-lasting wear. Fast delivery all across Bangladesh with Cash on Delivery and bKash.",
     ctaText: "Shop Jackets & Coats",
-    ctaLink: "/blogs/art-of-layering-outerwear",
+    ctaLink: "/products?category=Outerwear",
     secondaryCtaText: "Read Our Story",
     secondaryCtaLink: "/about-us",
     image:
@@ -101,9 +84,9 @@ export const initialHeroBanners: HeroBanner[] = [
     subtitle:
       "Made on vintage shuttle looms using 100% natural cotton. Durable clothing designed to look better the more you wear it.",
     ctaText: "Explore Denim",
-    ctaLink: "/blogs/sustainable-denim-longevity",
-    secondaryCtaText: "View Lookbook",
-    secondaryCtaLink: "/blogs",
+    ctaLink: "/products?category=Denim",
+    secondaryCtaText: "All Products",
+    secondaryCtaLink: "/products",
     image:
       "https://images.unsplash.com/photo-1544441893-675973e31985?auto=format&fit=crop&w=1600&q=85",
     accent: "stone",
@@ -145,7 +128,7 @@ export const initialFeaturedCategories: FeaturedCategory[] = [
     itemCount: "28 Items",
     image:
       "https://images.unsplash.com/photo-1544441893-675973e31985?auto=format&fit=crop&w=800&q=80",
-    link: "/blogs/art-of-layering-outerwear",
+    link: "/products?category=Outerwear",
   },
   {
     id: "cat-workwear",
@@ -154,7 +137,7 @@ export const initialFeaturedCategories: FeaturedCategory[] = [
     itemCount: "34 Items",
     image:
       "https://images.unsplash.com/photo-1487222477894-8943e31ef7b2?auto=format&fit=crop&w=800&q=80",
-    link: "/blogs/modern-workwear-reimagined",
+    link: "/products?category=Workwear",
   },
   {
     id: "cat-denim",
@@ -163,7 +146,7 @@ export const initialFeaturedCategories: FeaturedCategory[] = [
     itemCount: "19 Items",
     image:
       "https://images.unsplash.com/photo-1582552938357-32b906df40cb?auto=format&fit=crop&w=800&q=80",
-    link: "/blogs/sustainable-denim-longevity",
+    link: "/products?category=Denim",
   },
   {
     id: "cat-knitwear",
@@ -172,7 +155,7 @@ export const initialFeaturedCategories: FeaturedCategory[] = [
     itemCount: "22 Items",
     image:
       "https://images.unsplash.com/photo-1558769132-cb1aea458c5e?auto=format&fit=crop&w=800&q=80",
-    link: "/blogs/the-minimalist-capsule-wardrobe",
+    link: "/products?category=Knitwear",
   },
 ];
 
@@ -416,7 +399,7 @@ export const initialSpotlightBanner: SpotlightBanner = {
   description:
     "Order online today and enjoy 15% discount on your first purchase. Free courier delivery all across Bangladesh on orders over ৳2,500.",
   ctaText: "Shop The Collection",
-  ctaLink: "/blogs/sustainable-denim-longevity",
+  ctaLink: "/products?category=Denim",
   image:
     "https://images.unsplash.com/photo-1490481651871-ab68de25d43d?auto=format&fit=crop&w=1200&q=80",
   discountCode: "FEDOLL2026",

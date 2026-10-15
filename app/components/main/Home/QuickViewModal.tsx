@@ -1,4 +1,5 @@
 import React, { useState } from "react";
+import { Link } from "react-router";
 import {
   Dialog,
   DialogPanel,
@@ -295,6 +296,16 @@ export default function QuickViewModal() {
                         </span>
                         <span>•</span>
                         <span>7-Day Easy Exchange in Bangladesh</span>
+                      </div>
+
+                      <div className="pt-2 text-center">
+                        <Link
+                          to={`/products/${quickViewProduct.id}`}
+                          onClick={() => dispatch(setQuickViewProduct(null))}
+                          className="text-xs font-semibold text-orange-700 hover:text-orange-800 hover:underline transition"
+                        >
+                          View Full Product Details &rarr;
+                        </Link>
                       </div>
                     </div>
                   </div>
