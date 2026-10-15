@@ -190,7 +190,7 @@ export default function Header() {
               onClick={() => setMobileMenuOpen(false)}
             >
               <span className="sr-only">Fedoll</span>
-              <img alt="" src="/dkgloballogorb.png" className="h-8 w-auto" />
+              <img alt="" src="/fedoll-logo.svg" className="h-8 w-auto" />
             </Link>
             <button
               type="button"

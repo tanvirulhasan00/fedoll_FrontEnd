@@ -1,45 +1,42 @@
+import { useState, useEffect } from "react";
 import {
-  CalendarDaysIcon,
-  CheckBadgeIcon,
-  HandRaisedIcon,
-  XCircleIcon,
+  EnvelopeIcon,
+  CheckCircleIcon,
+  ExclamationCircleIcon,
   InformationCircleIcon,
+  SparklesIcon,
+  TagIcon,
+  BoltIcon,
+  ShieldCheckIcon,
+  ArrowRightIcon,
 } from "@heroicons/react/24/outline";
-import { useEffect, useState } from "react";
 import { toast } from "sonner";
 import { Spinner } from "~/components/ui/spinner";
 import { createNewsletter } from "~/redux/features/newsletterSlice";
 import { useAppDispatch, useAppSelector } from "~/redux/hooks/hook";
 
 export default function NewsLetter() {
-  const [formData, setFormData] = useState({
-    email: "",
-  });
+  const [email, setEmail] = useState("");
   const dispatch = useAppDispatch();
-  const { loading, Data } = useAppSelector((state) => state.newsletter);
+  const { loading } = useAppSelector((state) => state.newsletter);
   const token = "";
-  const [show, setShow] = useState(false);
+
   const [message, setMessage] = useState("");
-  const [status, setStatus] = useState<"success" | "info" | "error" | null>(
-    null
-  );
+  const [status, setStatus] = useState<"success" | "info" | "error" | null>(null);
+  const [showNotification, setShowNotification] = useState(false);
 
   useEffect(() => {
-    if (show) {
+    if (showNotification) {
       const timer = setTimeout(() => {
-        setShow(false);
-      }, 5000);
+        setShowNotification(false);
+      }, 6000);
       return () => clearTimeout(timer);
     }
-  }, [show]);
-
-  const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    setFormData({ ...formData, [e.target.name]: e.target.value });
-  };
+  }, [showNotification]);
 
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
-    const emailToSubmit = formData.email.trim();
+    const emailToSubmit = email.trim();
     if (!emailToSubmit) return;
 
     const formPayload = new FormData();
@@ -47,29 +44,31 @@ export default function NewsLetter() {
 
     try {
       const resultAction = await dispatch(
-        createNewsletter({ token, formPayload, email: emailToSubmit })
+        createNewsletter({ token, formPayload, email: emailToSubmit }),
       );
 
       if (createNewsletter.fulfilled.match(resultAction)) {
         const payload = resultAction.payload;
         if (payload?.alreadySubscribed) {
-          toast.info(payload.message || "You are already subscribed!");
+          toast.info(payload.message || "You are already subscribed to our newsletter!");
           setStatus("info");
-          setMessage(payload.message || "You are already subscribed to our newsletter!");
+          setMessage(payload.message || "You are already subscribed to our VIP insider club!");
         } else {
-          toast.success(payload?.message || "Thank you for subscribing!");
+          toast.success(payload?.message || "Thank you for subscribing! Check your inbox.");
           setStatus("success");
-          setMessage(payload?.message || "Thank you for subscribing to our newsletter!");
-          setFormData({ email: "" });
+          setMessage(
+            payload?.message || "Welcome to Fedoll! Your 10% discount code is on its way to your inbox.",
+          );
+          setEmail("");
         }
-        setShow(true);
+        setShowNotification(true);
       } else if (createNewsletter.rejected.match(resultAction)) {
         const errMsg =
-          (resultAction.payload as string) || "Failed to subscribe to newsletter.";
+          (resultAction.payload as string) || "Failed to subscribe to the newsletter.";
         toast.error(errMsg);
         setStatus("error");
         setMessage(errMsg);
-        setShow(true);
+        setShowNotification(true);
       }
     } catch (err: unknown) {
       const error = err as Error;
@@ -77,112 +76,155 @@ export default function NewsLetter() {
       toast.error(errMsg);
       setStatus("error");
       setMessage(errMsg);
-      setShow(true);
+      setShowNotification(true);
     }
   };
 
   return (
-    <div className="relative isolate overflow-hidden bg-white px-0 py-10 sm:py-16 lg:py-24 ">
-      <div className="mx-auto ">
-        <div className="mx-auto grid max-w-2xl grid-cols-1 gap-x-8 gap-y-16 lg:max-w-none lg:grid-cols-2">
-          <form onSubmit={handleSubmit}>
-            <div className="max-w-xl lg:max-w-2xl">
-              <h2 className="text-4xl font-semibold tracking-tight text-black">
-                Subscribe to our{" "}
-                <span className="text-orange-700">Newsletter</span>
-              </h2>
-              <p className="mt-4 text-lg text-gray-500 leading-relaxed text-justify whitespace-pre-line">
-                Join thousands of readers who receive the latest industry
-                insights, helpful resources, and exclusive updates delivered
-                straight to their inbox.
-              </p>
+    <div className="relative isolate overflow-hidden rounded-3xl bg-gradient-to-b from-neutral-900 via-neutral-900 to-neutral-950 border border-neutral-800 p-8 sm:p-12 lg:p-16 shadow-2xl">
+      {/* Decorative ambient glowing gradients */}
+      <div
+        aria-hidden="true"
+        className="pointer-events-none absolute -top-24 -right-24 h-96 w-96 rounded-full bg-orange-600/20 blur-3xl"
+      />
+      <div
+        aria-hidden="true"
+        className="pointer-events-none absolute -bottom-24 -left-24 h-96 w-96 rounded-full bg-amber-500/10 blur-3xl"
+      />
 
-              {show && message && (
-                <div
-                  className={`mt-4 flex items-center gap-2 rounded-lg px-3.5 py-2.5 text-sm border transition-all duration-300 ${
-                    status === "error"
-                      ? "border-red-200 bg-red-50 text-red-800"
-                      : status === "info"
-                      ? "border-blue-200 bg-blue-50 text-blue-800"
-                      : "border-green-200 bg-green-50 text-green-800"
-                  }`}
-                >
-                  {status === "error" ? (
-                    <XCircleIcon className="size-5 text-red-600 shrink-0" />
-                  ) : status === "info" ? (
-                    <InformationCircleIcon className="size-5 text-blue-600 shrink-0" />
-                  ) : (
-                    <CheckBadgeIcon className="size-5 text-green-600 shrink-0" />
-                  )}
-                  <span className="font-medium">{message}</span>
+      <div className="relative z-10 grid grid-cols-1 gap-12 lg:grid-cols-12 lg:items-center">
+        {/* Left Column: Headline, Description & Subscription Form */}
+        <div className="lg:col-span-7">
+          <div className="inline-flex items-center gap-2 rounded-full border border-orange-500/30 bg-orange-500/10 px-3.5 py-1.5 text-xs font-semibold uppercase tracking-wider text-orange-400">
+            <SparklesIcon className="size-4 text-orange-400" />
+            <span>Exclusive VIP Circle</span>
+          </div>
+
+          <h2 className="mt-4 text-3xl font-extrabold tracking-tight text-white sm:text-4xl lg:text-5xl">
+            Stay Ahead. <br />
+            <span className="bg-gradient-to-r from-orange-400 via-orange-500 to-amber-400 bg-clip-text text-transparent">
+              Enjoy 10% Off
+            </span>{" "}
+            Your Next Order.
+          </h2>
+
+          <p className="mt-4 max-w-xl text-base sm:text-lg leading-relaxed text-neutral-400">
+            Join thousands of global fashion enthusiasts. Receive private seasonal drops,
+            limited denim releases, textile craftsmanship stories, and members-only promotions.
+          </p>
+
+          {/* Form */}
+          <form onSubmit={handleSubmit} className="mt-8 max-w-xl">
+            <div className="flex flex-col sm:flex-row gap-3">
+              <div className="relative flex-1">
+                <div className="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-4 text-neutral-400">
+                  <EnvelopeIcon className="size-5" />
                 </div>
-              )}
-
-              <div className="mt-6 flex max-w-md gap-x-4 items-center">
-                <label htmlFor="email" className="sr-only">
-                  Email address
-                </label>
                 <input
-                  id="email"
+                  id="newsletter-email"
                   name="email"
                   type="email"
-                  value={formData.email}
-                  onChange={handleChange}
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
                   required
                   disabled={loading}
-                  placeholder="Enter your email"
+                  placeholder="Enter your email address..."
                   autoComplete="email"
-                  className="min-w-0 flex-auto rounded-md bg-white px-3.5 py-2 text-base border border-gray-300 text-black outline-1 -outline-offset-1 outline-gray-300 placeholder:text-gray-400 focus:outline-2 focus:-outline-offset-2 focus:outline-orange-700 sm:text-sm/6 disabled:opacity-60 disabled:cursor-not-allowed"
+                  className="w-full rounded-xl border border-neutral-700 bg-neutral-800/90 py-3.5 pl-11 pr-4 text-sm sm:text-base text-white placeholder-neutral-400 shadow-inner outline-none transition focus:border-orange-500 focus:ring-2 focus:ring-orange-500/30 disabled:opacity-60 disabled:cursor-not-allowed"
                 />
-                <button
-                  type="submit"
-                  disabled={loading}
-                  className="flex-none rounded-md bg-orange-700 px-4 py-2.5 text-sm font-semibold text-white shadow-xs hover:bg-orange-800 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-orange-700 disabled:opacity-60 disabled:cursor-not-allowed flex items-center justify-center gap-2"
-                >
-                  {loading ? (
-                    <>
-                      <Spinner className="size-4 text-white" />
-                      <span>Saving...</span>
-                    </>
-                  ) : (
-                    "Subscribe"
-                  )}
-                </button>
               </div>
+
+              <button
+                type="submit"
+                disabled={loading}
+                className="group relative inline-flex items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-orange-600 to-orange-700 px-7 py-3.5 text-sm sm:text-base font-semibold text-white shadow-lg shadow-orange-700/30 transition-all duration-200 hover:from-orange-500 hover:to-orange-600 hover:shadow-orange-600/40 hover:-translate-y-0.5 active:translate-y-0 disabled:opacity-60 disabled:cursor-not-allowed cursor-pointer shrink-0"
+              >
+                {loading ? (
+                  <>
+                    <Spinner className="size-4 text-white" />
+                    <span>Subscribing...</span>
+                  </>
+                ) : (
+                  <>
+                    <span>Subscribe</span>
+                    <ArrowRightIcon className="size-4 transition-transform group-hover:translate-x-1" />
+                  </>
+                )}
+              </button>
             </div>
+
+            {/* Notification alert banner */}
+            {showNotification && message && (
+              <div
+                className={`mt-4 flex items-center gap-2.5 rounded-xl border p-3.5 text-sm transition-all animate-in fade-in duration-300 ${
+                  status === "error"
+                    ? "border-red-500/30 bg-red-950/40 text-red-300"
+                    : status === "info"
+                    ? "border-amber-500/30 bg-amber-950/40 text-amber-200"
+                    : "border-green-500/30 bg-green-950/40 text-green-200"
+                }`}
+              >
+                {status === "error" ? (
+                  <ExclamationCircleIcon className="size-5 shrink-0 text-red-400" />
+                ) : status === "info" ? (
+                  <InformationCircleIcon className="size-5 shrink-0 text-amber-400" />
+                ) : (
+                  <CheckCircleIcon className="size-5 shrink-0 text-green-400" />
+                )}
+                <span className="font-medium">{message}</span>
+              </div>
+            )}
+
+            <p className="mt-3 flex items-center gap-1.5 text-xs text-neutral-400">
+              <ShieldCheckIcon className="size-4 text-neutral-400" />
+              <span>We value your privacy. Strictly zero spam. Unsubscribe anytime with 1 click.</span>
+            </p>
           </form>
-          <dl className="grid grid-cols-1 gap-x-8 gap-y-10 sm:grid-cols-2 lg:pt-2">
-            <div className="flex flex-col items-start">
-              <div className="rounded-md bg-white/5 p-2 ring-1 ring-white/10">
-                <CalendarDaysIcon
-                  aria-hidden="true"
-                  className="size-6 text-black"
-                />
+        </div>
+
+        {/* Right Column: 3 Value Props Micro-Cards */}
+        <div className="lg:col-span-5 flex flex-col gap-4">
+          <div className="group rounded-2xl border border-neutral-800 bg-neutral-800/40 p-4 sm:p-5 backdrop-blur-sm transition-all duration-300 hover:border-neutral-700 hover:bg-neutral-800/70">
+            <div className="flex items-start gap-4">
+              <div className="flex size-11 shrink-0 items-center justify-center rounded-xl bg-orange-500/10 text-orange-400 ring-1 ring-orange-500/20 group-hover:bg-orange-500 group-hover:text-white transition-colors duration-300">
+                <TagIcon className="size-6" />
               </div>
-              <dt className="mt-4 text-base font-semibold text-black">
-                Weekly articles
-              </dt>
-              <dd className="mt-2 text-base/7 text-gray-500 leading-relaxed text-justify whitespace-pre-line">
-                Get fresh content every week, including expert tips, case
-                studies, and industry news to help you stay ahead.
-              </dd>
-            </div>
-            <div className="flex flex-col items-start">
-              <div className="rounded-md bg-white/5 p-2 ring-1 ring-white/10">
-                <HandRaisedIcon
-                  aria-hidden="true"
-                  className="size-6 text-red-500"
-                />
+              <div>
+                <h3 className="text-base font-semibold text-white">Instant 10% Welcome Voucher</h3>
+                <p className="mt-1 text-sm text-neutral-400 leading-relaxed">
+                  Receive a personal welcome code for your very first outerwear, workwear, or denim order.
+                </p>
               </div>
-              <dt className="mt-4 text-base font-semibold text-black">
-                No <span className="text-orange-700">spam</span>
-              </dt>
-              <dd className="mt-2 text-base/7 text-gray-500 leading-relaxed text-justify whitespace-pre-line">
-                We respect your inbox. You’ll only receive valuable content,
-                never irrelevant promotions or spam.
-              </dd>
             </div>
-          </dl>
+          </div>
+
+          <div className="group rounded-2xl border border-neutral-800 bg-neutral-800/40 p-4 sm:p-5 backdrop-blur-sm transition-all duration-300 hover:border-neutral-700 hover:bg-neutral-800/70">
+            <div className="flex items-start gap-4">
+              <div className="flex size-11 shrink-0 items-center justify-center rounded-xl bg-amber-500/10 text-amber-400 ring-1 ring-amber-500/20 group-hover:bg-amber-500 group-hover:text-white transition-colors duration-300">
+                <BoltIcon className="size-6" />
+              </div>
+              <div>
+                <h3 className="text-base font-semibold text-white">VIP Early Drop Access</h3>
+                <p className="mt-1 text-sm text-neutral-400 leading-relaxed">
+                  Shop limited-run collections and seasonal drops 24 hours before they open to the public.
+                </p>
+              </div>
+            </div>
+          </div>
+
+          <div className="group rounded-2xl border border-neutral-800 bg-neutral-800/40 p-4 sm:p-5 backdrop-blur-sm transition-all duration-300 hover:border-neutral-700 hover:bg-neutral-800/70">
+            <div className="flex items-start gap-4">
+              <div className="flex size-11 shrink-0 items-center justify-center rounded-xl bg-emerald-500/10 text-emerald-400 ring-1 ring-emerald-500/20 group-hover:bg-emerald-500 group-hover:text-white transition-colors duration-300">
+                <ShieldCheckIcon className="size-6" />
+              </div>
+              <div>
+                <h3 className="text-base font-semibold text-white">Sustainable Craft Stories</h3>
+                <p className="mt-1 text-sm text-neutral-400 leading-relaxed">
+                  Go behind the scenes into our certified Bangladeshi factories, ethical cotton sourcing, and artisan stitchers.
+                </p>
+              </div>
+            </div>
+          </div>
         </div>
       </div>
     </div>
