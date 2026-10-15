@@ -4,3 +4,4 @@ export * from "./firestore";
 export * from "./blogs";
 export * from "./home";
 export * from "./about";
+export * from "./contact";

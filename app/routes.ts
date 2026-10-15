@@ -5,4 +5,6 @@ export default [
   route("blogs", "routes/blogs.tsx"),
   route("blogs/:id", "routes/blog-detail.tsx"),
   route("about-us", "routes/about-us.tsx"),
+  route("contact-us", "routes/contact-us.tsx"),
+  route("contact", "routes/contact-us.tsx", { id: "contact-alias" }),
 ] satisfies RouteConfig;
