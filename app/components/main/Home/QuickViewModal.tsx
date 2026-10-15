@@ -86,12 +86,12 @@ export default function QuickViewModal() {
               leaveFrom="opacity-100 translate-y-0 sm:scale-100"
               leaveTo="opacity-0 translate-y-4 sm:translate-y-0 sm:scale-95"
             >
-              <DialogPanel className="relative transform overflow-hidden rounded-3xl bg-white text-left shadow-2xl transition-all sm:my-8 sm:w-full sm:max-w-4xl border border-gray-100">
+              <DialogPanel className="relative transform overflow-hidden rounded-3xl bg-white dark:bg-neutral-900 text-left shadow-2xl transition-all sm:my-8 sm:w-full sm:max-w-4xl border border-gray-100 dark:border-neutral-800">
                 {/* Close Button */}
                 <button
                   type="button"
                   onClick={() => dispatch(setQuickViewProduct(null))}
-                  className="absolute right-4 top-4 z-20 size-9 rounded-full bg-stone-100 hover:bg-stone-200 flex items-center justify-center text-gray-500 hover:text-gray-900 transition cursor-pointer"
+                  className="absolute right-4 top-4 z-20 size-9 rounded-full bg-stone-100 hover:bg-stone-200 dark:bg-neutral-800 dark:hover:bg-neutral-700 flex items-center justify-center text-gray-500 hover:text-gray-900 dark:text-neutral-400 dark:hover:text-white transition cursor-pointer"
                 >
                   <XMarkIcon className="size-5" />
                 </button>
@@ -99,7 +99,7 @@ export default function QuickViewModal() {
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-8 p-6 sm:p-10">
                   {/* Product Images Column */}
                   <div className="space-y-4">
-                    <div className="relative rounded-2xl overflow-hidden bg-stone-100 aspect-4/5 border border-gray-200">
+                    <div className="relative rounded-2xl overflow-hidden bg-stone-100 dark:bg-neutral-800 aspect-4/5 border border-gray-200 dark:border-neutral-700">
                       <img
                         src={
                           quickViewProduct.images[activeImageIndex] ||
@@ -109,7 +109,7 @@ export default function QuickViewModal() {
                         className="w-full h-full object-cover"
                       />
                       {quickViewProduct.badge && (
-                        <span className="absolute top-3 left-3 bg-orange-700 text-white text-xs font-bold px-3 py-1 rounded-full uppercase tracking-wider shadow-xs">
+                        <span className="absolute top-3 left-3 bg-orange-600 dark:bg-orange-500 text-white text-xs font-bold px-3 py-1 rounded-full uppercase tracking-wider shadow-xs">
                           {quickViewProduct.badge}
                         </span>
                       )}
@@ -125,8 +125,8 @@ export default function QuickViewModal() {
                             onClick={() => setActiveImageIndex(i)}
                             className={`size-16 rounded-xl overflow-hidden border-2 transition cursor-pointer ${
                               i === activeImageIndex
-                                ? "border-orange-700 shadow-xs"
-                                : "border-gray-200 hover:border-gray-400"
+                                ? "border-orange-600 shadow-xs"
+                                : "border-gray-200 dark:border-neutral-700 hover:border-gray-400 dark:hover:border-neutral-500"
                             }`}
                           >
                             <img
@@ -144,21 +144,21 @@ export default function QuickViewModal() {
                   <div className="flex flex-col justify-between">
                     <div className="space-y-5">
                       <div>
-                        <span className="text-xs font-bold uppercase tracking-wider text-orange-700">
+                        <span className="text-xs font-bold uppercase tracking-wider text-orange-600 dark:text-orange-400">
                           {quickViewProduct.category}
                         </span>
-                        <h3 className="text-2xl font-bold text-gray-900 mt-1 leading-snug">
+                        <h3 className="text-2xl font-bold text-gray-900 dark:text-white mt-1 leading-snug">
                           {quickViewProduct.name}
                         </h3>
 
                         {/* Rating */}
-                        <div className="flex items-center gap-2 mt-2 text-xs text-gray-500">
+                        <div className="flex items-center gap-2 mt-2 text-xs text-gray-500 dark:text-neutral-400">
                           <div className="flex text-amber-500">
                             {[1, 2, 3, 4, 5].map((s) => (
                               <StarIcon key={s} className="size-4 fill-current" />
                             ))}
                           </div>
-                          <span className="font-bold text-gray-800">
+                          <span className="font-bold text-gray-800 dark:text-neutral-200">
                             {quickViewProduct.rating}
                           </span>
                           <span>•</span>
@@ -168,16 +168,16 @@ export default function QuickViewModal() {
 
                       {/* Pricing in BDT */}
                       <div className="flex items-baseline gap-3">
-                        <span className="text-3xl font-extrabold text-gray-900">
+                        <span className="text-3xl font-extrabold text-gray-900 dark:text-white">
                           ৳{quickViewProduct.price.toLocaleString()}
                         </span>
                         {quickViewProduct.originalPrice && (
-                          <span className="text-lg text-gray-400 line-through">
+                          <span className="text-lg text-gray-400 dark:text-neutral-500 line-through">
                             ৳{quickViewProduct.originalPrice.toLocaleString()}
                           </span>
                         )}
                         {quickViewProduct.originalPrice && (
-                          <span className="text-xs font-bold text-emerald-700 bg-emerald-100 px-2.5 py-0.5 rounded-full">
+                          <span className="text-xs font-bold text-emerald-700 dark:text-emerald-400 bg-emerald-100 dark:bg-emerald-950/60 px-2.5 py-0.5 rounded-full">
                             Save ৳
                             {(
                               quickViewProduct.originalPrice -
@@ -187,14 +187,14 @@ export default function QuickViewModal() {
                         )}
                       </div>
 
-                      <p className="text-sm text-gray-600 leading-relaxed">
+                      <p className="text-sm text-gray-600 dark:text-neutral-300 leading-relaxed">
                         {quickViewProduct.description}
                       </p>
 
                       {/* Color Selector */}
                       <div>
-                        <label className="block text-xs font-bold uppercase tracking-wider text-gray-700 mb-2">
-                          Color: <span className="font-normal text-gray-500">{selectedColor}</span>
+                        <label className="block text-xs font-bold uppercase tracking-wider text-gray-700 dark:text-neutral-300 mb-2">
+                          Color: <span className="font-normal text-gray-500 dark:text-neutral-400">{selectedColor}</span>
                         </label>
                         <div className="flex gap-2.5">
                           {quickViewProduct.colors.map((c) => {
@@ -206,8 +206,8 @@ export default function QuickViewModal() {
                                 onClick={() => setSelectedColor(c.name)}
                                 className={`size-8 rounded-full border-2 flex items-center justify-center transition cursor-pointer ${
                                   isSelected
-                                    ? "border-orange-700 ring-2 ring-orange-700/30"
-                                    : "border-gray-300 hover:border-gray-500"
+                                    ? "border-orange-600 ring-2 ring-orange-500/30"
+                                    : "border-gray-300 dark:border-neutral-600 hover:border-gray-500 dark:hover:border-neutral-400"
                                 }`}
                                 style={{ backgroundColor: c.hex }}
                                 title={c.name}
@@ -230,10 +230,10 @@ export default function QuickViewModal() {
                       {/* Size Selector */}
                       <div>
                         <div className="flex justify-between items-center mb-2">
-                          <label className="text-xs font-bold uppercase tracking-wider text-gray-700">
-                            Size: <span className="font-normal text-gray-500">{selectedSize}</span>
+                          <label className="text-xs font-bold uppercase tracking-wider text-gray-700 dark:text-neutral-300">
+                            Size: <span className="font-normal text-gray-500 dark:text-neutral-400">{selectedSize}</span>
                           </label>
-                          <span className="text-[11px] text-orange-700 hover:underline cursor-pointer">
+                          <span className="text-[11px] text-orange-600 dark:text-orange-400 hover:underline cursor-pointer">
                             Size Guide
                           </span>
                         </div>
@@ -245,8 +245,8 @@ export default function QuickViewModal() {
                               onClick={() => setSelectedSize(s)}
                               className={`px-3.5 py-2 text-xs font-bold rounded-lg border transition cursor-pointer ${
                                 selectedSize === s
-                                  ? "bg-gray-900 text-white border-gray-900 shadow-xs"
-                                  : "bg-white text-gray-700 border-gray-200 hover:border-gray-400"
+                                  ? "bg-gray-900 dark:bg-white text-white dark:text-gray-900 border-gray-900 dark:border-white shadow-xs"
+                                  : "bg-white dark:bg-neutral-800 text-gray-700 dark:text-neutral-200 border-gray-200 dark:border-neutral-700 hover:border-gray-400 dark:hover:border-neutral-500"
                               }`}
                             >
                               {s}
@@ -257,23 +257,23 @@ export default function QuickViewModal() {
                     </div>
 
                     {/* Actions */}
-                    <div className="mt-8 pt-6 border-t border-gray-100 space-y-4">
+                    <div className="mt-8 pt-6 border-t border-gray-100 dark:border-neutral-800 space-y-4">
                       <div className="flex items-center gap-4">
-                        <div className="flex items-center border border-gray-300 rounded-xl">
+                        <div className="flex items-center border border-gray-300 dark:border-neutral-700 rounded-xl">
                           <button
                             type="button"
                             onClick={() => setQuantity(Math.max(1, quantity - 1))}
-                            className="px-3.5 py-2 text-gray-600 hover:bg-gray-100 rounded-l-xl transition"
+                            className="px-3.5 py-2 text-gray-600 dark:text-neutral-300 hover:bg-gray-100 dark:hover:bg-neutral-800 rounded-l-xl transition"
                           >
                             -
                           </button>
-                          <span className="px-3 text-sm font-bold text-gray-900">
+                          <span className="px-3 text-sm font-bold text-gray-900 dark:text-white">
                             {quantity}
                           </span>
                           <button
                             type="button"
                             onClick={() => setQuantity(quantity + 1)}
-                            className="px-3.5 py-2 text-gray-600 hover:bg-gray-100 rounded-r-xl transition"
+                            className="px-3.5 py-2 text-gray-600 dark:text-neutral-300 hover:bg-gray-100 dark:hover:bg-neutral-800 rounded-r-xl transition"
                           >
                             +
                           </button>
@@ -282,16 +282,16 @@ export default function QuickViewModal() {
                         <button
                           type="button"
                           onClick={handleAddToCart}
-                          className="flex-1 py-3.5 px-6 rounded-xl bg-orange-700 hover:bg-orange-800 text-white text-sm font-bold shadow-md hover:shadow-lg transition flex items-center justify-center gap-2 cursor-pointer"
+                          className="flex-1 py-3.5 px-6 rounded-xl bg-orange-600 hover:bg-orange-700 active:scale-98 text-white text-sm font-bold shadow-md hover:shadow-lg transition flex items-center justify-center gap-2 cursor-pointer"
                         >
                           <ShoppingBagIcon className="size-4" />
                           <span>Add to Shopping Bag • ৳{(quickViewProduct.price * quantity).toLocaleString()}</span>
                         </button>
                       </div>
 
-                      <div className="flex items-center justify-center gap-6 text-[11px] text-gray-500 pt-1">
+                      <div className="flex items-center justify-center gap-6 text-[11px] text-gray-500 dark:text-neutral-400 pt-1">
                         <span className="flex items-center gap-1">
-                          <ShieldCheckIcon className="size-4 text-emerald-600" />
+                          <ShieldCheckIcon className="size-4 text-emerald-600 dark:text-emerald-400" />
                           Cash on Delivery & bKash Available
                         </span>
                         <span>•</span>
@@ -302,7 +302,7 @@ export default function QuickViewModal() {
                         <Link
                           to={`/products/${quickViewProduct.id}`}
                           onClick={() => dispatch(setQuickViewProduct(null))}
-                          className="text-xs font-semibold text-orange-700 hover:text-orange-800 hover:underline transition"
+                          className="text-xs font-semibold text-orange-600 dark:text-orange-400 hover:text-orange-700 dark:hover:text-orange-300 hover:underline transition"
                         >
                           View Full Product Details &rarr;
                         </Link>

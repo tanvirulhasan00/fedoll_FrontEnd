@@ -23,7 +23,7 @@ const Topbar = () => {
   }, [dispatch]);
 
   return (
-    <div className="w-full bg-orange-700 text-gray-100 text-xs sm:text-sm ">
+    <div className="w-full bg-orange-700 dark:bg-neutral-950 dark:border-b dark:border-neutral-800 text-gray-100 dark:text-neutral-300 text-xs sm:text-sm transition-colors duration-200">
       <div className="max-w-7xl mx-auto flex flex-col sm:flex-row items-center justify-between px-4 py-2 gap-2 text-center sm:text-left">
         {/* Contact Info */}
         <div className="sm:h-[1rem] flex flex-wrap items-center justify-center sm:justify-start gap-3">

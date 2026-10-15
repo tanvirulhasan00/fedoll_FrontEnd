@@ -244,23 +244,23 @@ export default function ProductsPage() {
   }, [products]);
 
   return (
-    <div className="min-h-screen bg-white text-gray-900 flex flex-col font-sans selection:bg-orange-500 selection:text-white">
+    <div className="min-h-screen bg-white dark:bg-neutral-950 text-gray-900 dark:text-neutral-100 flex flex-col font-sans selection:bg-orange-500 selection:text-white transition-colors">
       {/* Navigation Layer */}
       <Topbar />
       <Header />
 
       <main className="flex-1">
         {/* Breadcrumb Navigation */}
-        <div className="bg-stone-50 border-b border-stone-200/60 py-3">
+        <div className="bg-stone-50 dark:bg-neutral-900/60 border-b border-stone-200/60 dark:border-neutral-800 py-3 transition-colors">
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-            <nav className="flex items-center gap-2 text-xs text-gray-500" aria-label="Breadcrumb">
-              <Link to="/" className="hover:text-orange-700 transition">
+            <nav className="flex items-center gap-2 text-xs text-gray-500 dark:text-neutral-400" aria-label="Breadcrumb">
+              <Link to="/" className="hover:text-orange-600 dark:hover:text-orange-400 transition">
                 Home
               </Link>
               <span>/</span>
-              <span className="text-gray-400">Collections</span>
+              <span className="text-gray-400 dark:text-neutral-500">Collections</span>
               <span>/</span>
-              <span className="font-medium text-gray-900">
+              <span className="font-medium text-gray-900 dark:text-white">
                 {selectedCategory === "All" ? "All Products" : selectedCategory}
               </span>
             </nav>
@@ -268,32 +268,32 @@ export default function ProductsPage() {
         </div>
 
         {/* Page Hero Header */}
-        <section className="relative overflow-hidden bg-gradient-to-b from-stone-50 via-orange-50/15 to-white border-b border-stone-200/60 py-12 sm:py-16">
+        <section className="relative overflow-hidden bg-gradient-to-b from-stone-50 dark:from-neutral-900/50 via-orange-50/15 dark:via-neutral-950 to-white dark:to-neutral-950 border-b border-stone-200/60 dark:border-neutral-800 py-12 sm:py-16 transition-colors">
           <div className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
             <div className="flex flex-col md:flex-row md:items-end md:justify-between gap-6">
               <div>
-                <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-orange-100 text-orange-800 text-xs font-semibold uppercase tracking-wider mb-3">
-                  <SparklesIcon className="size-3.5 text-orange-700" />
+                <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-orange-100 dark:bg-orange-950/60 text-orange-800 dark:text-orange-300 text-xs font-semibold uppercase tracking-wider mb-3">
+                  <SparklesIcon className="size-3.5 text-orange-600 dark:text-orange-400" />
                   Export Quality Garments
                 </div>
-                <h1 className="text-3xl sm:text-5xl font-bold tracking-tight text-gray-900">
+                <h1 className="text-3xl sm:text-5xl font-bold tracking-tight text-gray-900 dark:text-white">
                   {selectedCategory === "All" ? (
                     <>
                       Explore All Collections. <br />
-                      <span className="text-orange-700 italic font-serif">
+                      <span className="text-orange-600 dark:text-orange-400 italic font-serif">
                         Made for Everyday Living.
                       </span>
                     </>
                   ) : (
                     <>
                       {selectedCategory} Collection. <br />
-                      <span className="text-orange-700 italic font-serif">
+                      <span className="text-orange-600 dark:text-orange-400 italic font-serif">
                         Crafted in Bangladesh.
                       </span>
                     </>
                   )}
                 </h1>
-                <p className="mt-4 text-sm sm:text-base text-gray-600 max-w-2xl leading-relaxed">
+                <p className="mt-4 text-sm sm:text-base text-gray-600 dark:text-neutral-400 max-w-2xl leading-relaxed">
                   Crafted with heavy 14oz shuttle-loom selvedge denim, pure double-layer wool,
                   and 240 GSM combed cotton. Shipped anywhere in Bangladesh with Cash on Delivery.
                 </p>
@@ -301,7 +301,7 @@ export default function ProductsPage() {
 
               {/* Live Firestore Connection Status & Sync */}
               <div className="flex flex-col items-start md:items-end gap-2 shrink-0">
-                <div className="inline-flex items-center gap-2 text-xs font-medium text-emerald-800 bg-emerald-50 border border-emerald-200 px-3 py-1.5 rounded-full shadow-2xs">
+                <div className="inline-flex items-center gap-2 text-xs font-medium text-emerald-800 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-950/40 border border-emerald-200 dark:border-emerald-800/60 px-3 py-1.5 rounded-full shadow-2xs">
                   <span className="size-2 rounded-full bg-emerald-500 animate-pulse" />
                   <span>Cloud Firestore Sync</span>
                 </div>
@@ -309,11 +309,11 @@ export default function ProductsPage() {
                   type="button"
                   onClick={handleSyncFirebase}
                   disabled={syncing || loading}
-                  className="inline-flex items-center gap-1.5 text-xs font-medium text-gray-700 bg-white border border-gray-300 hover:border-orange-500 hover:text-orange-700 px-3 py-1.5 rounded-lg shadow-2xs transition disabled:opacity-50 cursor-pointer"
+                  className="inline-flex items-center gap-1.5 text-xs font-medium text-gray-700 dark:text-neutral-300 bg-white dark:bg-neutral-800 border border-gray-300 dark:border-neutral-700 hover:border-orange-500 hover:text-orange-600 dark:hover:text-orange-400 px-3 py-1.5 rounded-lg shadow-2xs transition disabled:opacity-50 cursor-pointer"
                   title="Resync products directly with Firebase Firestore"
                 >
                   <ArrowPathIcon
-                    className={`size-3.5 ${syncing ? "animate-spin text-orange-600" : ""}`}
+                    className={`size-3.5 ${syncing ? "animate-spin text-orange-600 dark:text-orange-400" : ""}`}
                   />
                   <span>{syncing ? "Syncing..." : "Sync Products"}</span>
                 </button>
@@ -332,8 +332,8 @@ export default function ProductsPage() {
                     onClick={() => handleCategoryChange(cat)}
                     className={`inline-flex items-center gap-2 whitespace-nowrap px-4 py-2.5 rounded-full text-xs font-semibold transition cursor-pointer ${
                       isActive
-                        ? "bg-orange-700 text-white shadow-md shadow-orange-700/20"
-                        : "bg-white text-gray-700 border border-stone-200/80 hover:bg-stone-50 hover:text-orange-700"
+                        ? "bg-orange-600 dark:bg-orange-500 text-white shadow-md shadow-orange-600/20"
+                        : "bg-white dark:bg-neutral-900 text-gray-700 dark:text-neutral-300 border border-stone-200/80 dark:border-neutral-800 hover:bg-stone-50 dark:hover:bg-neutral-800 hover:text-orange-600 dark:hover:text-orange-400"
                     }`}
                   >
                     <span>{cat}</span>
@@ -341,7 +341,7 @@ export default function ProductsPage() {
                       className={`text-[10px] px-1.5 py-0.5 rounded-full font-bold ${
                         isActive
                           ? "bg-white/20 text-white"
-                          : "bg-stone-100 text-gray-500"
+                          : "bg-stone-100 dark:bg-neutral-800 text-gray-500 dark:text-neutral-400"
                       }`}
                     >
                       {count}
@@ -354,10 +354,10 @@ export default function ProductsPage() {
         </section>
 
         {/* Product Catalog Body */}
-        <section className="py-12 bg-white">
+        <section className="py-12 bg-white dark:bg-neutral-950 transition-colors">
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
             {/* Search, Sort, and Filter Controls Bar */}
-            <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4 pb-8 border-b border-stone-200/80">
+            <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4 pb-8 border-b border-stone-200/80 dark:border-neutral-800">
               {/* Search Form */}
               <form onSubmit={handleSearchSubmit} className="relative w-full md:w-80">
                 <input
@@ -365,14 +365,14 @@ export default function ProductsPage() {
                   placeholder="Search denim, coats, blazers..."
                   value={localSearch}
                   onChange={(e) => setLocalSearch(e.target.value)}
-                  className="w-full pl-10 pr-9 py-2.5 rounded-xl border border-gray-300 text-sm placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-orange-600 focus:border-orange-600 transition"
+                  className="w-full pl-10 pr-9 py-2.5 rounded-xl border border-gray-300 dark:border-neutral-700 bg-white dark:bg-neutral-900 text-sm text-gray-900 dark:text-white placeholder-gray-400 dark:placeholder-neutral-500 focus:outline-none focus:ring-2 focus:ring-orange-600 focus:border-orange-600 transition"
                 />
-                <MagnifyingGlassIcon className="absolute left-3.5 top-3 size-4 text-gray-400" />
+                <MagnifyingGlassIcon className="absolute left-3.5 top-3 size-4 text-gray-400 dark:text-neutral-500" />
                 {localSearch && (
                   <button
                     type="button"
                     onClick={handleClearSearch}
-                    className="absolute right-3 top-3 text-gray-400 hover:text-gray-600"
+                    className="absolute right-3 top-3 text-gray-400 dark:text-neutral-500 hover:text-gray-600 dark:hover:text-white cursor-pointer"
                   >
                     <XMarkIcon className="size-4" />
                   </button>
@@ -381,12 +381,12 @@ export default function ProductsPage() {
 
               {/* Sort & Filter Controls */}
               <div className="flex flex-wrap items-center gap-3">
-                <div className="flex items-center gap-2 text-xs font-medium text-gray-700">
-                  <span className="text-gray-400">Sort by:</span>
+                <div className="flex items-center gap-2 text-xs font-medium text-gray-700 dark:text-neutral-300">
+                  <span className="text-gray-400 dark:text-neutral-500">Sort by:</span>
                   <select
                     value={sortBy}
                     onChange={(e) => dispatch(setSortBy(e.target.value as any))}
-                    className="px-3 py-2 rounded-xl border border-gray-300 bg-white text-xs font-semibold text-gray-800 focus:outline-none focus:ring-2 focus:ring-orange-600 cursor-pointer"
+                    className="px-3 py-2 rounded-xl border border-gray-300 dark:border-neutral-700 bg-white dark:bg-neutral-900 text-xs font-semibold text-gray-800 dark:text-neutral-200 focus:outline-none focus:ring-2 focus:ring-orange-600 cursor-pointer"
                   >
                     <option value="featured">Featured / Best</option>
                     <option value="price-asc">Price: Low to High</option>
@@ -397,23 +397,23 @@ export default function ProductsPage() {
                 </div>
 
                 {/* In Stock Toggle */}
-                <label className="inline-flex items-center gap-2 text-xs font-semibold text-gray-700 cursor-pointer px-3 py-2 rounded-xl border border-gray-200 hover:bg-stone-50 select-none">
+                <label className="inline-flex items-center gap-2 text-xs font-semibold text-gray-700 dark:text-neutral-300 cursor-pointer px-3 py-2 rounded-xl border border-gray-200 dark:border-neutral-700 bg-white dark:bg-neutral-900 hover:bg-stone-50 dark:hover:bg-neutral-800 select-none">
                   <input
                     type="checkbox"
                     checked={onlyInStock}
                     onChange={(e) => dispatch(setOnlyInStock(e.target.checked))}
-                    className="rounded text-orange-700 focus:ring-orange-500 accent-orange-700"
+                    className="rounded text-orange-600 focus:ring-orange-500 accent-orange-600"
                   />
                   <span>In Stock Only</span>
                 </label>
 
                 {/* Price Filter Selector */}
-                <div className="flex items-center gap-2 text-xs text-gray-600">
-                  <span className="text-gray-400">Max:</span>
+                <div className="flex items-center gap-2 text-xs text-gray-600 dark:text-neutral-400">
+                  <span className="text-gray-400 dark:text-neutral-500">Max:</span>
                   <select
                     value={maxPrice}
                     onChange={(e) => setMaxPrice(Number(e.target.value))}
-                    className="px-2.5 py-2 rounded-xl border border-gray-300 bg-white text-xs font-semibold text-gray-800 focus:outline-none cursor-pointer"
+                    className="px-2.5 py-2 rounded-xl border border-gray-300 dark:border-neutral-700 bg-white dark:bg-neutral-900 text-xs font-semibold text-gray-800 dark:text-neutral-200 focus:outline-none cursor-pointer"
                   >
                     <option value={10000}>All Prices</option>
                     <option value={2000}>Under ৳2,000</option>
@@ -432,7 +432,7 @@ export default function ProductsPage() {
                       setMaxPrice(10000);
                       setSearchParams({});
                     }}
-                    className="inline-flex items-center gap-1 text-xs font-semibold text-orange-700 hover:underline cursor-pointer"
+                    className="inline-flex items-center gap-1 text-xs font-semibold text-orange-600 dark:text-orange-400 hover:underline cursor-pointer"
                   >
                     <XMarkIcon className="size-3.5" />
                     <span>Reset</span>
@@ -442,29 +442,29 @@ export default function ProductsPage() {
             </div>
 
             {/* Results Count Summary */}
-            <div className="pt-6 pb-4 flex items-center justify-between text-xs text-gray-500">
+            <div className="pt-6 pb-4 flex items-center justify-between text-xs text-gray-500 dark:text-neutral-400">
               <p>
                 Showing{" "}
-                <span className="font-bold text-gray-900">{filteredProducts.length}</span> items
+                <span className="font-bold text-gray-900 dark:text-white">{filteredProducts.length}</span> items
                 {selectedCategory !== "All" && (
                   <span>
                     {" "}
-                    in <span className="font-semibold text-orange-700">{selectedCategory}</span>
+                    in <span className="font-semibold text-orange-600 dark:text-orange-400">{selectedCategory}</span>
                   </span>
                 )}
               </p>
-              <span className="text-gray-400">All prices in Bangladeshi Taka (৳ BDT)</span>
+              <span className="text-gray-400 dark:text-neutral-500">All prices in Bangladeshi Taka (৳ BDT)</span>
             </div>
 
             {/* Products Grid */}
             {filteredProducts.length === 0 ? (
               /* Empty State */
               <div className="py-20 text-center space-y-4 max-w-md mx-auto">
-                <div className="size-16 mx-auto rounded-full bg-stone-100 flex items-center justify-center text-gray-400">
+                <div className="size-16 mx-auto rounded-full bg-stone-100 dark:bg-neutral-800 flex items-center justify-center text-gray-400 dark:text-neutral-500">
                   <MagnifyingGlassIcon className="size-8" />
                 </div>
-                <h3 className="text-xl font-bold text-gray-900">No products found</h3>
-                <p className="text-sm text-gray-500">
+                <h3 className="text-xl font-bold text-gray-900 dark:text-white">No products found</h3>
+                <p className="text-sm text-gray-500 dark:text-neutral-400">
                   We couldn&apos;t find any garments matching your selected filters. Try broadening
                   your search or switching categories.
                 </p>
@@ -476,7 +476,7 @@ export default function ProductsPage() {
                     setMaxPrice(10000);
                     setSearchParams({});
                   }}
-                  className="px-6 py-2.5 rounded-full bg-orange-700 hover:bg-orange-800 text-white text-xs font-semibold shadow-xs transition cursor-pointer"
+                  className="px-6 py-2.5 rounded-full bg-orange-600 hover:bg-orange-700 active:scale-98 text-white text-xs font-semibold shadow-xs transition cursor-pointer"
                 >
                   Clear All Filters
                 </button>
@@ -491,10 +491,10 @@ export default function ProductsPage() {
                   return (
                     <div
                       key={product.id}
-                      className="group flex flex-col rounded-2xl bg-white border border-gray-200/80 overflow-hidden shadow-xs hover:shadow-xl transition-all duration-300"
+                      className="group flex flex-col rounded-2xl bg-white dark:bg-neutral-900 border border-gray-200/80 dark:border-neutral-800 overflow-hidden shadow-xs hover:shadow-xl transition-all duration-300"
                     >
                       {/* Product Card Image */}
-                      <div className="relative aspect-4/5 overflow-hidden bg-stone-100">
+                      <div className="relative aspect-4/5 overflow-hidden bg-stone-100 dark:bg-neutral-800">
                         <Link
                           to={`/products/${product.id}`}
                           className="block w-full h-full cursor-pointer"
@@ -524,7 +524,7 @@ export default function ProductsPage() {
                                   ? "bg-rose-600 text-white"
                                   : product.badge === "Best Seller"
                                   ? "bg-stone-900 text-white"
-                                  : "bg-orange-700 text-white"
+                                  : "bg-orange-600 dark:bg-orange-500 text-white"
                               }`}
                             >
                               {product.badge}
@@ -536,7 +536,7 @@ export default function ProductsPage() {
                         <button
                           type="button"
                           onClick={(e) => handleWishlist(e, product.id)}
-                          className="absolute top-3 right-3 size-8 rounded-full bg-white/90 backdrop-blur-xs flex items-center justify-center text-gray-700 hover:text-rose-600 hover:scale-110 transition shadow-xs cursor-pointer z-10"
+                          className="absolute top-3 right-3 size-8 rounded-full bg-white/90 dark:bg-neutral-900/90 backdrop-blur-xs flex items-center justify-center text-gray-700 dark:text-neutral-200 hover:text-rose-600 hover:scale-110 transition shadow-xs cursor-pointer z-10"
                           title="Save to wishlist"
                         >
                           {isWishlisted ? (
@@ -555,16 +555,16 @@ export default function ProductsPage() {
                               e.stopPropagation();
                               dispatch(setQuickViewProduct(product));
                             }}
-                            className="flex-1 py-2 px-3 rounded-xl bg-white/95 backdrop-blur-xs text-gray-900 text-xs font-bold hover:bg-white flex items-center justify-center gap-1.5 shadow-md hover:shadow-lg transition cursor-pointer"
+                            className="flex-1 py-2 px-3 rounded-xl bg-white/95 dark:bg-neutral-800/95 backdrop-blur-xs text-gray-900 dark:text-white text-xs font-bold hover:bg-white dark:hover:bg-neutral-700 flex items-center justify-center gap-1.5 shadow-md hover:shadow-lg transition cursor-pointer"
                           >
-                            <EyeIcon className="size-4 text-gray-600" />
+                            <EyeIcon className="size-4 text-gray-600 dark:text-neutral-300" />
                             <span>Quick View</span>
                           </button>
 
                           <button
                             type="button"
                             onClick={(e) => handleQuickAdd(e, product)}
-                            className="size-9 rounded-xl bg-orange-700 hover:bg-orange-800 text-white flex items-center justify-center shadow-md transition cursor-pointer shrink-0"
+                            className="size-9 rounded-xl bg-orange-600 hover:bg-orange-700 active:scale-98 text-white flex items-center justify-center shadow-md transition cursor-pointer shrink-0"
                             title="Quick Add to Bag"
                           >
                             <ShoppingBagIcon className="size-4" />
@@ -575,38 +575,38 @@ export default function ProductsPage() {
                       {/* Product Info */}
                       <div className="p-5 flex-1 flex flex-col justify-between space-y-3">
                         <div>
-                          <div className="flex items-center justify-between text-xs text-gray-500 mb-1">
-                            <span className="font-semibold text-orange-700 uppercase tracking-wider text-[11px]">
+                          <div className="flex items-center justify-between text-xs text-gray-500 dark:text-neutral-400 mb-1">
+                            <span className="font-semibold text-orange-600 dark:text-orange-400 uppercase tracking-wider text-[11px]">
                               {product.category}
                             </span>
                             <div className="flex items-center gap-1">
                               <StarSolidIcon className="size-3.5 text-amber-500 fill-current" />
-                              <span className="font-bold text-gray-700">
+                              <span className="font-bold text-gray-700 dark:text-neutral-200">
                                 {product.rating}
                               </span>
-                              <span className="text-gray-400">({product.reviewCount})</span>
+                              <span className="text-gray-400 dark:text-neutral-500">({product.reviewCount})</span>
                             </div>
                           </div>
 
                           <Link
                             to={`/products/${product.id}`}
-                            className="block text-sm font-bold text-gray-900 hover:text-orange-700 transition line-clamp-1"
+                            className="block text-sm font-bold text-gray-900 dark:text-white hover:text-orange-600 dark:hover:text-orange-400 transition line-clamp-1"
                           >
                             {product.name}
                           </Link>
 
-                          <p className="mt-1 text-xs text-gray-500 line-clamp-2 leading-relaxed">
+                          <p className="mt-1 text-xs text-gray-500 dark:text-neutral-400 line-clamp-2 leading-relaxed">
                             {product.description}
                           </p>
                         </div>
 
-                        <div className="pt-3 border-t border-gray-100 flex items-center justify-between">
+                        <div className="pt-3 border-t border-gray-100 dark:border-neutral-800 flex items-center justify-between">
                           <div className="flex items-baseline gap-2">
-                            <span className="text-base font-bold text-gray-900">
+                            <span className="text-base font-bold text-gray-900 dark:text-white">
                               ৳{product.price.toLocaleString()}
                             </span>
                             {hasDiscount && (
-                              <span className="text-xs text-gray-400 line-through">
+                              <span className="text-xs text-gray-400 dark:text-neutral-500 line-through">
                                 ৳{product.originalPrice?.toLocaleString()}
                               </span>
                             )}
@@ -617,13 +617,13 @@ export default function ProductsPage() {
                             {product.colors.slice(0, 3).map((c) => (
                               <span
                                 key={c.name}
-                                className="size-3 rounded-full border border-gray-300"
+                                className="size-3 rounded-full border border-gray-300 dark:border-neutral-700"
                                 style={{ backgroundColor: c.hex }}
                                 title={c.name}
                               />
                             ))}
                             {product.colors.length > 3 && (
-                              <span className="text-[10px] text-gray-400 font-semibold pl-0.5">
+                              <span className="text-[10px] text-gray-400 dark:text-neutral-500 font-semibold pl-0.5">
                                 +{product.colors.length - 3}
                               </span>
                             )}
@@ -639,40 +639,40 @@ export default function ProductsPage() {
         </section>
 
         {/* Fedoll Customer Guarantees Strip */}
-        <section className="py-12 bg-stone-50 border-t border-stone-200/60">
+        <section className="py-12 bg-stone-50 dark:bg-neutral-900 border-t border-stone-200/60 dark:border-neutral-800 transition-colors">
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-8 text-center sm:text-left">
               <div className="flex flex-col sm:flex-row items-center sm:items-start gap-4">
-                <div className="size-12 rounded-2xl bg-orange-100 text-orange-700 flex items-center justify-center shrink-0">
+                <div className="size-12 rounded-2xl bg-orange-100 dark:bg-orange-950/60 text-orange-600 dark:text-orange-400 flex items-center justify-center shrink-0">
                   <TruckIcon className="size-6" />
                 </div>
                 <div>
-                  <h4 className="text-sm font-bold text-gray-900">Delivery in 64 Districts</h4>
-                  <p className="text-xs text-gray-500 mt-1 leading-relaxed">
+                  <h4 className="text-sm font-bold text-gray-900 dark:text-white">Delivery in 64 Districts</h4>
+                  <p className="text-xs text-gray-500 dark:text-neutral-400 mt-1 leading-relaxed">
                     Doorstep courier delivery across Dhaka and all districts in Bangladesh with Cash on Delivery &amp; bKash.
                   </p>
                 </div>
               </div>
 
               <div className="flex flex-col sm:flex-row items-center sm:items-start gap-4">
-                <div className="size-12 rounded-2xl bg-orange-100 text-orange-700 flex items-center justify-center shrink-0">
+                <div className="size-12 rounded-2xl bg-orange-100 dark:bg-orange-950/60 text-orange-600 dark:text-orange-400 flex items-center justify-center shrink-0">
                   <ShieldCheckIcon className="size-6" />
                 </div>
                 <div>
-                  <h4 className="text-sm font-bold text-gray-900">7-Day Easy Size Exchange</h4>
-                  <p className="text-xs text-gray-500 mt-1 leading-relaxed">
+                  <h4 className="text-sm font-bold text-gray-900 dark:text-white">7-Day Easy Size Exchange</h4>
+                  <p className="text-xs text-gray-500 dark:text-neutral-400 mt-1 leading-relaxed">
                     Wrong size? Message our Dhaka support team for a seamless size exchange without hassle.
                   </p>
                 </div>
               </div>
 
               <div className="flex flex-col sm:flex-row items-center sm:items-start gap-4">
-                <div className="size-12 rounded-2xl bg-orange-100 text-orange-700 flex items-center justify-center shrink-0">
+                <div className="size-12 rounded-2xl bg-orange-100 dark:bg-orange-950/60 text-orange-600 dark:text-orange-400 flex items-center justify-center shrink-0">
                   <SparklesIcon className="size-6" />
                 </div>
                 <div>
-                  <h4 className="text-sm font-bold text-gray-900">100% Export-Grade Fabrics</h4>
-                  <p className="text-xs text-gray-500 mt-1 leading-relaxed">
+                  <h4 className="text-sm font-bold text-gray-900 dark:text-white">100% Export-Grade Fabrics</h4>
+                  <p className="text-xs text-gray-500 dark:text-neutral-400 mt-1 leading-relaxed">
                     Solid selvedge denim, combed ring-spun cotton, and natural wool tested for longevity.
                   </p>
                 </div>

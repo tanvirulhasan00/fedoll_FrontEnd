@@ -19,10 +19,10 @@ export default function JournalPreviewSection() {
             <BookOpenIcon className="size-4" />
             Style & Care Guides
           </div>
-          <h2 className="text-3xl sm:text-4xl font-bold tracking-tight text-gray-900">
+          <h2 className="text-3xl sm:text-4xl font-bold tracking-tight text-gray-900 dark:text-white">
             Fedoll Style Journal
           </h2>
-          <p className="mt-2 text-sm text-gray-500 max-w-md">
+          <p className="mt-2 text-sm text-gray-500 dark:text-neutral-400 max-w-md">
             Helpful tips on styling, caring for clothes in Bangladeshi weather,
             and picking the right everyday wardrobe essentials.
           </p>
@@ -30,7 +30,7 @@ export default function JournalPreviewSection() {
 
         <Link
           to="/blogs"
-          className="inline-flex items-center gap-1.5 text-sm font-semibold text-orange-700 hover:text-orange-800 transition"
+          className="inline-flex items-center gap-1.5 text-sm font-semibold text-orange-700 dark:text-orange-500 hover:text-orange-800 transition"
         >
           <span>Read All Guides</span>
           <ArrowRightIcon className="size-4" />
@@ -41,16 +41,16 @@ export default function JournalPreviewSection() {
         {previewBlogs.map((blog) => (
           <article
             key={blog.id}
-            className="group flex flex-col rounded-2xl border border-gray-200/90 bg-white overflow-hidden shadow-xs hover:shadow-xl hover:-translate-y-1 transition-all duration-300"
+            className="group flex flex-col rounded-2xl border border-gray-200/90 dark:border-neutral-800 bg-white dark:bg-neutral-900 overflow-hidden shadow-xs hover:shadow-xl hover:-translate-y-1 transition-all duration-300"
           >
             {/* Image */}
-            <div className="relative h-52 overflow-hidden bg-stone-100">
+            <div className="relative h-52 overflow-hidden bg-stone-100 dark:bg-neutral-800">
               <img
                 src={blog.coverImage}
                 alt={blog.title}
                 className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
               />
-              <div className="absolute top-3 left-3 bg-white/90 backdrop-blur-xs text-gray-900 text-xs font-semibold px-3 py-1 rounded-full shadow-xs">
+              <div className="absolute top-3 left-3 bg-white/90 dark:bg-neutral-900/90 backdrop-blur-xs text-gray-900 dark:text-neutral-100 text-xs font-semibold px-3 py-1 rounded-full shadow-xs">
                 {blog.category}
               </div>
             </div>
@@ -58,7 +58,7 @@ export default function JournalPreviewSection() {
             {/* Content */}
             <div className="p-6 flex-1 flex flex-col justify-between">
               <div>
-                <div className="flex items-center gap-2 text-xs text-gray-500 mb-2.5">
+                <div className="flex items-center gap-2 text-xs text-gray-500 dark:text-neutral-400 mb-2.5">
                   <span className="flex items-center gap-1">
                     <ClockIcon className="size-3.5" />
                     {blog.readTime}
@@ -68,24 +68,24 @@ export default function JournalPreviewSection() {
                 </div>
 
                 <Link to={`/blogs/${blog.id}`}>
-                  <h3 className="text-base font-bold text-gray-900 group-hover:text-orange-700 transition line-clamp-2 leading-snug">
+                  <h3 className="text-base font-bold text-gray-900 dark:text-white group-hover:text-orange-700 dark:group-hover:text-orange-400 transition line-clamp-2 leading-snug">
                     {blog.title}
                   </h3>
                 </Link>
 
-                <p className="mt-2 text-xs text-gray-600 line-clamp-2 leading-relaxed">
+                <p className="mt-2 text-xs text-gray-600 dark:text-neutral-400 line-clamp-2 leading-relaxed">
                   {blog.excerpt}
                 </p>
               </div>
 
-              <div className="mt-6 pt-4 border-t border-gray-100 flex items-center justify-between">
+              <div className="mt-6 pt-4 border-t border-gray-100 dark:border-neutral-800 flex items-center justify-between">
                 <div className="flex items-center gap-2.5">
                   <img
                     src={blog.author.avatar}
                     alt={blog.author.name}
                     className="size-7 rounded-full object-cover"
                   />
-                  <span className="text-xs font-medium text-gray-800">
+                  <span className="text-xs font-medium text-gray-800 dark:text-neutral-200">
                     {blog.author.name}
                   </span>
                 </div>

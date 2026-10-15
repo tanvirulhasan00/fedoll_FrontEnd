@@ -29,11 +29,11 @@ export default function FeaturedCategories() {
           <span className="text-xs font-bold uppercase tracking-widest text-orange-700">
             Shop By Category
           </span>
-          <h2 className="text-3xl sm:text-4xl font-bold tracking-tight text-gray-900 mt-2">
+          <h2 className="text-3xl sm:text-4xl font-bold tracking-tight text-gray-900 dark:text-white mt-2">
             Explore Our Collections
           </h2>
         </div>
-        <p className="text-sm text-gray-500 max-w-md">
+        <p className="text-sm text-gray-500 dark:text-neutral-400 max-w-md">
           Discover premium, comfortable clothing designed for Bangladeshi weather,
           everyday comfort, and long-lasting style.
         </p>
@@ -44,7 +44,7 @@ export default function FeaturedCategories() {
           <Link
             key={cat.id}
             to={getCategoryLink(cat)}
-            className="group relative rounded-2xl overflow-hidden bg-stone-100 shadow-xs hover:shadow-xl transition-all duration-500 h-[380px] flex flex-col justify-end p-6 border border-gray-200/80"
+            className="group relative rounded-2xl overflow-hidden bg-stone-100 dark:bg-neutral-900 shadow-xs hover:shadow-xl transition-all duration-500 h-[380px] flex flex-col justify-end p-6 border border-gray-200/80 dark:border-neutral-800"
           >
             {/* Background Image with Zoom */}
             <img

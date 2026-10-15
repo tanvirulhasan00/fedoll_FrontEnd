@@ -93,12 +93,12 @@ export default function ProductDetailPage() {
 
   if (loadingProduct) {
     return (
-      <div className="min-h-screen bg-white flex flex-col font-sans">
+      <div className="min-h-screen bg-white dark:bg-neutral-950 text-gray-900 dark:text-white flex flex-col font-sans transition-colors">
         <Topbar />
         <Header />
         <div className="flex-1 flex flex-col items-center justify-center py-32 space-y-4">
-          <Spinner className="size-10 text-orange-700 animate-spin" />
-          <p className="text-sm font-semibold text-gray-600">
+          <Spinner className="size-10 text-orange-600 dark:text-orange-400 animate-spin" />
+          <p className="text-sm font-semibold text-gray-600 dark:text-neutral-400">
             Loading garment details from Cloud Firestore...
           </p>
         </div>
@@ -109,24 +109,24 @@ export default function ProductDetailPage() {
 
   if (productError || !currentProduct) {
     return (
-      <div className="min-h-screen bg-white flex flex-col font-sans">
+      <div className="min-h-screen bg-white dark:bg-neutral-950 text-gray-900 dark:text-white flex flex-col font-sans transition-colors">
         <Topbar />
         <Header />
         <div className="flex-1 max-w-xl mx-auto px-4 py-24 text-center space-y-6">
-          <div className="size-16 mx-auto rounded-full bg-stone-100 flex items-center justify-center text-gray-400">
+          <div className="size-16 mx-auto rounded-full bg-stone-100 dark:bg-neutral-800 flex items-center justify-center text-gray-400 dark:text-neutral-500">
             <InformationCircleIcon className="size-8" />
           </div>
-          <h2 className="text-2xl sm:text-3xl font-bold text-gray-900">
+          <h2 className="text-2xl sm:text-3xl font-bold text-gray-900 dark:text-white">
             Garment Not Found
           </h2>
-          <p className="text-sm text-gray-500">
+          <p className="text-sm text-gray-500 dark:text-neutral-400">
             The product you are looking for may have sold out or is no longer available in our
             current collection.
           </p>
           <div className="pt-2">
             <Link
               to="/products"
-              className="inline-flex items-center gap-2 px-6 py-3 rounded-full bg-orange-700 hover:bg-orange-800 text-white text-xs font-semibold shadow-xs transition"
+              className="inline-flex items-center gap-2 px-6 py-3 rounded-full bg-orange-600 hover:bg-orange-700 active:scale-98 text-white text-xs font-semibold shadow-xs transition"
             >
               <ArrowLeftIcon className="size-4" />
               <span>Back to All Collections</span>
@@ -182,32 +182,32 @@ export default function ProductDetailPage() {
     .slice(0, 4);
 
   return (
-    <div className="min-h-screen bg-white text-gray-900 flex flex-col font-sans selection:bg-orange-500 selection:text-white">
+    <div className="min-h-screen bg-white dark:bg-neutral-950 text-gray-900 dark:text-neutral-100 flex flex-col font-sans selection:bg-orange-500 selection:text-white transition-colors">
       {/* Navigation */}
       <Topbar />
       <Header />
 
       <main className="flex-1">
         {/* Breadcrumb Navigation */}
-        <div className="bg-stone-50 border-b border-stone-200/60 py-3">
+        <div className="bg-stone-50 dark:bg-neutral-900/60 border-b border-stone-200/60 dark:border-neutral-800 py-3 transition-colors">
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-            <nav className="flex items-center gap-2 text-xs text-gray-500" aria-label="Breadcrumb">
-              <Link to="/" className="hover:text-orange-700 transition">
+            <nav className="flex items-center gap-2 text-xs text-gray-500 dark:text-neutral-400" aria-label="Breadcrumb">
+              <Link to="/" className="hover:text-orange-600 dark:hover:text-orange-400 transition">
                 Home
               </Link>
               <span>/</span>
-              <Link to="/products" className="hover:text-orange-700 transition">
+              <Link to="/products" className="hover:text-orange-600 dark:hover:text-orange-400 transition">
                 Products
               </Link>
               <span>/</span>
               <Link
                 to={`/products?category=${encodeURIComponent(currentProduct.category)}`}
-                className="hover:text-orange-700 transition"
+                className="hover:text-orange-600 dark:hover:text-orange-400 transition"
               >
                 {currentProduct.category}
               </Link>
               <span>/</span>
-              <span className="font-medium text-gray-900 truncate max-w-xs">
+              <span className="font-medium text-gray-900 dark:text-white truncate max-w-xs">
                 {currentProduct.name}
               </span>
             </nav>
@@ -221,7 +221,7 @@ export default function ProductDetailPage() {
               {/* Left Column: Image Gallery (7 Cols) */}
               <div className="lg:col-span-7 space-y-4">
                 {/* Main Large Image Display */}
-                <div className="relative rounded-3xl overflow-hidden bg-stone-100 border border-stone-200/80 aspect-4/5 shadow-md">
+                <div className="relative rounded-3xl overflow-hidden bg-stone-100 dark:bg-neutral-800 border border-stone-200/80 dark:border-neutral-700 aspect-4/5 shadow-md">
                   <img
                     src={currentProduct.images[selectedImageIndex] || currentProduct.images[0]}
                     alt={currentProduct.name}
@@ -237,7 +237,7 @@ export default function ProductDetailPage() {
                             ? "bg-rose-600 text-white"
                             : currentProduct.badge === "Best Seller"
                             ? "bg-stone-900 text-white"
-                            : "bg-orange-700 text-white"
+                            : "bg-orange-600 dark:bg-orange-500 text-white"
                         }`}
                       >
                         {currentProduct.badge}
@@ -249,7 +249,7 @@ export default function ProductDetailPage() {
                   <button
                     type="button"
                     onClick={handleWishlistToggle}
-                    className="absolute top-4 right-4 size-11 rounded-full bg-white/95 backdrop-blur-xs flex items-center justify-center text-gray-700 hover:text-rose-600 hover:scale-110 transition shadow-md cursor-pointer z-10"
+                    className="absolute top-4 right-4 size-11 rounded-full bg-white/95 dark:bg-neutral-900/95 backdrop-blur-xs flex items-center justify-center text-gray-700 dark:text-neutral-200 hover:text-rose-600 hover:scale-110 transition shadow-md cursor-pointer z-10"
                     title="Save to wishlist"
                   >
                     {isWishlisted ? (
@@ -273,10 +273,10 @@ export default function ProductDetailPage() {
                         key={idx}
                         type="button"
                         onClick={() => setSelectedImageIndex(idx)}
-                        className={`relative size-20 sm:size-24 rounded-2xl overflow-hidden border-2 bg-stone-100 transition shrink-0 cursor-pointer ${
+                        className={`relative size-20 sm:size-24 rounded-2xl overflow-hidden border-2 bg-stone-100 dark:bg-neutral-800 transition shrink-0 cursor-pointer ${
                           selectedImageIndex === idx
-                            ? "border-orange-700 ring-2 ring-orange-700/20"
-                            : "border-stone-200/80 hover:border-gray-400 opacity-80 hover:opacity-100"
+                            ? "border-orange-600 ring-2 ring-orange-500/20"
+                            : "border-stone-200/80 dark:border-neutral-700 hover:border-gray-400 dark:hover:border-neutral-500 opacity-80 hover:opacity-100"
                         }`}
                       >
                         <img
@@ -293,19 +293,19 @@ export default function ProductDetailPage() {
               {/* Right Column: Garment Information & Purchase Controls (5 Cols) */}
               <div className="lg:col-span-5 space-y-6">
                 <div>
-                  <div className="flex items-center justify-between text-xs text-gray-500 mb-2">
+                  <div className="flex items-center justify-between text-xs text-gray-500 dark:text-neutral-400 mb-2">
                     <Link
                       to={`/products?category=${encodeURIComponent(currentProduct.category)}`}
-                      className="font-bold text-orange-700 uppercase tracking-widest hover:underline"
+                      className="font-bold text-orange-600 dark:text-orange-400 uppercase tracking-widest hover:underline"
                     >
                       {currentProduct.category}
                     </Link>
                     {currentProduct.sku && (
-                      <span className="font-mono text-gray-400">SKU: {currentProduct.sku}</span>
+                      <span className="font-mono text-gray-400 dark:text-neutral-500">SKU: {currentProduct.sku}</span>
                     )}
                   </div>
 
-                  <h1 className="text-2xl sm:text-3xl font-bold tracking-tight text-gray-900 leading-tight">
+                  <h1 className="text-2xl sm:text-3xl font-bold tracking-tight text-gray-900 dark:text-white leading-tight">
                     {currentProduct.name}
                   </h1>
 
@@ -316,26 +316,26 @@ export default function ProductDetailPage() {
                         <StarSolidIcon key={i} className="size-4 text-amber-500 fill-current" />
                       ))}
                     </div>
-                    <span className="text-xs font-bold text-gray-900">
+                    <span className="text-xs font-bold text-gray-900 dark:text-white">
                       {currentProduct.rating}
                     </span>
-                    <span className="text-xs text-gray-400">
+                    <span className="text-xs text-gray-400 dark:text-neutral-500">
                       ({currentProduct.reviewCount} customer reviews)
                     </span>
                   </div>
                 </div>
 
                 {/* Price Display */}
-                <div className="p-4 rounded-2xl bg-stone-50 border border-stone-200/80 flex items-baseline gap-3">
-                  <span className="text-3xl font-extrabold text-gray-900">
+                <div className="p-4 rounded-2xl bg-stone-50 dark:bg-neutral-900 border border-stone-200/80 dark:border-neutral-800 flex items-baseline gap-3">
+                  <span className="text-3xl font-extrabold text-gray-900 dark:text-white">
                     ৳{currentProduct.price.toLocaleString()}
                   </span>
                   {hasDiscount && (
                     <>
-                      <span className="text-base text-gray-400 line-through">
+                      <span className="text-base text-gray-400 dark:text-neutral-500 line-through">
                         ৳{currentProduct.originalPrice?.toLocaleString()}
                       </span>
-                      <span className="text-xs font-bold text-rose-600 bg-rose-50 border border-rose-200 px-2.5 py-1 rounded-full">
+                      <span className="text-xs font-bold text-rose-600 dark:text-rose-400 bg-rose-50 dark:bg-rose-950/40 border border-rose-200 dark:border-rose-900/40 px-2.5 py-1 rounded-full">
                         Save {discountPercent}%
                       </span>
                     </>
@@ -343,16 +343,16 @@ export default function ProductDetailPage() {
                 </div>
 
                 {/* Short Description */}
-                <p className="text-sm text-gray-600 leading-relaxed">
+                <p className="text-sm text-gray-600 dark:text-neutral-300 leading-relaxed">
                   {currentProduct.description}
                 </p>
 
                 {/* Color Selector */}
                 <div className="space-y-2">
                   <div className="flex items-center justify-between text-xs">
-                    <span className="font-bold text-gray-900">
+                    <span className="font-bold text-gray-900 dark:text-white">
                       Color:{" "}
-                      <span className="font-normal text-orange-700">{selectedColor}</span>
+                      <span className="font-normal text-orange-600 dark:text-orange-400">{selectedColor}</span>
                     </span>
                   </div>
                   <div className="flex items-center gap-3">
@@ -365,8 +365,8 @@ export default function ProductDetailPage() {
                           onClick={() => setSelectedColor(color.name)}
                           className={`group relative flex items-center gap-2 p-1.5 rounded-full border transition cursor-pointer ${
                             isSelected
-                              ? "border-orange-700 ring-2 ring-orange-700/20 bg-orange-50/50"
-                              : "border-gray-300 hover:border-gray-400"
+                              ? "border-orange-600 ring-2 ring-orange-500/20 bg-orange-50/50 dark:bg-orange-950/20"
+                              : "border-gray-300 dark:border-neutral-700 hover:border-gray-400 dark:hover:border-neutral-500"
                           }`}
                           title={color.name}
                         >
@@ -374,7 +374,7 @@ export default function ProductDetailPage() {
                             className="size-5 rounded-full border border-black/10 shadow-2xs"
                             style={{ backgroundColor: color.hex }}
                           />
-                          <span className="text-xs font-medium text-gray-700 pr-2">
+                          <span className="text-xs font-medium text-gray-700 dark:text-neutral-300 pr-2">
                             {color.name}
                           </span>
                         </button>
@@ -386,14 +386,14 @@ export default function ProductDetailPage() {
                 {/* Size Selector */}
                 <div className="space-y-2">
                   <div className="flex items-center justify-between text-xs">
-                    <span className="font-bold text-gray-900">
+                    <span className="font-bold text-gray-900 dark:text-white">
                       Select Size:{" "}
-                      <span className="font-normal text-orange-700">{selectedSize}</span>
+                      <span className="font-normal text-orange-600 dark:text-orange-400">{selectedSize}</span>
                     </span>
                     <button
                       type="button"
                       onClick={() => setSizeGuideOpen(!sizeGuideOpen)}
-                      className="text-xs font-semibold text-orange-700 hover:underline cursor-pointer"
+                      className="text-xs font-semibold text-orange-600 dark:text-orange-400 hover:underline cursor-pointer"
                     >
                       Size Guide &amp; Measurements
                     </button>
@@ -409,8 +409,8 @@ export default function ProductDetailPage() {
                           onClick={() => setSelectedSize(size)}
                           className={`py-2.5 rounded-xl text-xs font-bold transition cursor-pointer ${
                             isSelected
-                              ? "bg-stone-900 text-white shadow-md"
-                              : "bg-white text-gray-800 border border-stone-200/90 hover:border-orange-500 hover:text-orange-700"
+                              ? "bg-stone-900 dark:bg-white text-white dark:text-stone-900 shadow-md"
+                              : "bg-white dark:bg-neutral-900 text-gray-800 dark:text-neutral-200 border border-stone-200/90 dark:border-neutral-700 hover:border-orange-500 hover:text-orange-600 dark:hover:text-orange-400"
                           }`}
                         >
                           {size}
@@ -421,41 +421,41 @@ export default function ProductDetailPage() {
 
                   {/* Size Guide Accordion Helper */}
                   {sizeGuideOpen && (
-                    <div className="p-4 rounded-2xl bg-stone-50 border border-stone-200 text-xs space-y-2 animate-in fade-in-50 duration-200">
-                      <p className="font-bold text-gray-900">
+                    <div className="p-4 rounded-2xl bg-stone-50 dark:bg-neutral-900 border border-stone-200 dark:border-neutral-800 text-xs space-y-2 animate-in fade-in-50 duration-200">
+                      <p className="font-bold text-gray-900 dark:text-white">
                         Bangladesh Fit &amp; Measurements (Inches):
                       </p>
-                      <div className="grid grid-cols-4 gap-2 text-center border-t border-stone-200/60 pt-2 font-mono">
+                      <div className="grid grid-cols-4 gap-2 text-center border-t border-stone-200/60 dark:border-neutral-800 pt-2 font-mono text-gray-800 dark:text-neutral-200">
                         <div>
-                          <span className="block text-gray-400">Size</span>
+                          <span className="block text-gray-400 dark:text-neutral-500">Size</span>
                           <span className="font-bold">S / 38</span>
                           <span className="font-bold">M / 40</span>
                           <span className="font-bold">L / 42</span>
                           <span className="font-bold">XL / 44</span>
                         </div>
                         <div>
-                          <span className="block text-gray-400">Chest</span>
+                          <span className="block text-gray-400 dark:text-neutral-500">Chest</span>
                           <span>39.5&quot;</span>
                           <span>41.5&quot;</span>
                           <span>43.5&quot;</span>
                           <span>45.5&quot;</span>
                         </div>
                         <div>
-                          <span className="block text-gray-400">Shoulder</span>
+                          <span className="block text-gray-400 dark:text-neutral-500">Shoulder</span>
                           <span>17.5&quot;</span>
                           <span>18.2&quot;</span>
                           <span>19.0&quot;</span>
                           <span>19.8&quot;</span>
                         </div>
                         <div>
-                          <span className="block text-gray-400">Length</span>
+                          <span className="block text-gray-400 dark:text-neutral-500">Length</span>
                           <span>28.0&quot;</span>
                           <span>29.0&quot;</span>
                           <span>30.0&quot;</span>
                           <span>30.5&quot;</span>
                         </div>
                       </div>
-                      <p className="text-[11px] text-gray-500 pt-1">
+                      <p className="text-[11px] text-gray-500 dark:text-neutral-400 pt-1">
                         Unsure about your size? We offer a 7-day hassle-free size exchange anywhere
                         in Bangladesh.
                       </p>
@@ -467,22 +467,22 @@ export default function ProductDetailPage() {
                 <div className="space-y-3 pt-2">
                   <div className="flex items-center gap-3">
                     {/* Quantity Selector */}
-                    <div className="flex items-center border border-gray-300 rounded-xl bg-white shadow-2xs">
+                    <div className="flex items-center border border-gray-300 dark:border-neutral-700 rounded-xl bg-white dark:bg-neutral-900 shadow-2xs">
                       <button
                         type="button"
                         onClick={() => setQuantity(Math.max(1, quantity - 1))}
                         disabled={quantity <= 1}
-                        className="px-3.5 py-3 text-gray-600 hover:bg-stone-50 disabled:opacity-30 rounded-l-xl transition cursor-pointer"
+                        className="px-3.5 py-3 text-gray-600 dark:text-neutral-300 hover:bg-stone-50 dark:hover:bg-neutral-800 disabled:opacity-30 rounded-l-xl transition cursor-pointer"
                       >
                         -
                       </button>
-                      <span className="px-3 py-3 text-xs font-bold text-gray-900 min-w-8 text-center">
+                      <span className="px-3 py-3 text-xs font-bold text-gray-900 dark:text-white min-w-8 text-center">
                         {quantity}
                       </span>
                       <button
                         type="button"
                         onClick={() => setQuantity(quantity + 1)}
-                        className="px-3.5 py-3 text-gray-600 hover:bg-stone-50 rounded-r-xl transition cursor-pointer"
+                        className="px-3.5 py-3 text-gray-600 dark:text-neutral-300 hover:bg-stone-50 dark:hover:bg-neutral-800 rounded-r-xl transition cursor-pointer"
                       >
                         +
                       </button>
@@ -492,7 +492,7 @@ export default function ProductDetailPage() {
                     <button
                       type="button"
                       onClick={handleAddToCart}
-                      className="flex-1 py-3.5 px-6 rounded-xl bg-orange-700 hover:bg-orange-800 text-white font-bold text-sm shadow-md hover:shadow-lg transition-all duration-200 flex items-center justify-center gap-2 cursor-pointer"
+                      className="flex-1 py-3.5 px-6 rounded-xl bg-orange-600 hover:bg-orange-700 active:scale-98 text-white font-bold text-sm shadow-md hover:shadow-lg transition-all duration-200 flex items-center justify-center gap-2 cursor-pointer"
                     >
                       <ShoppingBagIcon className="size-5" />
                       <span>
@@ -503,29 +503,29 @@ export default function ProductDetailPage() {
                 </div>
 
                 {/* Stock & Delivery Promise */}
-                <div className="p-4 rounded-2xl bg-emerald-50/60 border border-emerald-200/60 space-y-2 text-xs">
-                  <div className="flex items-center gap-2 text-emerald-900 font-bold">
+                <div className="p-4 rounded-2xl bg-emerald-50/60 dark:bg-emerald-950/30 border border-emerald-200/60 dark:border-emerald-800/40 space-y-2 text-xs">
+                  <div className="flex items-center gap-2 text-emerald-900 dark:text-emerald-300 font-bold">
                     <span className="size-2 rounded-full bg-emerald-500 animate-pulse" />
                     <span>In Stock — Ready to Dispatch from Dhaka Studio</span>
                   </div>
-                  <p className="text-emerald-800/90 leading-relaxed text-[11px]">
+                  <p className="text-emerald-800/90 dark:text-emerald-400/90 leading-relaxed text-[11px]">
                     Orders in Dhaka metropolitan area are delivered within 24 to 48 hours. Orders
                     across all other 63 districts arrive within 2 to 4 business days.
                   </p>
                 </div>
 
                 {/* Fedoll Customer Guarantees List */}
-                <div className="border-t border-stone-200/80 pt-4 space-y-2.5 text-xs text-gray-600">
+                <div className="border-t border-stone-200/80 dark:border-neutral-800 pt-4 space-y-2.5 text-xs text-gray-600 dark:text-neutral-400">
                   <div className="flex items-center gap-2.5">
-                    <TruckIcon className="size-4 text-orange-700 shrink-0" />
+                    <TruckIcon className="size-4 text-orange-600 dark:text-orange-400 shrink-0" />
                     <span>Cash on Delivery &amp; bKash / Nagad available in 64 districts</span>
                   </div>
                   <div className="flex items-center gap-2.5">
-                    <ArrowPathRoundedSquareIcon className="size-4 text-orange-700 shrink-0" />
+                    <ArrowPathRoundedSquareIcon className="size-4 text-orange-600 dark:text-orange-400 shrink-0" />
                     <span>7-Day Easy Size &amp; Fit Exchange guarantee</span>
                   </div>
                   <div className="flex items-center gap-2.5">
-                    <BuildingStorefrontIcon className="size-4 text-orange-700 shrink-0" />
+                    <BuildingStorefrontIcon className="size-4 text-orange-600 dark:text-orange-400 shrink-0" />
                     <span>Try it on in person at our Banani / Gulshan studio in Dhaka</span>
                   </div>
                 </div>
@@ -535,18 +535,18 @@ export default function ProductDetailPage() {
         </section>
 
         {/* Detailed Product Specifications Accordion */}
-        <section className="py-12 bg-stone-50 border-y border-stone-200/60">
+        <section className="py-12 bg-stone-50 dark:bg-neutral-900/60 border-y border-stone-200/60 dark:border-neutral-800 transition-colors">
           <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
-            <h2 className="text-xl sm:text-2xl font-bold text-gray-900 mb-6 text-center">
+            <h2 className="text-xl sm:text-2xl font-bold text-gray-900 dark:text-white mb-6 text-center">
               Garment Specifications &amp; Care
             </h2>
 
             <Accordion className="space-y-4">
-              <AccordionItem className="rounded-2xl border border-stone-200/80 bg-white p-3 sm:p-4">
-                <AccordionTrigger className="text-base font-bold text-gray-900 hover:text-orange-700 py-2">
+              <AccordionItem className="rounded-2xl border border-stone-200/80 dark:border-neutral-800 bg-white dark:bg-neutral-900 p-3 sm:p-4">
+                <AccordionTrigger className="text-base font-bold text-gray-900 dark:text-white hover:text-orange-600 dark:hover:text-orange-400 py-2">
                   Garment Details &amp; Craftsmanship
                 </AccordionTrigger>
-                <AccordionContent className="text-sm text-gray-600 leading-relaxed pt-2">
+                <AccordionContent className="text-sm text-gray-600 dark:text-neutral-300 leading-relaxed pt-2">
                   <ul className="space-y-2 list-disc list-inside">
                     {currentProduct.details?.map((detail, idx) => (
                       <li key={idx}>{detail}</li>
@@ -561,27 +561,27 @@ export default function ProductDetailPage() {
                 </AccordionContent>
               </AccordionItem>
 
-              <AccordionItem className="rounded-2xl border border-stone-200/80 bg-white p-3 sm:p-4">
-                <AccordionTrigger className="text-base font-bold text-gray-900 hover:text-orange-700 py-2">
+              <AccordionItem className="rounded-2xl border border-stone-200/80 dark:border-neutral-800 bg-white dark:bg-neutral-900 p-3 sm:p-4">
+                <AccordionTrigger className="text-base font-bold text-gray-900 dark:text-white hover:text-orange-600 dark:hover:text-orange-400 py-2">
                   Fabric &amp; Material
                 </AccordionTrigger>
-                <AccordionContent className="text-sm text-gray-600 leading-relaxed pt-2">
+                <AccordionContent className="text-sm text-gray-600 dark:text-neutral-300 leading-relaxed pt-2">
                   <p>
-                    <strong className="text-gray-900">Material Composition:</strong>{" "}
+                    <strong className="text-gray-900 dark:text-white">Material Composition:</strong>{" "}
                     {currentProduct.material || "100% Pure Combed Natural Cotton"}
                   </p>
                   <p className="mt-2">
-                    <strong className="text-gray-900">Fit Silhouette:</strong>{" "}
+                    <strong className="text-gray-900 dark:text-white">Fit Silhouette:</strong>{" "}
                     {currentProduct.fit || "Standard relaxed everyday fit designed for comfort"}
                   </p>
                 </AccordionContent>
               </AccordionItem>
 
-              <AccordionItem className="rounded-2xl border border-stone-200/80 bg-white p-3 sm:p-4">
-                <AccordionTrigger className="text-base font-bold text-gray-900 hover:text-orange-700 py-2">
+              <AccordionItem className="rounded-2xl border border-stone-200/80 dark:border-neutral-800 bg-white dark:bg-neutral-900 p-3 sm:p-4">
+                <AccordionTrigger className="text-base font-bold text-gray-900 dark:text-white hover:text-orange-600 dark:hover:text-orange-400 py-2">
                   Washing &amp; Care Guidelines
                 </AccordionTrigger>
-                <AccordionContent className="text-sm text-gray-600 leading-relaxed pt-2">
+                <AccordionContent className="text-sm text-gray-600 dark:text-neutral-300 leading-relaxed pt-2">
                   <p>
                     {currentProduct.care ||
                       "Machine wash in cold water with similar colors. Do not bleach. Hang dry in shade to preserve fabric softness and color depth."}
@@ -589,11 +589,11 @@ export default function ProductDetailPage() {
                 </AccordionContent>
               </AccordionItem>
 
-              <AccordionItem className="rounded-2xl border border-stone-200/80 bg-white p-3 sm:p-4">
-                <AccordionTrigger className="text-base font-bold text-gray-900 hover:text-orange-700 py-2">
+              <AccordionItem className="rounded-2xl border border-stone-200/80 dark:border-neutral-800 bg-white dark:bg-neutral-900 p-3 sm:p-4">
+                <AccordionTrigger className="text-base font-bold text-gray-900 dark:text-white hover:text-orange-600 dark:hover:text-orange-400 py-2">
                   Delivery &amp; Exchange Policy in Bangladesh
                 </AccordionTrigger>
-                <AccordionContent className="text-sm text-gray-600 leading-relaxed pt-2">
+                <AccordionContent className="text-sm text-gray-600 dark:text-neutral-300 leading-relaxed pt-2">
                   <p>
                     We deliver to all 64 districts in Bangladesh with reliable courier partners. If
                     you need a different size, simply reach out to our WhatsApp care team within 7
@@ -607,20 +607,20 @@ export default function ProductDetailPage() {
 
         {/* Related Products Carousel / Grid */}
         {relatedProducts.length > 0 && (
-          <section className="py-16 bg-white">
+          <section className="py-16 bg-white dark:bg-neutral-950 transition-colors">
             <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
               <div className="flex items-center justify-between mb-8">
                 <div>
-                  <span className="text-xs font-bold uppercase tracking-widest text-orange-700">
+                  <span className="text-xs font-bold uppercase tracking-widest text-orange-600 dark:text-orange-400">
                     Complete Your Outfit
                   </span>
-                  <h3 className="text-2xl sm:text-3xl font-bold text-gray-900 mt-1">
+                  <h3 className="text-2xl sm:text-3xl font-bold text-gray-900 dark:text-white mt-1">
                     More in {currentProduct.category}
                   </h3>
                 </div>
                 <Link
                   to={`/products?category=${encodeURIComponent(currentProduct.category)}`}
-                  className="inline-flex items-center gap-1 text-xs font-semibold text-orange-700 hover:underline"
+                  className="inline-flex items-center gap-1 text-xs font-semibold text-orange-600 dark:text-orange-400 hover:underline"
                 >
                   <span>View All {currentProduct.category}</span>
                   <ChevronRightIcon className="size-4" />
@@ -632,9 +632,9 @@ export default function ProductDetailPage() {
                   <Link
                     key={p.id}
                     to={`/products/${p.id}`}
-                    className="group flex flex-col rounded-2xl bg-white border border-stone-200/80 overflow-hidden shadow-2xs hover:shadow-lg transition-all"
+                    className="group flex flex-col rounded-2xl bg-white dark:bg-neutral-900 border border-stone-200/80 dark:border-neutral-800 overflow-hidden shadow-2xs hover:shadow-lg transition-all"
                   >
-                    <div className="aspect-4/5 overflow-hidden bg-stone-100">
+                    <div className="aspect-4/5 overflow-hidden bg-stone-100 dark:bg-neutral-800">
                       <img
                         src={p.images[0]}
                         alt={p.name}
@@ -643,18 +643,18 @@ export default function ProductDetailPage() {
                     </div>
                     <div className="p-4 flex-1 flex flex-col justify-between">
                       <div>
-                        <span className="text-[10px] font-bold text-orange-700 uppercase tracking-wider">
+                        <span className="text-[10px] font-bold text-orange-600 dark:text-orange-400 uppercase tracking-wider">
                           {p.category}
                         </span>
-                        <h4 className="text-sm font-bold text-gray-900 group-hover:text-orange-700 transition line-clamp-1 mt-0.5">
+                        <h4 className="text-sm font-bold text-gray-900 dark:text-white group-hover:text-orange-600 dark:group-hover:text-orange-400 transition line-clamp-1 mt-0.5">
                           {p.name}
                         </h4>
                       </div>
                       <div className="pt-2 flex items-baseline justify-between">
-                        <span className="text-sm font-bold text-gray-900">
+                        <span className="text-sm font-bold text-gray-900 dark:text-white">
                           ৳{p.price.toLocaleString()}
                         </span>
-                        <span className="text-xs text-orange-700 font-semibold group-hover:underline">
+                        <span className="text-xs text-orange-600 dark:text-orange-400 font-semibold group-hover:underline">
                           View &rarr;
                         </span>
                       </div>

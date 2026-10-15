@@ -82,10 +82,10 @@ export default function ProductShowcase() {
             <SparklesIcon className="size-4" />
             Everyday Quality Clothing
           </div>
-          <h2 className="text-3xl sm:text-4xl font-bold tracking-tight text-gray-900">
+          <h2 className="text-3xl sm:text-4xl font-bold tracking-tight text-gray-900 dark:text-white">
             Featured Products
           </h2>
-          <p className="mt-2 text-sm text-gray-500 max-w-xl">
+          <p className="mt-2 text-sm text-gray-500 dark:text-neutral-400 max-w-xl">
             Comfortable everyday clothing made with pure cotton, durable selvedge denim, and warm winter fabrics. Cash on delivery available across Bangladesh.
           </p>
         </div>
@@ -101,8 +101,8 @@ export default function ProductShowcase() {
                 onClick={() => dispatch(setActiveProductTab(tab))}
                 className={`whitespace-nowrap px-4 py-2 rounded-full text-xs sm:text-sm font-semibold transition cursor-pointer ${
                   isActive
-                    ? "bg-gray-900 text-white shadow-sm"
-                    : "bg-stone-100 text-gray-600 hover:bg-stone-200 hover:text-gray-900"
+                    ? "bg-gray-900 dark:bg-orange-700 text-white shadow-sm"
+                    : "bg-stone-100 dark:bg-neutral-800 text-gray-600 dark:text-neutral-300 hover:bg-stone-200 dark:hover:bg-neutral-700 hover:text-gray-900 dark:hover:text-white"
                 }`}
               >
                 {tab}
@@ -122,10 +122,10 @@ export default function ProductShowcase() {
           return (
             <div
               key={product.id}
-              className="group flex flex-col rounded-2xl bg-white border border-gray-200/80 overflow-hidden shadow-xs hover:shadow-xl transition-all duration-300"
+              className="group flex flex-col rounded-2xl bg-white dark:bg-neutral-900 border border-gray-200/80 dark:border-neutral-800 overflow-hidden shadow-xs hover:shadow-xl transition-all duration-300"
             >
               {/* Product Card Image Container */}
-              <div className="relative aspect-4/5 overflow-hidden bg-stone-100">
+              <div className="relative aspect-4/5 overflow-hidden bg-stone-100 dark:bg-neutral-800">
                 <Link
                   to={`/products/${product.id}`}
                   className="block w-full h-full cursor-pointer"
@@ -167,7 +167,7 @@ export default function ProductShowcase() {
                 <button
                   type="button"
                   onClick={(e) => handleWishlist(e, product.id)}
-                  className="absolute top-3 right-3 size-8 rounded-full bg-white/90 backdrop-blur-xs flex items-center justify-center text-gray-700 hover:text-rose-600 hover:scale-110 transition shadow-xs cursor-pointer z-10"
+                  className="absolute top-3 right-3 size-8 rounded-full bg-white/90 dark:bg-neutral-800/90 backdrop-blur-xs flex items-center justify-center text-gray-700 dark:text-neutral-200 hover:text-rose-600 hover:scale-110 transition shadow-xs cursor-pointer z-10"
                   title="Save to wishlist"
                 >
                   {isWishlisted ? (
@@ -186,9 +186,9 @@ export default function ProductShowcase() {
                       e.stopPropagation();
                       dispatch(setQuickViewProduct(product));
                     }}
-                    className="flex-1 py-2 px-3 rounded-xl bg-white/95 backdrop-blur-xs text-gray-900 text-xs font-bold hover:bg-white flex items-center justify-center gap-1.5 shadow-md hover:shadow-lg transition cursor-pointer"
+                    className="flex-1 py-2 px-3 rounded-xl bg-white/95 dark:bg-neutral-800/95 backdrop-blur-xs text-gray-900 dark:text-neutral-100 text-xs font-bold hover:bg-white dark:hover:bg-neutral-700 flex items-center justify-center gap-1.5 shadow-md hover:shadow-lg transition cursor-pointer"
                   >
-                    <EyeIcon className="size-4 text-gray-600" />
+                    <EyeIcon className="size-4 text-gray-600 dark:text-neutral-300" />
                     <span>Quick View</span>
                   </button>
 
@@ -206,35 +206,35 @@ export default function ProductShowcase() {
               {/* Product Info */}
               <div className="p-5 flex-1 flex flex-col justify-between space-y-3">
                 <div>
-                  <div className="flex items-center justify-between text-xs text-gray-500 mb-1">
-                    <span className="font-semibold text-orange-700 uppercase tracking-wider text-[11px]">
+                  <div className="flex items-center justify-between text-xs text-gray-500 dark:text-neutral-400 mb-1">
+                    <span className="font-semibold text-orange-700 dark:text-orange-500 uppercase tracking-wider text-[11px]">
                       {product.category}
                     </span>
                     <div className="flex items-center gap-1">
                       <StarSolidIcon className="size-3.5 text-amber-500 fill-current" />
-                      <span className="font-bold text-gray-700">
+                      <span className="font-bold text-gray-700 dark:text-neutral-300">
                         {product.rating}
                       </span>
-                      <span className="text-gray-400">({product.reviewCount})</span>
+                      <span className="text-gray-400 dark:text-neutral-500">({product.reviewCount})</span>
                     </div>
                   </div>
 
                   <Link
                     to={`/products/${product.id}`}
-                    className="block text-sm font-bold text-gray-900 group-hover:text-orange-700 transition line-clamp-1"
+                    className="block text-sm font-bold text-gray-900 dark:text-white group-hover:text-orange-700 dark:group-hover:text-orange-400 transition line-clamp-1"
                   >
                     {product.name}
                   </Link>
 
-                  <p className="mt-1 text-xs text-gray-500 line-clamp-2 leading-relaxed">
+                  <p className="mt-1 text-xs text-gray-500 dark:text-neutral-400 line-clamp-2 leading-relaxed">
                     {product.description}
                   </p>
                 </div>
 
-                <div className="pt-3 border-t border-gray-100 flex items-center justify-between">
+                <div className="pt-3 border-t border-gray-100 dark:border-neutral-800 flex items-center justify-between">
                   {/* Pricing in BDT */}
                   <div className="flex items-baseline gap-2">
-                    <span className="text-base font-bold text-gray-900">
+                    <span className="text-base font-bold text-gray-900 dark:text-white">
                       ৳{product.price.toLocaleString()}
                     </span>
                     {hasDiscount && (

@@ -30,18 +30,18 @@ const GALLERY_ITEMS = [
 
 export default function CommunityGallery() {
   return (
-    <section className="py-16 sm:py-20 border-t border-stone-200/80 bg-white">
+    <section className="py-16 sm:py-20 border-t border-stone-200/80 dark:border-neutral-800 bg-white dark:bg-neutral-950 transition-colors">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex flex-col sm:flex-row sm:items-end sm:justify-between gap-4 mb-10">
           <div>
-            <div className="inline-flex items-center gap-1.5 text-xs font-bold uppercase tracking-widest text-orange-700 mb-2">
+            <div className="inline-flex items-center gap-1.5 text-xs font-bold uppercase tracking-widest text-orange-600 dark:text-orange-400 mb-2">
               <FaInstagram className="size-4" />
               #FedollStyle
             </div>
-            <h2 className="text-2xl sm:text-3xl font-bold tracking-tight text-gray-900">
+            <h2 className="text-2xl sm:text-3xl font-bold tracking-tight text-gray-900 dark:text-white">
               Fedoll Community Style
             </h2>
-            <p className="mt-1 text-xs sm:text-sm text-gray-500">
+            <p className="mt-1 text-xs sm:text-sm text-gray-500 dark:text-neutral-400">
               Tag @fedoll on Instagram or Facebook to get featured on our website.
             </p>
           </div>
@@ -50,7 +50,7 @@ export default function CommunityGallery() {
             href="https://instagram.com"
             target="_blank"
             rel="noopener noreferrer"
-            className="text-xs font-semibold text-orange-700 hover:text-orange-800 transition"
+            className="text-xs font-semibold text-orange-600 dark:text-orange-400 hover:text-orange-700 dark:hover:text-orange-300 transition"
           >
             Follow @fedoll on Instagram &rarr;
           </a>

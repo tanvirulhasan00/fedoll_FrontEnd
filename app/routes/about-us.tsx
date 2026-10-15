@@ -54,48 +54,48 @@ export default function AboutUsPage() {
   const getPillarIcon = (iconName: string) => {
     switch (iconName) {
       case "CubeTransparentIcon":
-        return <CubeTransparentIcon className="size-6 text-orange-700" />;
+        return <CubeTransparentIcon className="size-6 text-orange-600 dark:text-orange-400" />;
       case "GlobeAmericasIcon":
-        return <GlobeAmericasIcon className="size-6 text-orange-700" />;
+        return <GlobeAmericasIcon className="size-6 text-orange-600 dark:text-orange-400" />;
       case "HeartIcon":
-        return <HeartIcon className="size-6 text-orange-700" />;
+        return <HeartIcon className="size-6 text-orange-600 dark:text-orange-400" />;
       case "SparklesIcon":
       default:
-        return <SparklesIcon className="size-6 text-orange-700" />;
+        return <SparklesIcon className="size-6 text-orange-600 dark:text-orange-400" />;
     }
   };
 
   return (
-    <div className="min-h-screen bg-white text-gray-900 flex flex-col font-sans selection:bg-orange-500 selection:text-white">
+    <div className="min-h-screen bg-white dark:bg-neutral-950 text-gray-900 dark:text-neutral-100 flex flex-col font-sans selection:bg-orange-500 selection:text-white transition-colors">
       <Topbar />
       <Header />
 
       <main className="flex-1">
         {/* Editorial Hero Header */}
-        <section className="relative overflow-hidden bg-gradient-to-b from-stone-50 via-orange-50/20 to-white border-b border-stone-200/60 py-16 sm:py-24">
+        <section className="relative overflow-hidden bg-gradient-to-b from-stone-50 dark:from-neutral-900/50 via-orange-50/20 dark:via-neutral-950 to-white dark:to-neutral-950 border-b border-stone-200/60 dark:border-neutral-800 py-16 sm:py-24 transition-colors">
           <div className="absolute inset-0 opacity-40 bg-[radial-gradient(#ea580c_1px,transparent_1px)] [background-size:24px_24px] pointer-events-none" />
 
           <div className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
             <div className="flex flex-col md:flex-row md:items-end md:justify-between gap-6">
               <div className="max-w-3xl">
-                <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-orange-100 text-orange-800 text-xs font-semibold uppercase tracking-wider mb-4">
-                  <BuildingLibraryIcon className="size-4 text-orange-700" />
+                <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-orange-100 dark:bg-orange-950/60 text-orange-800 dark:text-orange-300 text-xs font-semibold uppercase tracking-wider mb-4">
+                  <BuildingLibraryIcon className="size-4 text-orange-600 dark:text-orange-400" />
                   {data?.tagline || "Our Brand Story"}
                 </div>
-                <h1 className="text-4xl sm:text-5xl lg:text-6xl font-bold tracking-tight text-gray-900 leading-tight">
+                <h1 className="text-4xl sm:text-5xl lg:text-6xl font-bold tracking-tight text-gray-900 dark:text-white leading-tight">
                   Export Quality Clothes. <br />
-                  <span className="text-orange-700 italic font-serif">
+                  <span className="text-orange-600 dark:text-orange-400 italic font-serif">
                     Crafted in Bangladesh.
                   </span>
                 </h1>
-                <p className="mt-6 text-base sm:text-lg text-gray-600 leading-relaxed max-w-2xl">
+                <p className="mt-6 text-base sm:text-lg text-gray-600 dark:text-neutral-300 leading-relaxed max-w-2xl">
                   {data?.subtitle}
                 </p>
               </div>
 
               {/* Live Firebase Cloud Firestore Status */}
               <div className="flex flex-col items-start md:items-end gap-2 shrink-0">
-                <div className="inline-flex items-center gap-2 text-xs font-medium text-emerald-800 bg-emerald-50 border border-emerald-200 px-3 py-1.5 rounded-full shadow-xs">
+                <div className="inline-flex items-center gap-2 text-xs font-medium text-emerald-800 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-950/40 border border-emerald-200 dark:border-emerald-800/60 px-3 py-1.5 rounded-full shadow-xs">
                   <span className="size-2 rounded-full bg-emerald-500 animate-pulse" />
                   Dynamic Cloud Firestore Content
                 </div>
@@ -103,11 +103,11 @@ export default function AboutUsPage() {
                   type="button"
                   onClick={handleSyncFirebase}
                   disabled={syncing || loading}
-                  className="inline-flex items-center gap-1.5 text-xs font-medium text-gray-700 bg-white border border-gray-300 hover:border-orange-500 hover:text-orange-700 px-3 py-1.5 rounded-lg shadow-2xs transition disabled:opacity-50 cursor-pointer"
+                  className="inline-flex items-center gap-1.5 text-xs font-medium text-gray-700 dark:text-neutral-300 bg-white dark:bg-neutral-800 border border-gray-300 dark:border-neutral-700 hover:border-orange-500 hover:text-orange-600 dark:hover:text-orange-400 px-3 py-1.5 rounded-lg shadow-2xs transition disabled:opacity-50 cursor-pointer"
                   title="Resync data directly with Firebase"
                 >
                   <ArrowPathIcon
-                    className={`size-3.5 ${syncing ? "animate-spin text-orange-600" : ""}`}
+                    className={`size-3.5 ${syncing ? "animate-spin text-orange-600 dark:text-orange-400" : ""}`}
                   />
                   {syncing ? "Syncing..." : "Sync with Firebase"}
                 </button>
@@ -115,7 +115,7 @@ export default function AboutUsPage() {
             </div>
 
             {/* Hero Atelier Banner Image */}
-            <div className="mt-12 relative rounded-3xl overflow-hidden shadow-2xl border border-stone-200/80 aspect-21/9 bg-stone-100">
+            <div className="mt-12 relative rounded-3xl overflow-hidden shadow-2xl border border-stone-200/80 dark:border-neutral-800 aspect-21/9 bg-stone-100 dark:bg-neutral-800">
               <img
                 src={data?.heroImage}
                 alt="Fedoll Atelier"
@@ -133,46 +133,46 @@ export default function AboutUsPage() {
         <section className="py-16 sm:py-24 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="grid grid-cols-1 lg:grid-cols-12 gap-12 items-center">
             <div className="lg:col-span-7 space-y-6">
-              <span className="text-xs font-bold uppercase tracking-widest text-orange-700">
+              <span className="text-xs font-bold uppercase tracking-widest text-orange-600 dark:text-orange-400">
                 The Founding Conviction
               </span>
-              <h2 className="text-3xl sm:text-4xl font-bold tracking-tight text-gray-900 leading-snug">
+              <h2 className="text-3xl sm:text-4xl font-bold tracking-tight text-gray-900 dark:text-white leading-snug">
                 {data?.missionHeading}
               </h2>
-              <p className="text-gray-600 leading-relaxed text-base sm:text-lg">
+              <p className="text-gray-600 dark:text-neutral-300 leading-relaxed text-base sm:text-lg">
                 {data?.missionParagraph1}
               </p>
-              <p className="text-gray-600 leading-relaxed text-base sm:text-lg">
+              <p className="text-gray-600 dark:text-neutral-300 leading-relaxed text-base sm:text-lg">
                 {data?.missionParagraph2}
               </p>
 
               <div className="pt-4 flex items-center gap-6">
-                <div className="border-l-2 border-orange-700 pl-4">
-                  <p className="text-2xl font-bold text-gray-900">2021</p>
-                  <p className="text-xs text-gray-500">Founded in Dhaka</p>
+                <div className="border-l-2 border-orange-600 dark:border-orange-500 pl-4">
+                  <p className="text-2xl font-bold text-gray-900 dark:text-white">2021</p>
+                  <p className="text-xs text-gray-500 dark:text-neutral-400">Founded in Dhaka</p>
                 </div>
-                <div className="border-l-2 border-orange-700 pl-4">
-                  <p className="text-2xl font-bold text-gray-900">100%</p>
-                  <p className="text-xs text-gray-500">Export Grade Cotton</p>
+                <div className="border-l-2 border-orange-600 dark:border-orange-500 pl-4">
+                  <p className="text-2xl font-bold text-gray-900 dark:text-white">100%</p>
+                  <p className="text-xs text-gray-500 dark:text-neutral-400">Export Grade Cotton</p>
                 </div>
-                <div className="border-l-2 border-orange-700 pl-4">
-                  <p className="text-2xl font-bold text-gray-900">64</p>
-                  <p className="text-xs text-gray-500">Districts Delivery</p>
+                <div className="border-l-2 border-orange-600 dark:border-orange-500 pl-4">
+                  <p className="text-2xl font-bold text-gray-900 dark:text-white">64</p>
+                  <p className="text-xs text-gray-500 dark:text-neutral-400">Districts Delivery</p>
                 </div>
               </div>
             </div>
 
             <div className="lg:col-span-5 relative">
-              <div className="relative rounded-3xl overflow-hidden shadow-xl border border-stone-200">
+              <div className="relative rounded-3xl overflow-hidden shadow-xl border border-stone-200 dark:border-neutral-800">
                 <img
                   src={data?.atelierImage}
                   alt="Crafting garments"
                   className="w-full h-[460px] object-cover"
                 />
               </div>
-              <div className="absolute -bottom-6 -left-6 bg-white border border-stone-200 p-4 rounded-2xl shadow-lg hidden sm:flex items-center gap-3 max-w-xs">
-                <CheckBadgeIcon className="size-8 text-orange-700 shrink-0" />
-                <p className="text-xs text-gray-700 font-semibold leading-tight">
+              <div className="absolute -bottom-6 -left-6 bg-white dark:bg-neutral-900 border border-stone-200 dark:border-neutral-800 p-4 rounded-2xl shadow-lg hidden sm:flex items-center gap-3 max-w-xs">
+                <CheckBadgeIcon className="size-8 text-orange-600 dark:text-orange-400 shrink-0" />
+                <p className="text-xs text-gray-700 dark:text-neutral-200 font-semibold leading-tight">
                   Hand-inspected by master tailors before every delivery.
                 </p>
               </div>
@@ -207,13 +207,13 @@ export default function AboutUsPage() {
         {/* Core Pillars / Values */}
         <section className="py-16 sm:py-24 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="text-center max-w-2xl mx-auto mb-16">
-            <span className="text-xs font-bold uppercase tracking-widest text-orange-700">
+            <span className="text-xs font-bold uppercase tracking-widest text-orange-600 dark:text-orange-400">
               Our Promises
             </span>
-            <h2 className="text-3xl sm:text-4xl font-bold tracking-tight text-gray-900 mt-2">
+            <h2 className="text-3xl sm:text-4xl font-bold tracking-tight text-gray-900 dark:text-white mt-2">
               What We Stand For
             </h2>
-            <p className="mt-2 text-sm text-gray-500">
+            <p className="mt-2 text-sm text-gray-500 dark:text-neutral-400">
               Honest quality, comfortable fabrics, and dependable service for everyone in Bangladesh.
             </p>
           </div>
@@ -222,16 +222,16 @@ export default function AboutUsPage() {
             {data?.values?.map((val) => (
               <div
                 key={val.id}
-                className="p-8 rounded-3xl bg-stone-50/60 border border-stone-200/80 hover:bg-white hover:shadow-lg transition duration-300 flex items-start gap-5"
+                className="p-8 rounded-3xl bg-stone-50/60 dark:bg-neutral-900 border border-stone-200/80 dark:border-neutral-800 hover:bg-white dark:hover:bg-neutral-850 hover:shadow-lg transition duration-300 flex items-start gap-5"
               >
-                <div className="size-12 rounded-2xl bg-orange-100 flex items-center justify-center shrink-0">
+                <div className="size-12 rounded-2xl bg-orange-100 dark:bg-orange-950/60 flex items-center justify-center shrink-0">
                   {getPillarIcon(val.icon)}
                 </div>
                 <div>
-                  <h3 className="text-lg font-bold text-gray-900">
+                  <h3 className="text-lg font-bold text-gray-900 dark:text-white">
                     {val.title}
                   </h3>
-                  <p className="mt-2 text-sm text-gray-600 leading-relaxed">
+                  <p className="mt-2 text-sm text-gray-600 dark:text-neutral-300 leading-relaxed">
                     {val.description}
                   </p>
                 </div>
@@ -241,13 +241,13 @@ export default function AboutUsPage() {
         </section>
 
         {/* Milestone Timeline */}
-        <section className="py-16 sm:py-20 bg-stone-50 border-y border-stone-200/80">
+        <section className="py-16 sm:py-20 bg-stone-50 dark:bg-neutral-900/60 border-y border-stone-200/80 dark:border-neutral-800 transition-colors">
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
             <div className="text-center max-w-2xl mx-auto mb-14">
-              <span className="text-xs font-bold uppercase tracking-widest text-orange-700">
+              <span className="text-xs font-bold uppercase tracking-widest text-orange-600 dark:text-orange-400">
                 Our Journey
               </span>
-              <h2 className="text-3xl sm:text-4xl font-bold tracking-tight text-gray-900 mt-2">
+              <h2 className="text-3xl sm:text-4xl font-bold tracking-tight text-gray-900 dark:text-white mt-2">
                 How Fedoll Grew in Bangladesh
               </h2>
             </div>
@@ -256,15 +256,15 @@ export default function AboutUsPage() {
               {data?.milestones?.map((m, idx) => (
                 <div
                   key={idx}
-                  className="p-6 rounded-2xl bg-white border border-gray-200 shadow-xs relative"
+                  className="p-6 rounded-2xl bg-white dark:bg-neutral-900 border border-gray-200 dark:border-neutral-800 shadow-xs relative"
                 >
-                  <span className="text-2xl font-black text-orange-700 font-serif">
+                  <span className="text-2xl font-black text-orange-600 dark:text-orange-400 font-serif">
                     {m.year}
                   </span>
-                  <h4 className="mt-2 text-base font-bold text-gray-900 leading-snug">
+                  <h4 className="mt-2 text-base font-bold text-gray-900 dark:text-white leading-snug">
                     {m.title}
                   </h4>
-                  <p className="mt-2 text-xs text-gray-500 leading-relaxed">
+                  <p className="mt-2 text-xs text-gray-500 dark:text-neutral-400 leading-relaxed">
                     {m.description}
                   </p>
                 </div>
@@ -277,14 +277,14 @@ export default function AboutUsPage() {
         <section className="py-16 sm:py-24 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex flex-col md:flex-row md:items-end md:justify-between gap-4 mb-14">
             <div>
-              <span className="text-xs font-bold uppercase tracking-widest text-orange-700">
+              <span className="text-xs font-bold uppercase tracking-widest text-orange-600 dark:text-orange-400">
                 Our Team
               </span>
-              <h2 className="text-3xl sm:text-4xl font-bold tracking-tight text-gray-900 mt-2">
+              <h2 className="text-3xl sm:text-4xl font-bold tracking-tight text-gray-900 dark:text-white mt-2">
                 The People Behind Fedoll
               </h2>
             </div>
-            <p className="text-sm text-gray-500 max-w-md">
+            <p className="text-sm text-gray-500 dark:text-neutral-400 max-w-md">
               A dedicated team of Bangladeshi fashion designers, skilled master tailors,
               and garment craftsmen based in Dhaka.
             </p>
@@ -294,9 +294,9 @@ export default function AboutUsPage() {
             {data?.team?.map((member) => (
               <div
                 key={member.id}
-                className="group rounded-2xl border border-gray-200/90 bg-white overflow-hidden shadow-xs hover:shadow-xl transition-all duration-300 flex flex-col"
+                className="group rounded-2xl border border-gray-200/90 dark:border-neutral-800 bg-white dark:bg-neutral-900 overflow-hidden shadow-xs hover:shadow-xl transition-all duration-300 flex flex-col"
               >
-                <div className="relative aspect-4/5 overflow-hidden bg-stone-100">
+                <div className="relative aspect-4/5 overflow-hidden bg-stone-100 dark:bg-neutral-800">
                   <img
                     src={member.avatar}
                     alt={member.name}
@@ -305,13 +305,13 @@ export default function AboutUsPage() {
                 </div>
                 <div className="p-5 flex-1 flex flex-col justify-between">
                   <div>
-                    <h3 className="text-base font-bold text-gray-900">
+                    <h3 className="text-base font-bold text-gray-900 dark:text-white">
                       {member.name}
                     </h3>
-                    <p className="text-xs text-orange-700 font-semibold mt-0.5">
+                    <p className="text-xs text-orange-600 dark:text-orange-400 font-semibold mt-0.5">
                       {member.role}
                     </p>
-                    <p className="mt-3 text-xs text-gray-600 leading-relaxed">
+                    <p className="mt-3 text-xs text-gray-600 dark:text-neutral-400 leading-relaxed">
                       {member.bio}
                     </p>
                   </div>
@@ -375,8 +375,8 @@ export default function AboutUsPage() {
                         Explore Our Collections
                       </p>
                       <Link
-                        to="/"
-                        className="inline-flex items-center gap-2 px-6 py-3 rounded-full bg-orange-700 hover:bg-orange-800 text-white font-bold text-xs tracking-wide shadow-lg transition cursor-pointer"
+                        to="/products"
+                        className="inline-flex items-center gap-2 px-6 py-3 rounded-full bg-orange-600 hover:bg-orange-700 active:scale-98 text-white font-bold text-xs tracking-wide shadow-lg transition cursor-pointer"
                       >
                         <span>Browse All Products</span>
                         <ArrowRightIcon className="size-4" />

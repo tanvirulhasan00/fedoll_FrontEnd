@@ -8,16 +8,16 @@ export default function TestimonialsSection() {
   if (!testimonials || testimonials.length === 0) return null;
 
   return (
-    <section className="py-16 sm:py-24 bg-stone-50 border-y border-stone-200/80">
+    <section className="py-16 sm:py-24 bg-stone-50 dark:bg-neutral-900/60 border-y border-stone-200/80 dark:border-neutral-800 transition-colors duration-200">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="text-center max-w-2xl mx-auto mb-14">
-          <span className="text-xs font-bold uppercase tracking-widest text-orange-700">
+          <span className="text-xs font-bold uppercase tracking-widest text-orange-700 dark:text-orange-500">
             Customer Reviews
           </span>
-          <h2 className="text-3xl sm:text-4xl font-bold tracking-tight text-gray-900 mt-2">
+          <h2 className="text-3xl sm:text-4xl font-bold tracking-tight text-gray-900 dark:text-white mt-2">
             Loved by Customers Across Bangladesh
           </h2>
-          <p className="mt-2 text-sm text-gray-500">
+          <p className="mt-2 text-sm text-gray-500 dark:text-neutral-400">
             Real reviews from people wearing Fedoll clothes in Dhaka, Chittagong,
             Sylhet, and all across Bangladesh.
           </p>
@@ -27,7 +27,7 @@ export default function TestimonialsSection() {
           {testimonials.map((test) => (
             <div
               key={test.id}
-              className="flex flex-col justify-between p-8 rounded-3xl bg-white border border-gray-200/90 shadow-xs hover:shadow-lg transition-all duration-300"
+              className="flex flex-col justify-between p-8 rounded-3xl bg-white dark:bg-neutral-800/80 border border-gray-200/90 dark:border-neutral-700/80 shadow-xs hover:shadow-lg transition-all duration-300"
             >
               <div className="space-y-4">
                 {/* 5 Stars */}
@@ -38,12 +38,12 @@ export default function TestimonialsSection() {
                 </div>
 
                 {/* Comment */}
-                <p className="text-gray-700 text-sm leading-relaxed italic">
+                <p className="text-gray-700 dark:text-neutral-300 text-sm leading-relaxed italic">
                   "{test.comment}"
                 </p>
               </div>
 
-              <div className="mt-8 pt-6 border-t border-gray-100 flex items-center justify-between">
+              <div className="mt-8 pt-6 border-t border-gray-100 dark:border-neutral-700/60 flex items-center justify-between">
                 <div className="flex items-center gap-3">
                   <img
                     src={test.avatar}
@@ -52,7 +52,7 @@ export default function TestimonialsSection() {
                   />
                   <div>
                     <div className="flex items-center gap-1.5">
-                      <h4 className="text-xs font-bold text-gray-900">
+                      <h4 className="text-xs font-bold text-gray-900 dark:text-white">
                         {test.name}
                       </h4>
                       <CheckBadgeIcon className="size-4 text-emerald-600" title="Verified Buyer" />

@@ -101,29 +101,29 @@ export default function BlogsPage() {
   }, [filteredBlogs, featuredBlog]);
 
   return (
-    <div className="min-h-screen bg-white text-gray-900 flex flex-col font-sans">
+    <div className="min-h-screen bg-white dark:bg-neutral-950 text-gray-900 dark:text-neutral-100 flex flex-col font-sans">
       <Topbar />
       <Header />
 
       <main className="flex-1">
         {/* Editorial Hero Header */}
-        <section className="relative overflow-hidden bg-gradient-to-b from-stone-50 via-orange-50/20 to-white border-b border-stone-200/60 py-16 md:py-24">
+        <section className="relative overflow-hidden bg-gradient-to-b from-stone-50 via-orange-50/20 to-white dark:from-neutral-900 dark:via-neutral-900/40 dark:to-neutral-950 border-b border-stone-200/60 dark:border-neutral-800 py-16 md:py-24">
           <div className="absolute inset-0 opacity-40 bg-[radial-gradient(#ea580c_1px,transparent_1px)] [background-size:24px_24px] pointer-events-none" />
 
           <div className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
             <div className="flex flex-col md:flex-row md:items-end md:justify-between gap-6">
               <div className="max-w-2xl">
-                <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-orange-100 text-orange-800 text-xs font-semibold uppercase tracking-wider mb-4">
-                  <SparklesIcon className="size-4 text-orange-600" />
+                <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-orange-100 dark:bg-orange-950/60 text-orange-800 dark:text-orange-300 text-xs font-semibold uppercase tracking-wider mb-4">
+                  <SparklesIcon className="size-4 text-orange-600 dark:text-orange-400" />
                   Fedoll Fashion Journal
                 </div>
-                <h1 className="text-4xl sm:text-5xl lg:text-6xl font-bold tracking-tight text-gray-900">
+                <h1 className="text-4xl sm:text-5xl lg:text-6xl font-bold tracking-tight text-gray-900 dark:text-white">
                   Everyday Style <br />
-                  <span className="text-orange-700 italic font-serif">
+                  <span className="text-orange-700 dark:text-orange-500 italic font-serif">
                     & Care Guides
                   </span>
                 </h1>
-                <p className="mt-4 text-base sm:text-lg text-gray-600 leading-relaxed">
+                <p className="mt-4 text-base sm:text-lg text-gray-600 dark:text-neutral-400 leading-relaxed">
                   Simple, practical styling tips, weather-friendly clothing care guides,
                   and smart wardrobe essentials made for life in Bangladesh.
                 </p>
@@ -131,7 +131,7 @@ export default function BlogsPage() {
 
               {/* Firebase Status & Re-sync */}
               <div className="flex flex-col items-start md:items-end gap-2">
-                <div className="inline-flex items-center gap-2 text-xs font-medium text-emerald-800 bg-emerald-50 border border-emerald-200 px-3 py-1.5 rounded-full shadow-xs">
+                <div className="inline-flex items-center gap-2 text-xs font-medium text-emerald-800 dark:text-emerald-300 bg-emerald-50 dark:bg-emerald-950/50 border border-emerald-200 dark:border-emerald-800 px-3 py-1.5 rounded-full shadow-xs">
                   <span className="size-2 rounded-full bg-emerald-500 animate-pulse" />
                   Live Cloud Firestore Database
                 </div>
@@ -139,7 +139,7 @@ export default function BlogsPage() {
                   type="button"
                   onClick={handleSyncFirebase}
                   disabled={seeding || loading}
-                  className="inline-flex items-center gap-1.5 text-xs font-medium text-gray-700 bg-white border border-gray-300 hover:border-orange-500 hover:text-orange-700 px-3 py-1.5 rounded-lg shadow-2xs transition disabled:opacity-50 cursor-pointer"
+                  className="inline-flex items-center gap-1.5 text-xs font-medium text-gray-700 dark:text-neutral-300 bg-white dark:bg-neutral-900 border border-gray-300 dark:border-neutral-700 hover:border-orange-500 dark:hover:border-orange-500 hover:text-orange-700 dark:hover:text-orange-400 px-3 py-1.5 rounded-lg shadow-2xs transition disabled:opacity-50 cursor-pointer"
                   title="Reseed or refresh data directly with Firebase"
                 >
                   <ArrowPathIcon
@@ -151,7 +151,7 @@ export default function BlogsPage() {
             </div>
 
             {/* Filter and Search Bar */}
-            <div className="mt-10 pt-8 border-t border-stone-200/80 flex flex-col lg:flex-row lg:items-center justify-between gap-6">
+            <div className="mt-10 pt-8 border-t border-stone-200/80 dark:border-neutral-800 flex flex-col lg:flex-row lg:items-center justify-between gap-6">
               {/* Category Pills */}
               <div className="flex items-center gap-2 overflow-x-auto pb-2 scrollbar-none">
                 {CATEGORIES.map((cat) => {
@@ -163,8 +163,8 @@ export default function BlogsPage() {
                       onClick={() => dispatch(setSelectedCategory(cat))}
                       className={`whitespace-nowrap px-4 py-2 rounded-full text-xs sm:text-sm font-medium transition cursor-pointer ${
                         active
-                          ? "bg-gray-900 text-white shadow-sm"
-                          : "bg-white text-gray-600 border border-gray-200 hover:border-gray-400 hover:text-gray-900"
+                          ? "bg-gray-900 dark:bg-orange-600 text-white shadow-sm"
+                          : "bg-white dark:bg-neutral-900 text-gray-600 dark:text-neutral-400 border border-gray-200 dark:border-neutral-800 hover:border-gray-400 dark:hover:border-neutral-700 hover:text-gray-900 dark:hover:text-white"
                       }`}
                     >
                       {cat}
@@ -181,13 +181,13 @@ export default function BlogsPage() {
                   value={searchQuery}
                   onChange={(e) => dispatch(setSearchQuery(e.target.value))}
                   placeholder="Search articles, tags, authors..."
-                  className="w-full pl-10 pr-9 py-2 rounded-full text-sm bg-white border border-gray-200 focus:outline-none focus:ring-2 focus:ring-orange-600 focus:border-transparent transition"
+                  className="w-full pl-10 pr-9 py-2 rounded-full text-sm bg-white dark:bg-neutral-900 border border-gray-200 dark:border-neutral-800 text-gray-900 dark:text-neutral-100 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-orange-600 focus:border-transparent transition"
                 />
                 {searchQuery && (
                   <button
                     type="button"
                     onClick={() => dispatch(setSearchQuery(""))}
-                    className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-700"
+                    className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-700 dark:hover:text-white"
                   >
                     <XMarkIcon className="size-4" />
                   </button>
@@ -205,19 +205,19 @@ export default function BlogsPage() {
               {[1, 2, 3, 4, 5, 6].map((i) => (
                 <div
                   key={i}
-                  className="rounded-2xl border border-gray-200 overflow-hidden bg-white shadow-xs animate-pulse"
+                  className="rounded-2xl border border-gray-200 dark:border-neutral-800 overflow-hidden bg-white dark:bg-neutral-900 shadow-xs animate-pulse"
                 >
-                  <div className="h-52 bg-gray-200" />
+                  <div className="h-52 bg-gray-200 dark:bg-neutral-800" />
                   <div className="p-6 space-y-4">
-                    <div className="h-4 w-24 bg-gray-200 rounded" />
-                    <div className="h-6 w-5/6 bg-gray-200 rounded" />
-                    <div className="h-4 w-full bg-gray-200 rounded" />
-                    <div className="h-4 w-3/4 bg-gray-200 rounded" />
+                    <div className="h-4 w-24 bg-gray-200 dark:bg-neutral-800 rounded" />
+                    <div className="h-6 w-5/6 bg-gray-200 dark:bg-neutral-800 rounded" />
+                    <div className="h-4 w-full bg-gray-200 dark:bg-neutral-800 rounded" />
+                    <div className="h-4 w-3/4 bg-gray-200 dark:bg-neutral-800 rounded" />
                     <div className="pt-4 flex items-center gap-3">
-                      <div className="size-10 rounded-full bg-gray-200" />
+                      <div className="size-10 rounded-full bg-gray-200 dark:bg-neutral-800" />
                       <div className="space-y-1 flex-1">
-                        <div className="h-3 w-28 bg-gray-200 rounded" />
-                        <div className="h-2 w-20 bg-gray-200 rounded" />
+                        <div className="h-3 w-28 bg-gray-200 dark:bg-neutral-800 rounded" />
+                        <div className="h-2 w-20 bg-gray-200 dark:bg-neutral-800 rounded" />
                       </div>
                     </div>
                   </div>
@@ -226,14 +226,14 @@ export default function BlogsPage() {
             </div>
           ) : filteredBlogs.length === 0 ? (
             /* Empty State */
-            <div className="text-center py-20 bg-stone-50 rounded-3xl border border-dashed border-stone-300">
-              <div className="size-16 rounded-full bg-orange-100 text-orange-600 mx-auto flex items-center justify-center mb-4">
+            <div className="text-center py-20 bg-stone-50 dark:bg-neutral-900 rounded-3xl border border-dashed border-stone-300 dark:border-neutral-800">
+              <div className="size-16 rounded-full bg-orange-100 dark:bg-orange-950/60 text-orange-600 dark:text-orange-400 mx-auto flex items-center justify-center mb-4">
                 <MagnifyingGlassIcon className="size-8" />
               </div>
-              <h3 className="text-xl font-bold text-gray-900">
+              <h3 className="text-xl font-bold text-gray-900 dark:text-white">
                 No matching stories found
               </h3>
-              <p className="mt-2 text-sm text-gray-500 max-w-md mx-auto">
+              <p className="mt-2 text-sm text-gray-500 dark:text-neutral-400 max-w-md mx-auto">
                 We couldn't find any articles matching "{searchQuery}" in{" "}
                 {selectedCategory}. Try resetting your search terms.
               </p>
@@ -244,7 +244,7 @@ export default function BlogsPage() {
                     dispatch(setSelectedCategory("All"));
                     dispatch(setSearchQuery(""));
                   }}
-                  className="px-4 py-2 text-sm font-semibold text-white bg-gray-900 rounded-lg hover:bg-black transition cursor-pointer"
+                  className="px-4 py-2 text-sm font-semibold text-white bg-gray-900 dark:bg-orange-600 rounded-lg hover:bg-black dark:hover:bg-orange-700 transition cursor-pointer"
                 >
                   Reset All Filters
                 </button>
@@ -254,7 +254,7 @@ export default function BlogsPage() {
             <div className="space-y-12">
               {/* Featured Hero Article */}
               {featuredBlog && (
-                <div className="group relative rounded-3xl border border-stone-200 bg-stone-50/60 overflow-hidden shadow-sm hover:shadow-xl transition-all duration-300">
+                <div className="group relative rounded-3xl border border-stone-200 dark:border-neutral-800 bg-stone-50/60 dark:bg-neutral-900 overflow-hidden shadow-sm hover:shadow-xl transition-all duration-300">
                   <div className="grid grid-cols-1 lg:grid-cols-12 gap-0">
                     <div className="lg:col-span-7 relative overflow-hidden h-72 sm:h-96 lg:h-auto min-h-[320px]">
                       <img
@@ -270,27 +270,27 @@ export default function BlogsPage() {
 
                     <div className="lg:col-span-5 p-8 lg:p-12 flex flex-col justify-between">
                       <div>
-                        <div className="flex items-center gap-2 text-xs font-semibold text-orange-700 uppercase tracking-wider mb-3">
+                        <div className="flex items-center gap-2 text-xs font-semibold text-orange-700 dark:text-orange-400 uppercase tracking-wider mb-3">
                           <span>{featuredBlog.category}</span>
                           <span>•</span>
-                          <span className="flex items-center gap-1 text-gray-500 font-normal">
+                          <span className="flex items-center gap-1 text-gray-500 dark:text-neutral-400 font-normal">
                             <ClockIcon className="size-3.5" />
                             {featuredBlog.readTime}
                           </span>
                         </div>
 
                         <Link to={`/blogs/${featuredBlog.id}`}>
-                          <h2 className="text-2xl sm:text-3xl font-bold text-gray-900 group-hover:text-orange-700 transition leading-snug">
+                          <h2 className="text-2xl sm:text-3xl font-bold text-gray-900 dark:text-white group-hover:text-orange-700 dark:group-hover:text-orange-400 transition leading-snug">
                             {featuredBlog.title}
                           </h2>
                         </Link>
 
-                        <p className="mt-4 text-sm sm:text-base text-gray-600 line-clamp-3 leading-relaxed">
+                        <p className="mt-4 text-sm sm:text-base text-gray-600 dark:text-neutral-400 line-clamp-3 leading-relaxed">
                           {featuredBlog.excerpt}
                         </p>
                       </div>
 
-                      <div className="mt-8 pt-6 border-t border-stone-200 flex items-center justify-between">
+                      <div className="mt-8 pt-6 border-t border-stone-200 dark:border-neutral-800 flex items-center justify-between">
                         <div className="flex items-center gap-3">
                           <img
                             src={featuredBlog.author.avatar}
@@ -298,10 +298,10 @@ export default function BlogsPage() {
                             className="size-11 rounded-full object-cover ring-2 ring-orange-600/20"
                           />
                           <div>
-                            <p className="text-sm font-semibold text-gray-900">
+                            <p className="text-sm font-semibold text-gray-900 dark:text-white">
                               {featuredBlog.author.name}
                             </p>
-                            <p className="text-xs text-gray-500">
+                            <p className="text-xs text-gray-500 dark:text-neutral-400">
                               {featuredBlog.publishedAt}
                             </p>
                           </div>
@@ -309,7 +309,7 @@ export default function BlogsPage() {
 
                         <Link
                           to={`/blogs/${featuredBlog.id}`}
-                          className="inline-flex items-center gap-1.5 text-sm font-semibold text-orange-700 group-hover:translate-x-1 transition"
+                          className="inline-flex items-center gap-1.5 text-sm font-semibold text-orange-700 dark:text-orange-400 group-hover:translate-x-1 transition"
                         >
                           Read Article <ArrowRightIcon className="size-4" />
                         </Link>
@@ -323,10 +323,10 @@ export default function BlogsPage() {
               <div>
                 {featuredBlog && remainingBlogs.length > 0 && (
                   <div className="flex items-center justify-between mb-8">
-                    <h3 className="text-2xl font-bold tracking-tight text-gray-900">
+                    <h3 className="text-2xl font-bold tracking-tight text-gray-900 dark:text-white">
                       Recent Dispatches
                     </h3>
-                    <span className="text-sm text-gray-500">
+                    <span className="text-sm text-gray-500 dark:text-neutral-400">
                       Showing {remainingBlogs.length} articles
                     </span>
                   </div>
@@ -336,22 +336,22 @@ export default function BlogsPage() {
                   {remainingBlogs.map((blog) => (
                     <article
                       key={blog.id}
-                      className="group flex flex-col rounded-2xl border border-gray-200/90 bg-white overflow-hidden shadow-xs hover:shadow-xl hover:-translate-y-1 transition-all duration-300"
+                      className="group flex flex-col rounded-2xl border border-gray-200/90 dark:border-neutral-800 bg-white dark:bg-neutral-900 overflow-hidden shadow-xs hover:shadow-xl hover:-translate-y-1 transition-all duration-300"
                     >
                       {/* Card Cover */}
-                      <div className="relative h-56 overflow-hidden bg-stone-100">
+                      <div className="relative h-56 overflow-hidden bg-stone-100 dark:bg-neutral-800">
                         <img
                           src={blog.coverImage}
                           alt={blog.title}
                           className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
                         />
-                        <div className="absolute top-3 left-3 bg-white/90 backdrop-blur-xs text-gray-900 text-xs font-semibold px-3 py-1 rounded-full shadow-xs">
+                        <div className="absolute top-3 left-3 bg-white/90 dark:bg-neutral-950/80 backdrop-blur-xs text-gray-900 dark:text-neutral-200 text-xs font-semibold px-3 py-1 rounded-full shadow-xs">
                           {blog.category}
                         </div>
                         <button
                           type="button"
                           onClick={(e) => handleLike(e, blog.id)}
-                          className="absolute top-3 right-3 size-8 rounded-full bg-white/90 backdrop-blur-xs flex items-center justify-center text-gray-600 hover:text-red-500 hover:scale-110 transition shadow-xs cursor-pointer"
+                          className="absolute top-3 right-3 size-8 rounded-full bg-white/90 dark:bg-neutral-950/80 backdrop-blur-xs flex items-center justify-center text-gray-600 dark:text-neutral-300 hover:text-red-500 hover:scale-110 transition shadow-xs cursor-pointer"
                           title="Like this story"
                         >
                           {(blog.likes || 0) > 0 ? (
@@ -365,7 +365,7 @@ export default function BlogsPage() {
                       {/* Card Body */}
                       <div className="flex-1 p-6 flex flex-col justify-between">
                         <div>
-                          <div className="flex items-center gap-3 text-xs text-gray-500 mb-2.5">
+                          <div className="flex items-center gap-3 text-xs text-gray-500 dark:text-neutral-400 mb-2.5">
                             <span className="flex items-center gap-1">
                               <ClockIcon className="size-3.5" />
                               {blog.readTime}
@@ -375,12 +375,12 @@ export default function BlogsPage() {
                           </div>
 
                           <Link to={`/blogs/${blog.id}`}>
-                            <h3 className="text-lg font-bold text-gray-900 group-hover:text-orange-700 transition line-clamp-2 leading-snug">
+                            <h3 className="text-lg font-bold text-gray-900 dark:text-white group-hover:text-orange-700 dark:group-hover:text-orange-400 transition line-clamp-2 leading-snug">
                               {blog.title}
                             </h3>
                           </Link>
 
-                          <p className="mt-2.5 text-sm text-gray-600 line-clamp-2 leading-relaxed">
+                          <p className="mt-2.5 text-sm text-gray-600 dark:text-neutral-400 line-clamp-2 leading-relaxed">
                             {blog.excerpt}
                           </p>
 
@@ -389,7 +389,7 @@ export default function BlogsPage() {
                             {blog.tags.slice(0, 3).map((tag) => (
                               <span
                                 key={tag}
-                                className="text-[11px] font-medium bg-stone-100 text-stone-700 px-2.5 py-0.5 rounded-md"
+                                className="text-[11px] font-medium bg-stone-100 dark:bg-neutral-800 text-stone-700 dark:text-neutral-300 px-2.5 py-0.5 rounded-md"
                               >
                                 #{tag}
                               </span>
@@ -398,7 +398,7 @@ export default function BlogsPage() {
                         </div>
 
                         {/* Card Footer */}
-                        <div className="mt-6 pt-4 border-t border-gray-100 flex items-center justify-between">
+                        <div className="mt-6 pt-4 border-t border-gray-100 dark:border-neutral-800 flex items-center justify-between">
                           <div className="flex items-center gap-2.5">
                             <img
                               src={blog.author.avatar}
@@ -406,16 +406,16 @@ export default function BlogsPage() {
                               className="size-8 rounded-full object-cover"
                             />
                             <div>
-                              <p className="text-xs font-semibold text-gray-900 leading-tight">
+                              <p className="text-xs font-semibold text-gray-900 dark:text-white leading-tight">
                                 {blog.author.name}
                               </p>
-                              <p className="text-[11px] text-gray-400">
+                              <p className="text-[11px] text-gray-400 dark:text-neutral-500">
                                 {blog.author.role}
                               </p>
                             </div>
                           </div>
 
-                          <div className="flex items-center gap-2 text-xs text-gray-500">
+                          <div className="flex items-center gap-2 text-xs text-gray-500 dark:text-neutral-400">
                             <span className="flex items-center gap-1">
                               <EyeIcon className="size-3.5" />
                               {blog.views || 0}

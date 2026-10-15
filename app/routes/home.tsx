@@ -37,7 +37,7 @@ const Home = () => {
   };
 
   return (
-    <div className="min-h-screen bg-white text-gray-900 flex flex-col font-sans selection:bg-orange-500 selection:text-white">
+    <div className="min-h-screen bg-white dark:bg-neutral-950 text-gray-900 dark:text-neutral-100 flex flex-col font-sans selection:bg-orange-500 selection:text-white transition-colors duration-200">
       {/* Navigation Layer */}
       <Topbar />
       <Header />
