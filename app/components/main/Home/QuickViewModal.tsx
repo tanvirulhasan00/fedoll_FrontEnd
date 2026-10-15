@@ -17,6 +17,7 @@ import { useAppDispatch, useAppSelector } from "~/redux/hooks/hook";
 import { setQuickViewProduct } from "~/redux/features/homeSlice";
 import { addToCart } from "~/redux/features/cart/cartSlice";
 import { toast } from "sonner";
+import { SizeGuideBox, SizeGuideModal } from "~/components/main/Product";
 
 export default function QuickViewModal() {
   const dispatch = useAppDispatch();
@@ -26,6 +27,8 @@ export default function QuickViewModal() {
   const [selectedColor, setSelectedColor] = useState<string>("");
   const [activeImageIndex, setActiveImageIndex] = useState(0);
   const [quantity, setQuantity] = useState(1);
+  const [sizeGuideOpen, setSizeGuideOpen] = useState(false);
+  const [sizeGuideModalOpen, setSizeGuideModalOpen] = useState(false);
 
   // Sync state when quickViewProduct changes
   React.useEffect(() => {
@@ -34,6 +37,8 @@ export default function QuickViewModal() {
       setSelectedColor(quickViewProduct.colors[0]?.name || "Standard");
       setActiveImageIndex(0);
       setQuantity(1);
+      setSizeGuideOpen(false);
+      setSizeGuideModalOpen(false);
     }
   }, [quickViewProduct]);
 
@@ -233,9 +238,16 @@ export default function QuickViewModal() {
                           <label className="text-xs font-bold uppercase tracking-wider text-gray-700 dark:text-neutral-300">
                             Size: <span className="font-normal text-gray-500 dark:text-neutral-400">{selectedSize}</span>
                           </label>
-                          <span className="text-[11px] text-orange-600 dark:text-orange-400 hover:underline cursor-pointer">
+                          <button
+                            type="button"
+                            onClick={() => setSizeGuideOpen(!sizeGuideOpen)}
+                            className="text-[11px] font-semibold text-orange-600 dark:text-orange-400 hover:underline cursor-pointer flex items-center gap-1"
+                          >
                             Size Guide
-                          </span>
+                            <span className="text-[10px] text-gray-400 dark:text-neutral-500 font-normal">
+                              ({sizeGuideOpen ? "Hide" : "Show"})
+                            </span>
+                          </button>
                         </div>
                         <div className="flex flex-wrap gap-2">
                           {quickViewProduct.sizes.map((s) => (
@@ -253,6 +265,18 @@ export default function QuickViewModal() {
                             </button>
                           ))}
                         </div>
+
+                        {/* Inline Size Guide Accordion Helper */}
+                        {sizeGuideOpen && (
+                          <div className="mt-3">
+                            <SizeGuideBox
+                              category={quickViewProduct.category}
+                              selectedSize={selectedSize}
+                              compact={true}
+                              onOpenModal={() => setSizeGuideModalOpen(true)}
+                            />
+                          </div>
+                        )}
                       </div>
                     </div>
 
@@ -314,6 +338,16 @@ export default function QuickViewModal() {
             </TransitionChild>
           </div>
         </div>
+
+        {/* Full Size Guide Modal */}
+        {sizeGuideModalOpen && (
+          <SizeGuideModal
+            isOpen={sizeGuideModalOpen}
+            onClose={() => setSizeGuideModalOpen(false)}
+            category={quickViewProduct.category}
+            selectedSize={selectedSize}
+          />
+        )}
       </Dialog>
     </Transition>
   );

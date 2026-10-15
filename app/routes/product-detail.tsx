@@ -5,6 +5,7 @@ import Topbar from "~/components/main/Home/Topbar";
 import Header from "~/components/main/Home/Header";
 import Footer from "~/components/main/Home/Footer";
 import QuickViewModal from "~/components/main/Home/QuickViewModal";
+import { SizeGuideBox, SizeGuideModal } from "~/components/main/Product";
 import { useAppDispatch, useAppSelector } from "~/redux/hooks/hook";
 import {
   fetchProductById,
@@ -64,6 +65,7 @@ export default function ProductDetailPage() {
   const [selectedColor, setSelectedColor] = useState<string>("");
   const [quantity, setQuantity] = useState(1);
   const [sizeGuideOpen, setSizeGuideOpen] = useState(false);
+  const [sizeGuideModalOpen, setSizeGuideModalOpen] = useState(false);
 
   useEffect(() => {
     if (id) {
@@ -393,9 +395,12 @@ export default function ProductDetailPage() {
                     <button
                       type="button"
                       onClick={() => setSizeGuideOpen(!sizeGuideOpen)}
-                      className="text-xs font-semibold text-orange-600 dark:text-orange-400 hover:underline cursor-pointer"
+                      className="text-xs font-semibold text-orange-600 dark:text-orange-400 hover:underline cursor-pointer flex items-center gap-1"
                     >
-                      Size Guide &amp; Measurements
+                      <span>Size Guide &amp; Measurements</span>
+                      <span className="text-[10px] text-gray-400 dark:text-neutral-500 font-normal">
+                        ({sizeGuideOpen ? "Hide" : "Show"})
+                      </span>
                     </button>
                   </div>
 
@@ -419,47 +424,13 @@ export default function ProductDetailPage() {
                     })}
                   </div>
 
-                  {/* Size Guide Accordion Helper */}
+                  {/* Size Guide Accordion Helper (Clean, Non-Overlapping) */}
                   {sizeGuideOpen && (
-                    <div className="p-4 rounded-2xl bg-stone-50 dark:bg-neutral-900 border border-stone-200 dark:border-neutral-800 text-xs space-y-2 animate-in fade-in-50 duration-200">
-                      <p className="font-bold text-gray-900 dark:text-white">
-                        Bangladesh Fit &amp; Measurements (Inches):
-                      </p>
-                      <div className="grid grid-cols-4 gap-2 text-center border-t border-stone-200/60 dark:border-neutral-800 pt-2 font-mono text-gray-800 dark:text-neutral-200">
-                        <div>
-                          <span className="block text-gray-400 dark:text-neutral-500">Size</span>
-                          <span className="font-bold">S / 38</span>
-                          <span className="font-bold">M / 40</span>
-                          <span className="font-bold">L / 42</span>
-                          <span className="font-bold">XL / 44</span>
-                        </div>
-                        <div>
-                          <span className="block text-gray-400 dark:text-neutral-500">Chest</span>
-                          <span>39.5&quot;</span>
-                          <span>41.5&quot;</span>
-                          <span>43.5&quot;</span>
-                          <span>45.5&quot;</span>
-                        </div>
-                        <div>
-                          <span className="block text-gray-400 dark:text-neutral-500">Shoulder</span>
-                          <span>17.5&quot;</span>
-                          <span>18.2&quot;</span>
-                          <span>19.0&quot;</span>
-                          <span>19.8&quot;</span>
-                        </div>
-                        <div>
-                          <span className="block text-gray-400 dark:text-neutral-500">Length</span>
-                          <span>28.0&quot;</span>
-                          <span>29.0&quot;</span>
-                          <span>30.0&quot;</span>
-                          <span>30.5&quot;</span>
-                        </div>
-                      </div>
-                      <p className="text-[11px] text-gray-500 dark:text-neutral-400 pt-1">
-                        Unsure about your size? We offer a 7-day hassle-free size exchange anywhere
-                        in Bangladesh.
-                      </p>
-                    </div>
+                    <SizeGuideBox
+                      category={currentProduct.category}
+                      selectedSize={selectedSize}
+                      onOpenModal={() => setSizeGuideModalOpen(true)}
+                    />
                   )}
                 </div>
 
@@ -669,6 +640,16 @@ export default function ProductDetailPage() {
 
       {/* Global Quick View Modal */}
       <QuickViewModal />
+
+      {/* Full Size Guide Modal */}
+      {currentProduct && (
+        <SizeGuideModal
+          isOpen={sizeGuideModalOpen}
+          onClose={() => setSizeGuideModalOpen(false)}
+          category={currentProduct.category}
+          selectedSize={selectedSize}
+        />
+      )}
 
       {/* Global Footer */}
       <Footer />
