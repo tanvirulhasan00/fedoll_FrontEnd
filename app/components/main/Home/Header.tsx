@@ -2,7 +2,7 @@ import { useEffect, useState } from "react";
 import { Dialog, DialogPanel } from "@headlessui/react";
 import { Bars3Icon, XMarkIcon, ShoppingBagIcon } from "@heroicons/react/24/outline";
 import { ArrowRightStartOnRectangleIcon } from "@heroicons/react/24/outline";
-import { Link } from "react-router";
+import { Link, useLocation } from "react-router";
 import clsx from "clsx";
 import { toast } from "sonner";
 import { useAppDispatch, useAppSelector } from "~/redux/hooks/hook";
@@ -13,6 +13,14 @@ import { UserMenu } from "../Auth/UserMenu";
 import { openCart } from "~/redux/features/cart/cartSlice";
 import CartDrawer from "../Cart/CartDrawer";
 
+const NAV_ITEMS = [
+  { name: "Home", href: "/" },
+  { name: "Products", href: "/products" },
+  { name: "Blogs", href: "/blogs" },
+  { name: "About Us", href: "/about-us" },
+  { name: "Contact Us", href: "/contact-us" },
+];
+
 export default function Header() {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [scrolled, setScrolled] = useState(false);
@@ -21,9 +29,26 @@ export default function Header() {
   const [authModalOpen, setAuthModalOpen] = useState(false);
   const [authModalTab, setAuthModalTab] = useState<"login" | "signup">("login");
 
+  const location = useLocation();
   const dispatch = useAppDispatch();
   const { user, isAuthenticated } = useAppSelector((state) => state.auth);
   const { totalQuantity } = useAppSelector((state) => state.cart);
+
+  const isNavActive = (href: string) => {
+    if (href === "/") {
+      return location.pathname === "/";
+    }
+    if (href === "/products") {
+      return location.pathname.startsWith("/product");
+    }
+    if (href === "/blogs") {
+      return location.pathname.startsWith("/blog");
+    }
+    if (href === "/contact-us") {
+      return location.pathname === "/contact-us" || location.pathname === "/contact";
+    }
+    return location.pathname === href;
+  };
 
   const handleOpenAuth = (tab: "login" | "signup") => {
     setAuthModalTab(tab);
@@ -94,21 +119,23 @@ export default function Header() {
           </button>
         </div>
         <div className="hidden lg:flex lg:gap-x-12">
-          <Link to="/" className="text-sm/6 font-semibold hover:text-orange-700 transition">
-            Home
-          </Link>
-          <Link to="/products" className="text-sm/6 font-semibold hover:text-orange-700 transition">
-            Products
-          </Link>
-          <Link to="/blogs" className="text-sm/6 font-semibold hover:text-orange-700 transition">
-            Blogs
-          </Link>
-          <Link to="/about-us" className="text-sm/6 font-semibold hover:text-orange-700 transition">
-            About Us
-          </Link>
-          <Link to="/contact-us" className="text-sm/6 font-semibold hover:text-orange-700 transition">
-            Contact Us
-          </Link>
+          {NAV_ITEMS.map((item) => {
+            const active = isNavActive(item.href);
+            return (
+              <Link
+                key={item.name}
+                to={item.href}
+                className={clsx(
+                  "relative py-1 text-sm/6 font-semibold transition-colors duration-200",
+                  active
+                    ? "text-orange-700 font-bold after:absolute after:-bottom-1.5 after:left-0 after:right-0 after:h-0.5 after:bg-orange-700 after:rounded-full"
+                    : "text-gray-800 hover:text-orange-700",
+                )}
+              >
+                {item.name}
+              </Link>
+            );
+          })}
         </div>
 
         {/* Top-Right Auth Options (Desktop) */}
@@ -177,42 +204,24 @@ export default function Header() {
           <div className="mt-6 flow-root">
             <div className="-my-6 divide-y divide-gray-100">
               <div className="space-y-2 py-6">
-                <Link
-                  to="/"
-                  onClick={() => setMobileMenuOpen(false)}
-                  className="-mx-3 block rounded-lg px-3 py-2 text-base/7 font-semibold hover:bg-gray-50"
-                >
-                  Home
-                </Link>
-
-                <Link
-                  to="/products"
-                  onClick={() => setMobileMenuOpen(false)}
-                  className="-mx-3 block rounded-lg px-3 py-2 text-base/7 font-semibold hover:bg-gray-50"
-                >
-                  Products
-                </Link>
-                <Link
-                  to="/blogs"
-                  onClick={() => setMobileMenuOpen(false)}
-                  className="-mx-3 block rounded-lg px-3 py-2 text-base/7 font-semibold hover:bg-gray-50"
-                >
-                  Blogs
-                </Link>
-                <Link
-                  to="/about-us"
-                  onClick={() => setMobileMenuOpen(false)}
-                  className="-mx-3 block rounded-lg px-3 py-2 text-base/7 font-semibold hover:bg-gray-50"
-                >
-                  About Us
-                </Link>
-                <Link
-                  to="/contact-us"
-                  onClick={() => setMobileMenuOpen(false)}
-                  className="-mx-3 block rounded-lg px-3 py-2 text-base/7 font-semibold hover:bg-gray-50"
-                >
-                  Contact Us
-                </Link>
+                {NAV_ITEMS.map((item) => {
+                  const active = isNavActive(item.href);
+                  return (
+                    <Link
+                      key={item.name}
+                      to={item.href}
+                      onClick={() => setMobileMenuOpen(false)}
+                      className={clsx(
+                        "-mx-3 block rounded-lg px-3 py-2 text-base/7 font-semibold transition-all",
+                        active
+                          ? "bg-orange-50 text-orange-700 font-bold border-l-4 border-orange-700 pl-4"
+                          : "text-gray-900 hover:bg-gray-50 hover:text-orange-700",
+                      )}
+                    >
+                      {item.name}
+                    </Link>
+                  );
+                })}
               </div>
 
               {/* Mobile Auth Section */}
