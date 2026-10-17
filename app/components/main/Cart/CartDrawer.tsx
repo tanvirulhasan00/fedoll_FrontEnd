@@ -17,6 +17,7 @@ import {
   PlusIcon,
   MinusIcon,
   TagIcon,
+  LockClosedIcon,
 } from "@heroicons/react/24/outline";
 import { useAppDispatch, useAppSelector } from "~/redux/hooks/hook";
 import {
@@ -26,15 +27,20 @@ import {
   clearCart,
 } from "~/redux/features/cart/cartSlice";
 import { toast } from "sonner";
+import CheckoutModal from "./CheckoutModal";
+import { AuthModal } from "../Auth/AuthModal";
 
 export default function CartDrawer() {
   const dispatch = useAppDispatch();
   const { items, totalQuantity, totalAmount, isCartOpen } = useAppSelector(
     (state) => state.cart
   );
+  const { user, isAuthenticated } = useAppSelector((state) => state.auth);
 
   const [promoCode, setPromoCode] = useState("");
   const [discountPercent, setDiscountPercent] = useState(0);
+  const [checkoutModalOpen, setCheckoutModalOpen] = useState(false);
+  const [authModalOpen, setAuthModalOpen] = useState(false);
 
   // Free shipping threshold in BDT
   const freeShippingThreshold = 2500;
@@ -310,19 +316,51 @@ export default function CartDrawer() {
                         </div>
                       </div>
 
-                      {/* Checkout Buttons */}
+                      {/* Role-Based Shopping Checkout Section */}
                       <div className="space-y-2 pt-2">
-                        <button
-                          type="button"
-                          onClick={() => {
-                            toast.success("Proceeding to Cash on Delivery / bKash checkout!");
-                            dispatch(closeCart());
-                          }}
-                          className="w-full py-3.5 px-4 rounded-xl bg-orange-600 hover:bg-orange-700 active:scale-98 text-white text-sm font-bold shadow-md hover:shadow-lg transition flex items-center justify-center gap-2 cursor-pointer"
-                        >
-                          <span>Order with Cash on Delivery / bKash</span>
-                          <ArrowRightIcon className="size-4" />
-                        </button>
+                        {!isAuthenticated || !user ? (
+                          <div className="space-y-2">
+                            <div className="p-3 rounded-xl bg-amber-50 dark:bg-amber-950/40 border border-amber-200 dark:border-amber-800/60 text-xs text-amber-900 dark:text-amber-200 flex items-start gap-2">
+                              <LockClosedIcon className="size-4 text-amber-600 dark:text-amber-400 shrink-0 mt-0.5" />
+                              <div className="leading-snug">
+                                <strong className="font-semibold">Role-Based Shopping:</strong>{" "}
+                                Only registered customers can place orders. Please sign in or register to complete your order.
+                              </div>
+                            </div>
+
+                            <button
+                              type="button"
+                              onClick={() => {
+                                setAuthModalOpen(true);
+                              }}
+                              className="w-full py-3.5 px-4 rounded-xl bg-orange-600 hover:bg-orange-700 active:scale-98 text-white text-sm font-bold shadow-md hover:shadow-lg transition flex items-center justify-center gap-2 cursor-pointer"
+                            >
+                              <LockClosedIcon className="size-4" />
+                              <span>Sign In / Register as Customer to Order</span>
+                            </button>
+                          </div>
+                        ) : (
+                          <div className="space-y-2">
+                            <div className="flex items-center justify-between px-2 text-[11px] text-emerald-800 dark:text-emerald-300">
+                              <span className="flex items-center gap-1 font-medium">
+                                <ShieldCheckIcon className="size-3.5 text-emerald-600" />
+                                Customer Role Active: {user.displayName || user.email?.split("@")[0]}
+                              </span>
+                              <span className="text-gray-400 dark:text-neutral-500">Verified</span>
+                            </div>
+
+                            <button
+                              type="button"
+                              onClick={() => {
+                                setCheckoutModalOpen(true);
+                              }}
+                              className="w-full py-3.5 px-4 rounded-xl bg-orange-600 hover:bg-orange-700 active:scale-98 text-white text-sm font-bold shadow-md hover:shadow-lg transition flex items-center justify-center gap-2 cursor-pointer"
+                            >
+                              <span>Proceed to Checkout</span>
+                              <ArrowRightIcon className="size-4" />
+                            </button>
+                          </div>
+                        )}
 
                         <div className="flex items-center justify-between text-[11px] text-gray-500 dark:text-neutral-400 pt-1">
                           <span className="flex items-center gap-1">
@@ -335,7 +373,7 @@ export default function CartDrawer() {
                               dispatch(clearCart());
                               toast.info("Cart cleared.");
                             }}
-                            className="text-gray-400 hover:text-gray-700 dark:hover:text-neutral-300 underline"
+                            className="text-gray-400 hover:text-gray-700 dark:hover:text-neutral-300 underline cursor-pointer"
                           >
                             Clear Cart
                           </button>
@@ -349,6 +387,23 @@ export default function CartDrawer() {
           </div>
         </div>
       </Dialog>
+
+      {/* Role-Based Checkout Modal */}
+      <CheckoutModal
+        isOpen={checkoutModalOpen}
+        onClose={() => setCheckoutModalOpen(false)}
+        subtotal={totalAmount}
+        discountAmount={discountAmount}
+        shippingCost={shippingCost}
+        finalTotal={finalTotal}
+      />
+
+      {/* Guest Authentication Modal */}
+      <AuthModal
+        isOpen={authModalOpen}
+        onClose={() => setAuthModalOpen(false)}
+        initialTab="signup"
+      />
     </Transition>
   );
 }

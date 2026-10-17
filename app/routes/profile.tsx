@@ -1,0 +1,863 @@
+import React, { useState, useEffect } from "react";
+import { useSearchParams, Link, useNavigate } from "react-router";
+import Topbar from "~/components/main/Home/Topbar";
+import Header from "~/components/main/Home/Header";
+import Footer from "~/components/main/Home/Footer";
+import { useAppDispatch, useAppSelector } from "~/redux/hooks/hook";
+import {
+  fetchCustomerOrders,
+  fetchOrderByTrackingOrNumber,
+  cancelOrderInFirestore,
+  type Order,
+} from "~/firebase";
+import { addToCart } from "~/redux/features/cart/cartSlice";
+import {
+  UserCircleIcon,
+  ShoppingBagIcon,
+  TruckIcon,
+  ShieldCheckIcon,
+  ArrowRightStartOnRectangleIcon,
+  MagnifyingGlassIcon,
+  CalendarIcon,
+  CreditCardIcon,
+  ArrowPathIcon,
+  XMarkIcon,
+  PlusIcon,
+  ArrowRightIcon,
+  CheckCircleIcon,
+  SparklesIcon,
+  TagIcon,
+  Cog6ToothIcon,
+  DocumentDuplicateIcon,
+} from "@heroicons/react/24/outline";
+import { toast } from "sonner";
+import { Spinner } from "~/components/ui/spinner";
+import { AuthModal } from "~/components/main/Auth/AuthModal";
+import OrderTrackerView from "~/components/main/Profile/OrderTrackerView";
+import ProfileSettings from "~/components/main/Profile/ProfileSettings";
+
+export function meta() {
+  return [
+    { title: "Customer Profile & Orders | Fedoll" },
+    {
+      name: "description",
+      content:
+        "Manage your Fedoll customer profile, view past orders, and track active courier shipments across Bangladesh.",
+    },
+  ];
+}
+
+type TabType = "orders" | "track" | "settings";
+
+export default function ProfilePage() {
+  const navigate = useNavigate();
+  const dispatch = useAppDispatch();
+  const [searchParams, setSearchParams] = useSearchParams();
+
+  const { user, isAuthenticated, loading: authLoading } = useAppSelector(
+    (state) => state.auth
+  );
+
+  // Tab State
+  const initialTab = (searchParams.get("tab") as TabType) || "orders";
+  const [activeTab, setActiveTab] = useState<TabType>(initialTab);
+
+  // Auth modal
+  const [authModalOpen, setAuthModalOpen] = useState(false);
+  const [authInitialTab, setAuthInitialTab] = useState<"login" | "signup">(
+    "login"
+  );
+
+  // Orders State
+  const [orders, setOrders] = useState<Order[]>([]);
+  const [loadingOrders, setLoadingOrders] = useState(true);
+  const [orderFilter, setOrderFilter] = useState<
+    "all" | "active" | "delivered" | "cancelled"
+  >("all");
+  const [orderSearchQuery, setOrderSearchQuery] = useState("");
+
+  // Tracking Tab State
+  const [trackingInput, setTrackingInput] = useState(
+    searchParams.get("tracking") || ""
+  );
+  const [trackedOrder, setTrackedOrder] = useState<Order | null>(null);
+  const [trackingLoading, setTrackingLoading] = useState(false);
+  const [trackingError, setTrackingError] = useState<string | null>(null);
+
+  // Sync tab with URL
+  useEffect(() => {
+    const tabParam = searchParams.get("tab") as TabType;
+    if (tabParam && ["orders", "track", "settings"].includes(tabParam)) {
+      setActiveTab(tabParam);
+    }
+    const trackingParam = searchParams.get("tracking");
+    if (trackingParam) {
+      setTrackingInput(trackingParam);
+    }
+  }, [searchParams]);
+
+  const handleTabChange = (tab: TabType) => {
+    setActiveTab(tab);
+    setSearchParams((prev) => {
+      const next = new URLSearchParams(prev);
+      next.set("tab", tab);
+      return next;
+    });
+  };
+
+  // Load customer orders from Firestore
+  const loadOrders = async () => {
+    if (!user?.uid) {
+      setLoadingOrders(false);
+      return;
+    }
+    setLoadingOrders(true);
+    try {
+      const customerOrders = await fetchCustomerOrders(user.uid);
+      setOrders(customerOrders);
+
+      // If tracking param was provided or we have orders, set initial tracked order
+      const trackingQuery = searchParams.get("tracking") || trackingInput;
+      if (trackingQuery) {
+        const found = customerOrders.find(
+          (o) =>
+            o.orderNumber.toUpperCase() === trackingQuery.toUpperCase() ||
+            o.trackingNumber.toUpperCase() === trackingQuery.toUpperCase()
+        );
+        if (found) {
+          setTrackedOrder(found);
+        } else {
+          handleSearchTracking(trackingQuery);
+        }
+      } else if (customerOrders.length > 0 && !trackedOrder) {
+        setTrackedOrder(customerOrders[0]);
+      }
+    } catch (err) {
+      console.warn("Failed to load customer orders:", err);
+    } finally {
+      setLoadingOrders(false);
+    }
+  };
+
+  useEffect(() => {
+    if (user?.uid) {
+      loadOrders();
+    }
+  }, [user?.uid]);
+
+  // Handle tracking search
+  const handleSearchTracking = async (queryParam?: string) => {
+    const key = (queryParam || trackingInput).trim();
+    if (!key) {
+      toast.error("Please enter an Order ID or Courier Tracking Number.");
+      return;
+    }
+
+    setTrackingLoading(true);
+    setTrackingError(null);
+
+    try {
+      const found = await fetchOrderByTrackingOrNumber(key);
+      if (found) {
+        setTrackedOrder(found);
+        setActiveTab("track");
+        setSearchParams((prev) => {
+          const next = new URLSearchParams(prev);
+          next.set("tab", "track");
+          next.set("tracking", key);
+          return next;
+        });
+      } else {
+        setTrackingError(
+          `No order or shipment found matching "${key}". Please check your order confirmation code.`
+        );
+      }
+    } catch (err: unknown) {
+      const error = err as Error;
+      setTrackingError(error.message || "Failed to search tracking records.");
+    } finally {
+      setTrackingLoading(false);
+    }
+  };
+
+  // Cancel order handler
+  const handleCancelOrder = async (orderId: string) => {
+    const confirmCancel = window.confirm(
+      "Are you sure you want to cancel this order? This will release items back into inventory."
+    );
+    if (!confirmCancel) return;
+
+    try {
+      await cancelOrderInFirestore(orderId);
+      toast.success("Order has been cancelled.");
+      await loadOrders();
+    } catch (err: unknown) {
+      const error = err as Error;
+      toast.error(error.message || "Could not cancel order.");
+    }
+  };
+
+  // Reorder handler
+  const handleReorder = (order: Order) => {
+    order.items.forEach((item) => {
+      dispatch(addToCart(item));
+    });
+    toast.success(`Added ${order.items.length} items to your shopping bag!`);
+  };
+
+  // Filter orders
+  const filteredOrders = orders.filter((order) => {
+    // Status filter
+    if (orderFilter === "active") {
+      if (["delivered", "cancelled"].includes(order.orderStatus)) return false;
+    } else if (orderFilter === "delivered") {
+      if (order.orderStatus !== "delivered") return false;
+    } else if (orderFilter === "cancelled") {
+      if (order.orderStatus !== "cancelled") return false;
+    }
+
+    // Search query filter
+    if (orderSearchQuery.trim()) {
+      const q = orderSearchQuery.toLowerCase();
+      const matchOrderNo = order.orderNumber.toLowerCase().includes(q);
+      const matchTracking = order.trackingNumber.toLowerCase().includes(q);
+      const matchItem = order.items.some((it) =>
+        it.name.toLowerCase().includes(q)
+      );
+      if (!matchOrderNo && !matchTracking && !matchItem) return false;
+    }
+
+    return true;
+  });
+
+  // Calculate customer metrics
+  const totalOrdersCount = orders.length;
+  const activeOrdersCount = orders.filter(
+    (o) => !["delivered", "cancelled"].includes(o.orderStatus)
+  ).length;
+  const totalSpent = orders
+    .filter((o) => o.orderStatus !== "cancelled")
+    .reduce((acc, o) => acc + o.totalAmount, 0);
+
+  const getStatusBadge = (status: Order["orderStatus"]) => {
+    switch (status) {
+      case "placed":
+        return {
+          bg: "bg-blue-50 dark:bg-blue-950/40 text-blue-700 dark:text-blue-300 border-blue-200 dark:border-blue-800",
+          text: "Order Placed",
+        };
+      case "confirmed":
+        return {
+          bg: "bg-purple-50 dark:bg-purple-950/40 text-purple-700 dark:text-purple-300 border-purple-200 dark:border-purple-800",
+          text: "Confirmed",
+        };
+      case "processing":
+        return {
+          bg: "bg-amber-50 dark:bg-amber-950/40 text-amber-700 dark:text-amber-300 border-amber-200 dark:border-amber-800",
+          text: "At Atelier",
+        };
+      case "shipped":
+        return {
+          bg: "bg-sky-50 dark:bg-sky-950/40 text-sky-700 dark:text-sky-300 border-sky-200 dark:border-sky-800",
+          text: "In Transit",
+        };
+      case "delivered":
+        return {
+          bg: "bg-emerald-50 dark:bg-emerald-950/40 text-emerald-700 dark:text-emerald-300 border-emerald-200 dark:border-emerald-800",
+          text: "Delivered",
+        };
+      case "cancelled":
+        return {
+          bg: "bg-rose-50 dark:bg-rose-950/40 text-rose-700 dark:text-rose-300 border-rose-200 dark:border-rose-800",
+          text: "Cancelled",
+        };
+      default:
+        return {
+          bg: "bg-stone-100 text-stone-700",
+          text: status,
+        };
+    }
+  };
+
+  return (
+    <div className="min-h-screen bg-stone-50/50 dark:bg-neutral-950 text-gray-900 dark:text-neutral-100 flex flex-col font-sans transition-colors selection:bg-orange-500 selection:text-white">
+      <Topbar />
+      <Header />
+
+      <main className="flex-1 py-8 md:py-12">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          {/* Breadcrumb Navigation */}
+          <nav
+            aria-label="Breadcrumb"
+            className="flex items-center gap-2 text-xs text-gray-500 dark:text-neutral-400 mb-6"
+          >
+            <Link
+              to="/"
+              className="hover:text-orange-600 dark:hover:text-orange-400 transition"
+            >
+              Home
+            </Link>
+            <span>/</span>
+            <span className="text-gray-900 dark:text-white font-semibold">
+              Customer Profile &amp; Orders
+            </span>
+          </nav>
+
+          {/* GUEST VIEW: If not authenticated */}
+          {!isAuthenticated || !user ? (
+            <div className="max-w-3xl mx-auto py-12">
+              <div className="rounded-3xl bg-white dark:bg-neutral-900 border border-stone-200/80 dark:border-neutral-800 shadow-xl p-8 sm:p-12 text-center space-y-6">
+                <div className="size-20 rounded-full bg-orange-50 dark:bg-orange-950/60 text-orange-600 dark:text-orange-400 mx-auto flex items-center justify-center ring-8 ring-orange-50/50 dark:ring-orange-950/30">
+                  <ShieldCheckIcon className="size-10" />
+                </div>
+
+                <div className="space-y-2 max-w-lg mx-auto">
+                  <span className="inline-block px-3 py-1 rounded-full bg-orange-100 dark:bg-orange-950/60 text-orange-800 dark:text-orange-300 text-xs font-bold uppercase tracking-wider">
+                    Role-Based Shopping System
+                  </span>
+                  <h1 className="text-2xl sm:text-3xl font-black text-gray-900 dark:text-white">
+                    Sign In to Your Customer Account
+                  </h1>
+                  <p className="text-xs sm:text-sm text-gray-600 dark:text-neutral-400 leading-relaxed">
+                    At Fedoll, only registered customers can place orders and track
+                    real-time courier delivery across all 64 districts in Bangladesh.
+                  </p>
+                </div>
+
+                {/* Benefits Grid */}
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 text-left pt-2">
+                  <div className="p-4 rounded-2xl bg-stone-50 dark:bg-neutral-950 border border-stone-200/60 dark:border-neutral-800">
+                    <TruckIcon className="size-5 text-orange-600 mb-1.5" />
+                    <h4 className="text-xs font-bold text-gray-900 dark:text-white">
+                      Live Courier Tracking
+                    </h4>
+                    <p className="text-[11px] text-gray-500 dark:text-neutral-400 mt-0.5">
+                      Check real-time milestones with Steadfast &amp; Pathao Express.
+                    </p>
+                  </div>
+
+                  <div className="p-4 rounded-2xl bg-stone-50 dark:bg-neutral-950 border border-stone-200/60 dark:border-neutral-800">
+                    <ShoppingBagIcon className="size-5 text-orange-600 mb-1.5" />
+                    <h4 className="text-xs font-bold text-gray-900 dark:text-white">
+                      Order History &amp; Receipts
+                    </h4>
+                    <p className="text-[11px] text-gray-500 dark:text-neutral-400 mt-0.5">
+                      Review previous garments, sizes, colors, and total receipts.
+                    </p>
+                  </div>
+
+                  <div className="p-4 rounded-2xl bg-stone-50 dark:bg-neutral-950 border border-stone-200/60 dark:border-neutral-800">
+                    <SparklesIcon className="size-5 text-orange-600 mb-1.5" />
+                    <h4 className="text-xs font-bold text-gray-900 dark:text-white">
+                      1-Click Reorder &amp; Saved Address
+                    </h4>
+                    <p className="text-[11px] text-gray-500 dark:text-neutral-400 mt-0.5">
+                      Skip retyping your shipping info on every new seasonal drop.
+                    </p>
+                  </div>
+                </div>
+
+                {/* Auth CTAs */}
+                <div className="flex flex-col sm:flex-row gap-3 justify-center pt-4">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setAuthInitialTab("login");
+                      setAuthModalOpen(true);
+                    }}
+                    className="px-6 py-3 rounded-xl bg-orange-600 hover:bg-orange-700 text-white font-bold text-xs shadow-md transition cursor-pointer"
+                  >
+                    Log In to Customer Account
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setAuthInitialTab("signup");
+                      setAuthModalOpen(true);
+                    }}
+                    className="px-6 py-3 rounded-xl bg-white dark:bg-neutral-800 border border-gray-300 dark:border-neutral-700 hover:bg-stone-50 dark:hover:bg-neutral-700 text-gray-800 dark:text-neutral-200 font-semibold text-xs transition cursor-pointer"
+                  >
+                    Register as New Customer
+                  </button>
+                </div>
+
+                <div className="pt-2 text-xs text-gray-500 dark:text-neutral-400">
+                  Looking to track an existing order without logging in?{" "}
+                  <Link
+                    to="/track-order"
+                    className="text-orange-600 dark:text-orange-400 font-semibold underline"
+                  >
+                    Open Public Order Tracker
+                  </Link>
+                </div>
+              </div>
+            </div>
+          ) : (
+            /* AUTHENTICATED CUSTOMER DASHBOARD */
+            <div className="space-y-8">
+              {/* Profile Overview Banner */}
+              <div className="bg-white dark:bg-neutral-900 rounded-3xl border border-stone-200/80 dark:border-neutral-800 shadow-sm p-6 sm:p-8">
+                <div className="flex flex-col md:flex-row md:items-center justify-between gap-6">
+                  {/* Left: Customer Profile info */}
+                  <div className="flex items-center gap-4">
+                    {user.photoURL ? (
+                      <img
+                        src={user.photoURL}
+                        alt={user.displayName || "Customer"}
+                        className="size-16 sm:size-20 rounded-2xl object-cover ring-4 ring-orange-100 dark:ring-orange-950/60 shadow-md"
+                      />
+                    ) : (
+                      <div className="size-16 sm:size-20 rounded-2xl bg-orange-700 text-white font-black text-2xl flex items-center justify-center shadow-md">
+                        {(user.displayName || user.email || "C")
+                          .charAt(0)
+                          .toUpperCase()}
+                      </div>
+                    )}
+
+                    <div className="space-y-1">
+                      <div className="flex flex-wrap items-center gap-2">
+                        <h1 className="text-xl sm:text-2xl font-black text-gray-900 dark:text-white">
+                          {user.displayName || "Valued Customer"}
+                        </h1>
+                        <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full bg-emerald-100 dark:bg-emerald-950/60 text-emerald-800 dark:text-emerald-300 text-xs font-bold border border-emerald-200/80 dark:border-emerald-800/40">
+                          <ShieldCheckIcon className="size-3.5" />
+                          <span>
+                            {user.role === "admin"
+                              ? "Admin Account"
+                              : "Registered Customer"}
+                          </span>
+                        </span>
+                      </div>
+
+                      <p className="text-xs text-gray-500 dark:text-neutral-400 font-mono">
+                        {user.email}
+                      </p>
+
+                      {user.phoneNumber && (
+                        <p className="text-xs text-gray-600 dark:text-neutral-300">
+                          Phone: <strong>{user.phoneNumber}</strong>
+                        </p>
+                      )}
+                    </div>
+                  </div>
+
+                  {/* Right: Metrics Stats */}
+                  <div className="grid grid-cols-3 gap-3 sm:gap-6 border-t md:border-t-0 md:border-l border-gray-100 dark:border-neutral-800 pt-4 md:pt-0 md:pl-6 text-center">
+                    <div>
+                      <span className="text-[11px] font-semibold uppercase tracking-wider text-gray-400 dark:text-neutral-500">
+                        Total Orders
+                      </span>
+                      <p className="text-xl sm:text-2xl font-black text-gray-900 dark:text-white mt-0.5">
+                        {totalOrdersCount}
+                      </p>
+                    </div>
+
+                    <div>
+                      <span className="text-[11px] font-semibold uppercase tracking-wider text-gray-400 dark:text-neutral-500">
+                        In Transit
+                      </span>
+                      <p className="text-xl sm:text-2xl font-black text-orange-600 dark:text-orange-400 mt-0.5">
+                        {activeOrdersCount}
+                      </p>
+                    </div>
+
+                    <div>
+                      <span className="text-[11px] font-semibold uppercase tracking-wider text-gray-400 dark:text-neutral-500">
+                        Total Spent
+                      </span>
+                      <p className="text-xl sm:text-2xl font-black text-gray-900 dark:text-white mt-0.5">
+                        ৳{totalSpent.toLocaleString()}
+                      </p>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Dashboard Navigation Tabs */}
+                <div className="flex border-b border-gray-100 dark:border-neutral-800 mt-8 gap-4 sm:gap-8 overflow-x-auto">
+                  <button
+                    type="button"
+                    onClick={() => handleTabChange("orders")}
+                    className={`pb-3.5 text-xs sm:text-sm font-bold flex items-center gap-2 border-b-2 transition cursor-pointer whitespace-nowrap ${
+                      activeTab === "orders"
+                        ? "border-orange-600 text-orange-600 dark:text-orange-400"
+                        : "border-transparent text-gray-600 dark:text-neutral-400 hover:text-gray-900 dark:hover:text-white"
+                    }`}
+                  >
+                    <ShoppingBagIcon className="size-4" />
+                    <span>My Orders</span>
+                    <span className="px-2 py-0.5 rounded-full bg-stone-100 dark:bg-neutral-800 text-[11px]">
+                      {totalOrdersCount}
+                    </span>
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={() => handleTabChange("track")}
+                    className={`pb-3.5 text-xs sm:text-sm font-bold flex items-center gap-2 border-b-2 transition cursor-pointer whitespace-nowrap ${
+                      activeTab === "track"
+                        ? "border-orange-600 text-orange-600 dark:text-orange-400"
+                        : "border-transparent text-gray-600 dark:text-neutral-400 hover:text-gray-900 dark:hover:text-white"
+                    }`}
+                  >
+                    <TruckIcon className="size-4" />
+                    <span>Track Shipment</span>
+                    {activeOrdersCount > 0 && (
+                      <span className="size-2 rounded-full bg-orange-600 animate-pulse" />
+                    )}
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={() => handleTabChange("settings")}
+                    className={`pb-3.5 text-xs sm:text-sm font-bold flex items-center gap-2 border-b-2 transition cursor-pointer whitespace-nowrap ${
+                      activeTab === "settings"
+                        ? "border-orange-600 text-orange-600 dark:text-orange-400"
+                        : "border-transparent text-gray-600 dark:text-neutral-400 hover:text-gray-900 dark:hover:text-white"
+                    }`}
+                  >
+                    <Cog6ToothIcon className="size-4" />
+                    <span>Profile &amp; Addresses</span>
+                  </button>
+                </div>
+              </div>
+
+              {/* TAB CONTENT: MY ORDERS */}
+              {activeTab === "orders" && (
+                <div className="space-y-6">
+                  {/* Filters & Search Toolbar */}
+                  <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3 bg-white dark:bg-neutral-900 p-4 rounded-2xl border border-stone-200/80 dark:border-neutral-800">
+                    {/* Status Pill Filters */}
+                    <div className="flex items-center gap-1.5 overflow-x-auto pb-1 sm:pb-0">
+                      {[
+                        { key: "all", label: "All Orders" },
+                        { key: "active", label: "Active & In Transit" },
+                        { key: "delivered", label: "Delivered" },
+                        { key: "cancelled", label: "Cancelled" },
+                      ].map((tab) => (
+                        <button
+                          key={tab.key}
+                          type="button"
+                          onClick={() => setOrderFilter(tab.key as any)}
+                          className={`px-3 py-1.5 rounded-xl text-xs font-semibold whitespace-nowrap transition cursor-pointer ${
+                            orderFilter === tab.key
+                              ? "bg-stone-900 dark:bg-white text-white dark:text-stone-900 shadow-xs"
+                              : "bg-stone-100 dark:bg-neutral-800 text-gray-600 dark:text-neutral-300 hover:bg-stone-200 dark:hover:bg-neutral-700"
+                          }`}
+                        >
+                          {tab.label}
+                        </button>
+                      ))}
+                    </div>
+
+                    {/* Search box */}
+                    <div className="relative min-w-[240px]">
+                      <MagnifyingGlassIcon className="absolute left-3 top-1/2 -translate-y-1/2 size-4 text-gray-400" />
+                      <input
+                        type="text"
+                        value={orderSearchQuery}
+                        onChange={(e) => setOrderSearchQuery(e.target.value)}
+                        placeholder="Search by Order # or item..."
+                        className="w-full pl-9 pr-3 py-1.5 text-xs bg-stone-50/60 dark:bg-neutral-800 border border-gray-200 dark:border-neutral-700 rounded-xl text-gray-900 dark:text-white focus:outline-none focus:ring-1 focus:ring-orange-600"
+                      />
+                    </div>
+                  </div>
+
+                  {/* Orders Cards List */}
+                  {loadingOrders ? (
+                    <div className="py-20 text-center space-y-3">
+                      <Spinner className="size-8 text-orange-600 mx-auto" />
+                      <p className="text-xs text-gray-500">
+                        Fetching your orders from Cloud Firestore...
+                      </p>
+                    </div>
+                  ) : filteredOrders.length === 0 ? (
+                    <div className="py-20 text-center bg-white dark:bg-neutral-900 rounded-3xl border border-stone-200/80 dark:border-neutral-800 p-8">
+                      <div className="size-16 rounded-full bg-stone-100 dark:bg-neutral-800 text-stone-400 mx-auto flex items-center justify-center mb-4">
+                        <ShoppingBagIcon className="size-8" />
+                      </div>
+                      <h3 className="text-base font-bold text-gray-900 dark:text-white">
+                        No orders found
+                      </h3>
+                      <p className="mt-1 text-xs text-gray-500 dark:text-neutral-400 max-w-sm mx-auto">
+                        {orderSearchQuery
+                          ? `No orders matching "${orderSearchQuery}". Try clearing search.`
+                          : "You haven't placed any orders with this customer account yet."}
+                      </p>
+                      <button
+                        type="button"
+                        onClick={() => navigate("/products")}
+                        className="mt-6 px-6 py-2.5 rounded-full bg-orange-600 hover:bg-orange-700 text-white font-bold text-xs shadow-md transition cursor-pointer"
+                      >
+                        Start Shopping Now
+                      </button>
+                    </div>
+                  ) : (
+                    <div className="space-y-4">
+                      {filteredOrders.map((order) => {
+                        const badge = getStatusBadge(order.orderStatus);
+                        const canCancel = ["placed", "confirmed"].includes(
+                          order.orderStatus
+                        );
+
+                        return (
+                          <div
+                            key={order.id}
+                            className="bg-white dark:bg-neutral-900 rounded-3xl border border-stone-200/80 dark:border-neutral-800 shadow-xs hover:shadow-md transition p-6 space-y-5"
+                          >
+                            {/* Card Top Strip */}
+                            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-4 border-b border-gray-100 dark:border-neutral-800 text-xs">
+                              <div className="space-y-1">
+                                <div className="flex items-center gap-2">
+                                  <span className="font-mono font-bold text-gray-900 dark:text-white text-sm">
+                                    #{order.orderNumber}
+                                  </span>
+                                  <span
+                                    className={`px-2.5 py-0.5 rounded-full font-bold border ${badge.bg}`}
+                                  >
+                                    {badge.text}
+                                  </span>
+                                </div>
+                                <p className="text-gray-500 dark:text-neutral-400 text-[11px]">
+                                  Placed on{" "}
+                                  {new Date(order.createdAt).toLocaleDateString(
+                                    "en-US",
+                                    {
+                                      month: "short",
+                                      day: "numeric",
+                                      year: "numeric",
+                                      hour: "2-digit",
+                                      minute: "2-digit",
+                                    }
+                                  )}
+                                </p>
+                              </div>
+
+                              <div className="flex flex-wrap items-center gap-2">
+                                <button
+                                  type="button"
+                                  onClick={() => {
+                                    setTrackedOrder(order);
+                                    setTrackingInput(order.orderNumber);
+                                    handleTabChange("track");
+                                  }}
+                                  className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-orange-600 hover:bg-orange-700 text-white font-bold text-xs shadow-xs transition cursor-pointer"
+                                >
+                                  <TruckIcon className="size-4" />
+                                  <span>Track Package</span>
+                                </button>
+
+                                <button
+                                  type="button"
+                                  onClick={() => handleReorder(order)}
+                                  className="px-3 py-1.5 rounded-xl border border-gray-200 dark:border-neutral-700 hover:bg-stone-50 dark:hover:bg-neutral-800 text-gray-700 dark:text-neutral-300 font-semibold text-xs transition cursor-pointer"
+                                >
+                                  Reorder
+                                </button>
+
+                                {canCancel && (
+                                  <button
+                                    type="button"
+                                    onClick={() => handleCancelOrder(order.id)}
+                                    className="px-3 py-1.5 rounded-xl border border-rose-200 dark:border-rose-900/60 text-rose-600 dark:text-rose-400 hover:bg-rose-50 dark:hover:bg-rose-950/40 text-xs font-semibold transition cursor-pointer"
+                                  >
+                                    Cancel
+                                  </button>
+                                )}
+                              </div>
+                            </div>
+
+                            {/* Items List */}
+                            <div className="space-y-3">
+                              {order.items.map((item, idx) => (
+                                <div
+                                  key={idx}
+                                  className="flex items-center gap-3.5"
+                                >
+                                  <img
+                                    src={
+                                      item.image ||
+                                      "https://images.unsplash.com/photo-1544441893-675973e31985?auto=format&fit=crop&w=150&q=80"
+                                    }
+                                    alt={item.name}
+                                    className="size-16 rounded-xl object-cover bg-stone-100 dark:bg-neutral-800 border border-gray-200 dark:border-neutral-700 shrink-0"
+                                  />
+                                  <div className="flex-1 min-w-0">
+                                    <h4 className="text-xs sm:text-sm font-bold text-gray-900 dark:text-white truncate">
+                                      {item.name}
+                                    </h4>
+                                    <div className="mt-0.5 flex flex-wrap items-center gap-2 text-xs text-gray-500 dark:text-neutral-400">
+                                      <span>Qty: {item.quantity}</span>
+                                      {item.size && (
+                                        <span>• Size: {item.size}</span>
+                                      )}
+                                      {item.color && (
+                                        <span>• Color: {item.color}</span>
+                                      )}
+                                    </div>
+                                    <p className="text-xs font-bold text-gray-900 dark:text-white mt-1">
+                                      ৳
+                                      {(
+                                        item.price * item.quantity
+                                      ).toLocaleString()}
+                                    </p>
+                                  </div>
+                                </div>
+                              ))}
+                            </div>
+
+                            {/* Card Footer Summary */}
+                            <div className="pt-3 border-t border-gray-100 dark:border-neutral-800 flex flex-col sm:flex-row sm:items-center justify-between gap-2 text-xs text-gray-500 dark:text-neutral-400">
+                              <div className="flex flex-wrap items-center gap-3">
+                                <span>
+                                  Courier:{" "}
+                                  <strong className="text-gray-800 dark:text-neutral-200">
+                                    {order.courierName}
+                                  </strong>
+                                </span>
+                                <span>•</span>
+                                <span>
+                                  Tracking:{" "}
+                                  <strong className="text-orange-600 font-mono">
+                                    {order.trackingNumber}
+                                  </strong>
+                                </span>
+                              </div>
+
+                              <div className="flex items-center gap-2">
+                                <span>Grand Total:</span>
+                                <span className="text-base font-black text-gray-900 dark:text-white">
+                                  ৳{order.totalAmount.toLocaleString()}
+                                </span>
+                                <span className="uppercase text-[11px] font-bold text-stone-500">
+                                  ({order.paymentMethod})
+                                </span>
+                              </div>
+                            </div>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  )}
+                </div>
+              )}
+
+              {/* TAB CONTENT: TRACK SHIPMENT */}
+              {activeTab === "track" && (
+                <div className="space-y-6">
+                  {/* Tracking Search Input Card */}
+                  <div className="bg-white dark:bg-neutral-900 rounded-3xl border border-stone-200/80 dark:border-neutral-800 shadow-sm p-6 sm:p-8 space-y-4">
+                    <div className="space-y-1">
+                      <h3 className="text-lg font-black text-gray-900 dark:text-white flex items-center gap-2">
+                        <TruckIcon className="size-5 text-orange-600" />
+                        <span>Track Any Package by Order or Tracking ID</span>
+                      </h3>
+                      <p className="text-xs text-gray-500 dark:text-neutral-400">
+                        Enter your Fedoll Order ID (e.g. FED-839201) or Courier
+                        Tracking Code (e.g. TRK-BD82941092).
+                      </p>
+                    </div>
+
+                    <form
+                      onSubmit={(e) => {
+                        e.preventDefault();
+                        handleSearchTracking();
+                      }}
+                      className="flex flex-col sm:flex-row gap-2 max-w-xl"
+                    >
+                      <div className="relative flex-1">
+                        <MagnifyingGlassIcon className="absolute left-3 top-1/2 -translate-y-1/2 size-4 text-gray-400" />
+                        <input
+                          type="text"
+                          required
+                          value={trackingInput}
+                          onChange={(e) => setTrackingInput(e.target.value)}
+                          placeholder="e.g. FED-123456 or TRK-BD12345678"
+                          className="w-full pl-9 pr-3 py-2.5 text-xs bg-stone-50 dark:bg-neutral-800 border border-gray-200 dark:border-neutral-700 rounded-xl text-gray-900 dark:text-white font-mono uppercase focus:outline-none focus:ring-2 focus:ring-orange-600"
+                        />
+                      </div>
+                      <button
+                        type="submit"
+                        disabled={trackingLoading}
+                        className="px-6 py-2.5 bg-orange-600 hover:bg-orange-700 disabled:opacity-50 text-white font-bold text-xs rounded-xl shadow-md transition flex items-center justify-center gap-2 cursor-pointer"
+                      >
+                        {trackingLoading ? (
+                          <Spinner className="size-4 text-white" />
+                        ) : (
+                          <span>Track Now</span>
+                        )}
+                      </button>
+                    </form>
+
+                    {/* Quick Pick From My Orders */}
+                    {orders.length > 0 && (
+                      <div className="pt-2 flex flex-wrap items-center gap-2 text-xs">
+                        <span className="text-gray-400 text-[11px]">
+                          Quick pick active orders:
+                        </span>
+                        {orders.slice(0, 4).map((o) => (
+                          <button
+                            key={o.id}
+                            type="button"
+                            onClick={() => {
+                              setTrackingInput(o.orderNumber);
+                              setTrackedOrder(o);
+                            }}
+                            className={`px-2.5 py-1 rounded-lg text-xs font-mono font-bold transition cursor-pointer ${
+                              trackedOrder?.id === o.id
+                                ? "bg-orange-100 dark:bg-orange-950/60 text-orange-700 dark:text-orange-400 border border-orange-300 dark:border-orange-800"
+                                : "bg-stone-100 dark:bg-neutral-800 text-gray-600 dark:text-neutral-300 hover:bg-stone-200"
+                            }`}
+                          >
+                            #{o.orderNumber}
+                          </button>
+                        ))}
+                      </div>
+                    )}
+
+                    {trackingError && (
+                      <div className="p-3.5 rounded-xl bg-rose-50 dark:bg-rose-950/40 border border-rose-200 dark:border-rose-900/60 text-xs text-rose-700 dark:text-rose-300">
+                        {trackingError}
+                      </div>
+                    )}
+                  </div>
+
+                  {/* Render Live Tracking View */}
+                  {trackedOrder ? (
+                    <OrderTrackerView
+                      order={trackedOrder}
+                      onRefresh={loadOrders}
+                      isRefreshing={loadingOrders}
+                    />
+                  ) : (
+                    <div className="p-12 text-center bg-white dark:bg-neutral-900 rounded-3xl border border-stone-200/80 dark:border-neutral-800">
+                      <TruckIcon className="size-12 text-gray-300 dark:text-neutral-700 mx-auto mb-2" />
+                      <h4 className="text-sm font-bold text-gray-900 dark:text-white">
+                        No shipment currently selected
+                      </h4>
+                      <p className="text-xs text-gray-500 dark:text-neutral-400 mt-1">
+                        Select an order from above or type your Order Number to view
+                        doorstep milestones.
+                      </p>
+                    </div>
+                  )}
+                </div>
+              )}
+
+              {/* TAB CONTENT: PROFILE & ADDRESSES */}
+              {activeTab === "settings" && <ProfileSettings />}
+            </div>
+          )}
+        </div>
+      </main>
+
+      <Footer />
+
+      {/* Auth Modal */}
+      <AuthModal
+        isOpen={authModalOpen}
+        onClose={() => setAuthModalOpen(false)}
+        initialTab={authInitialTab}
+      />
+    </div>
+  );
+}

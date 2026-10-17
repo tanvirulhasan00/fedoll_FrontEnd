@@ -61,8 +61,9 @@ const COMPANY_LINKS = [
 ];
 
 const SUPPORT_LINKS = [
+  { name: "Customer Profile & Orders", href: "/profile" },
+  { name: "Order Tracking", href: "/track-order" },
   { name: "Contact Customer Care", href: "/contact-us" },
-  { name: "Order Tracking", href: "/contact-us" },
   { name: "Shipping & Delivery Info", href: "/contact-us" },
   { name: "Returns & Exchanges", href: "/contact-us" },
   { name: "Size Guide & Fit Advice", href: "/contact-us" },

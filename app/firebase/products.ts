@@ -4,6 +4,7 @@ import {
   getDoc,
   getDocs,
   setDoc,
+  deleteDoc,
   query,
   where,
   serverTimestamp,
@@ -616,16 +617,17 @@ export const fetchCategoriesFromFirestore = async (): Promise<ProductCategoryIte
  * Seed all products and categories into Firebase Firestore
  */
 export const seedProductsToFirestore = async (force: boolean = false) => {
-  for (const product of initialProductsData) {
-    await setDoc(
-      doc(db, "products", product.id),
-      {
-        ...product,
-        updatedAt: serverTimestamp(),
-      },
-      { merge: !force }
-    );
-  }
+  try {
+    for (const product of initialProductsData) {
+      await setDoc(
+        doc(db, "products", product.id),
+        {
+          ...product,
+          updatedAt: serverTimestamp(),
+        },
+        { merge: !force }
+      );
+    }
 
   for (const cat of initialProductCategories) {
     await setDoc(
@@ -638,8 +640,113 @@ export const seedProductsToFirestore = async (force: boolean = false) => {
     );
   }
 
-  return {
-    success: true,
-    message: "Products and categories successfully synchronized with Firebase Firestore!",
-  };
+    return {
+      success: true,
+      message: "Products and categories successfully synchronized with Firebase Firestore!",
+    };
+  } catch (error) {
+    console.warn("Error seeding products to Firestore:", error);
+    return {
+      success: false,
+      message: "Could not seed all datasets to Firestore.",
+    };
+  }
 };
+
+/**
+ * Admin: Create or update a product
+ */
+export const saveProductToFirestore = async (
+  product: ProductItem
+): Promise<ProductItem> => {
+  try {
+    const docRef = doc(db, "products", product.id);
+    await setDoc(
+      docRef,
+      {
+        ...product,
+        updatedAt: serverTimestamp(),
+      },
+      { merge: true }
+    );
+  } catch (err) {
+    console.warn("Could not save product directly to Firestore:", err);
+  }
+
+  // Update in-memory / local dataset
+  const index = initialProductsData.findIndex((p) => p.id === product.id);
+  if (index >= 0) {
+    initialProductsData[index] = product;
+  } else {
+    initialProductsData.unshift(product);
+  }
+
+  return product;
+};
+
+/**
+ * Admin: Delete a product
+ */
+export const deleteProductFromFirestore = async (id: string): Promise<boolean> => {
+  try {
+    await deleteDoc(doc(db, "products", id));
+  } catch (err) {
+    console.warn("Could not delete product from Firestore:", err);
+  }
+
+  const index = initialProductsData.findIndex((p) => p.id === id);
+  if (index >= 0) {
+    initialProductsData.splice(index, 1);
+  }
+
+  return true;
+};
+
+/**
+ * Admin: Create or update a product category
+ */
+export const saveCategoryToFirestore = async (
+  category: ProductCategoryItem
+): Promise<ProductCategoryItem> => {
+  try {
+    const docRef = doc(db, "product_categories", category.id);
+    await setDoc(
+      docRef,
+      {
+        ...category,
+        updatedAt: serverTimestamp(),
+      },
+      { merge: true }
+    );
+  } catch (err) {
+    console.warn("Could not save category directly to Firestore:", err);
+  }
+
+  const index = initialProductCategories.findIndex((c) => c.id === category.id);
+  if (index >= 0) {
+    initialProductCategories[index] = category;
+  } else {
+    initialProductCategories.push(category);
+  }
+
+  return category;
+};
+
+/**
+ * Admin: Delete a product category
+ */
+export const deleteCategoryFromFirestore = async (id: string): Promise<boolean> => {
+  try {
+    await deleteDoc(doc(db, "product_categories", id));
+  } catch (err) {
+    console.warn("Could not delete category from Firestore:", err);
+  }
+
+  const index = initialProductCategories.findIndex((c) => c.id === id);
+  if (index >= 0) {
+    initialProductCategories.splice(index, 1);
+  }
+
+  return true;
+};
+

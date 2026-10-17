@@ -1,5 +1,5 @@
 import React, { useEffect } from "react";
-import { EnvelopeIcon, PhoneIcon } from "@heroicons/react/24/outline";
+import { EnvelopeIcon, PhoneIcon, TruckIcon } from "@heroicons/react/24/outline";
 import {
   FaFacebookF,
   FaTwitter,
@@ -42,15 +42,14 @@ const Topbar = () => {
               data?.result?.email
             )}
           </Link>
-          {/* {data?.result?.phoneNumber && (
-            <Link
-              to={`tel:${data?.result?.phoneNumber}`}
-              className="flex items-center gap-1 hover:underline transition"
-            >
-              <PhoneIcon className="h-4 w-4 text-gray-100 transition group-hover:text-green-500" />
-              {data?.result?.phoneNumber}
-            </Link>
-          )} */}
+          <Separator orientation="vertical" className="hidden sm:block" />
+          <Link
+            to="/track-order"
+            className="flex items-center gap-1 text-xs font-semibold hover:text-white hover:underline transition"
+          >
+            <TruckIcon className="size-3.5" />
+            <span>Track Order</span>
+          </Link>
         </div>
 
         {/* Social Media Links */}

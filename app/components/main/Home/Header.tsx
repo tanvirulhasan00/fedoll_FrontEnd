@@ -267,12 +267,50 @@ export default function Header() {
                           {user.displayName || "My Account"}
                         </p>
                         {user.email && (
-                          <p className="text-xs text-gray-500 truncate">
+                          <p className="text-xs text-gray-500 dark:text-neutral-400 truncate">
                             {user.email}
                           </p>
                         )}
+                        <span className="inline-block mt-1 px-2 py-0.5 rounded-full bg-emerald-100 dark:bg-emerald-950/60 text-[10px] font-bold text-emerald-800 dark:text-emerald-300">
+                          {user.role === "admin" ? "Store Admin" : "Registered Customer"}
+                        </span>
                       </div>
                     </div>
+
+                    <div className="pt-2 space-y-1">
+                      <Link
+                        to="/profile"
+                        onClick={() => setMobileMenuOpen(false)}
+                        className="-mx-3 block rounded-lg px-3 py-2 text-sm font-semibold text-gray-800 dark:text-neutral-200 hover:bg-gray-100 dark:hover:bg-neutral-800"
+                      >
+                        Customer Profile
+                      </Link>
+                      <Link
+                        to="/profile?tab=orders"
+                        onClick={() => setMobileMenuOpen(false)}
+                        className="-mx-3 block rounded-lg px-3 py-2 text-sm font-semibold text-gray-800 dark:text-neutral-200 hover:bg-gray-100 dark:hover:bg-neutral-800"
+                      >
+                        My Orders &amp; Receipts
+                      </Link>
+                      <Link
+                        to="/track-order"
+                        onClick={() => setMobileMenuOpen(false)}
+                        className="-mx-3 block rounded-lg px-3 py-2 text-sm font-semibold text-orange-600 dark:text-orange-400 hover:bg-orange-50 dark:hover:bg-orange-950/30"
+                      >
+                        Track Courier Shipment
+                      </Link>
+                      <Link
+                        to="/admin"
+                        onClick={() => setMobileMenuOpen(false)}
+                        className="-mx-3 flex items-center justify-between rounded-lg px-3 py-2 text-sm font-bold text-neutral-900 dark:text-white bg-neutral-100 dark:bg-neutral-800 hover:bg-neutral-200 dark:hover:bg-neutral-700"
+                      >
+                        <span>Admin Dashboard</span>
+                        <span className="text-[10px] uppercase font-bold tracking-wider px-1.5 py-0.5 rounded-sm bg-orange-700 text-white">
+                          Staff
+                        </span>
+                      </Link>
+                    </div>
+
                     <button
                       type="button"
                       onClick={async () => {
@@ -286,7 +324,7 @@ export default function Header() {
                           toast.error(error.message || "Failed to sign out.");
                         }
                       }}
-                      className="-mx-3 flex w-full items-center gap-2 rounded-lg px-3 py-2.5 text-base font-semibold text-red-600 hover:bg-red-50 transition"
+                      className="-mx-3 flex w-full items-center gap-2 rounded-lg px-3 py-2.5 text-base font-semibold text-red-600 hover:bg-red-50 dark:hover:bg-red-950/30 transition cursor-pointer"
                     >
                       <ArrowRightStartOnRectangleIcon className="size-5" />
                       <span>Sign Out</span>

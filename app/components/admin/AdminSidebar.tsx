@@ -1,0 +1,184 @@
+import React from "react";
+import { Link } from "react-router";
+import {
+  ChartBarIcon,
+  ShoppingBagIcon,
+  RectangleStackIcon,
+  ClipboardDocumentListIcon,
+  TruckIcon,
+  UsersIcon,
+  TagIcon,
+  Cog6ToothIcon,
+  ArrowRightStartOnRectangleIcon,
+  ArrowTopRightOnSquareIcon,
+  ShieldCheckIcon,
+} from "@heroicons/react/24/outline";
+import type { AuthUser } from "~/redux/features/auth/authSlice";
+
+export type AdminTab =
+  | "overview"
+  | "products"
+  | "categories"
+  | "orders"
+  | "shipping"
+  | "customers"
+  | "coupons"
+  | "settings";
+
+interface AdminSidebarProps {
+  currentTab: AdminTab;
+  onSelectTab: (tab: AdminTab) => void;
+  user: AuthUser | null;
+  onSignOut: () => void;
+  mobileMenuOpen?: boolean;
+  onCloseMobileMenu?: () => void;
+}
+
+export const AdminSidebar: React.FC<AdminSidebarProps> = ({
+  currentTab,
+  onSelectTab,
+  user,
+  onSignOut,
+  mobileMenuOpen,
+  onCloseMobileMenu,
+}) => {
+  const navItems: { id: AdminTab; label: string; icon: React.ElementType; badge?: string }[] = [
+    { id: "overview", label: "Dashboard Overview", icon: ChartBarIcon },
+    { id: "products", label: "Product Catalog", icon: ShoppingBagIcon },
+    { id: "categories", label: "Categories", icon: RectangleStackIcon },
+    { id: "orders", label: "Orders & Shipments", icon: ClipboardDocumentListIcon },
+    { id: "shipping", label: "Shipping & Couriers", icon: TruckIcon, badge: "Logistics" },
+    { id: "customers", label: "Customers & Roles", icon: UsersIcon },
+    { id: "coupons", label: "Coupons & Discounts", icon: TagIcon },
+    { id: "settings", label: "Store Settings", icon: Cog6ToothIcon },
+  ];
+
+  const handleTabClick = (tab: AdminTab) => {
+    onSelectTab(tab);
+    if (onCloseMobileMenu) onCloseMobileMenu();
+  };
+
+  return (
+    <aside
+      className={`fixed inset-y-0 left-0 z-40 w-64 bg-stone-900 dark:bg-neutral-950 text-stone-200 flex flex-col border-r border-stone-800 transition-transform duration-300 md:translate-x-0 ${
+        mobileMenuOpen ? "translate-x-0" : "-translate-x-full"
+      }`}
+    >
+      {/* Brand Header */}
+      <div className="p-5 border-b border-stone-800/80 flex items-center justify-between">
+        <Link to="/" className="flex items-center gap-2.5">
+          <div className="size-9 rounded-xl bg-orange-600 flex items-center justify-center font-black text-white text-lg shadow-md">
+            F
+          </div>
+          <div>
+            <span className="font-bold text-base text-white tracking-wide">
+              Fedoll
+            </span>
+            <span className="block text-[10px] text-orange-400 font-semibold uppercase tracking-wider">
+              Admin Atelier
+            </span>
+          </div>
+        </Link>
+
+        <span className="px-2 py-0.5 rounded-full bg-orange-950/80 text-[10px] text-orange-400 font-mono border border-orange-800/60 font-bold">
+          v2.0
+        </span>
+      </div>
+
+      {/* Navigation Menu */}
+      <nav className="flex-1 overflow-y-auto px-3 py-4 space-y-1">
+        <div className="px-3 pb-2 text-[10px] font-bold uppercase tracking-wider text-stone-400">
+          Atelier Control
+        </div>
+
+        {navItems.map((item) => {
+          const Icon = item.icon;
+          const isActive = currentTab === item.id;
+          return (
+            <button
+              key={item.id}
+              type="button"
+              onClick={() => handleTabClick(item.id)}
+              className={`w-full flex items-center justify-between px-3.5 py-2.5 rounded-xl text-xs font-semibold transition cursor-pointer ${
+                isActive
+                  ? "bg-orange-600 text-white shadow-sm font-bold"
+                  : "text-stone-300 hover:bg-stone-800/70 hover:text-white"
+              }`}
+            >
+              <div className="flex items-center gap-3">
+                <Icon className={`size-4.5 ${isActive ? "text-white" : "text-stone-400"}`} />
+                <span>{item.label}</span>
+              </div>
+              {item.badge && (
+                <span
+                  className={`text-[10px] px-1.5 py-0.5 rounded-md font-mono ${
+                    isActive
+                      ? "bg-orange-700 text-white"
+                      : "bg-stone-800 text-stone-400"
+                  }`}
+                >
+                  {item.badge}
+                </span>
+              )}
+            </button>
+          );
+        })}
+
+        <div className="pt-4 px-3 pb-2 text-[10px] font-bold uppercase tracking-wider text-stone-400">
+          Storefront Link
+        </div>
+
+        <Link
+          to="/"
+          target="_blank"
+          rel="noopener noreferrer"
+          className="flex items-center justify-between px-3.5 py-2.5 rounded-xl text-xs font-semibold text-stone-300 hover:bg-stone-800/70 hover:text-white transition"
+        >
+          <div className="flex items-center gap-3">
+            <ArrowTopRightOnSquareIcon className="size-4.5 text-stone-400" />
+            <span>Open Live Website</span>
+          </div>
+          <span className="text-[10px] text-stone-400">New Tab</span>
+        </Link>
+      </nav>
+
+      {/* Admin User Footer Card */}
+      <div className="p-4 border-t border-stone-800/80 bg-stone-950/60 space-y-3">
+        <div className="flex items-center gap-3">
+          {user?.photoURL ? (
+            <img
+              src={user.photoURL}
+              alt="Admin"
+              className="size-9 rounded-xl object-cover ring-2 ring-orange-500/30"
+            />
+          ) : (
+            <div className="size-9 rounded-xl bg-orange-600/30 border border-orange-500/40 text-orange-400 font-bold flex items-center justify-center text-xs">
+              {(user?.displayName || user?.email || "A").charAt(0).toUpperCase()}
+            </div>
+          )}
+
+          <div className="truncate flex-1">
+            <p className="text-xs font-bold text-white truncate">
+              {user?.displayName || "Admin User"}
+            </p>
+            <div className="flex items-center gap-1 text-[11px] text-emerald-400">
+              <ShieldCheckIcon className="size-3" />
+              <span>Full Admin Access</span>
+            </div>
+          </div>
+        </div>
+
+        <button
+          type="button"
+          onClick={onSignOut}
+          className="w-full flex items-center justify-center gap-2 py-2 px-3 rounded-lg border border-stone-800 bg-stone-900 hover:bg-stone-800 text-rose-400 text-xs font-semibold transition cursor-pointer"
+        >
+          <ArrowRightStartOnRectangleIcon className="size-4" />
+          <span>Exit Dashboard</span>
+        </button>
+      </div>
+    </aside>
+  );
+};
+
+export default AdminSidebar;

@@ -10,4 +10,9 @@ export default [
   route("products", "routes/products.tsx"),
   route("products/:id", "routes/product-detail.tsx"),
   route("product/:id", "routes/product-detail.tsx", { id: "product-alias" }),
+  route("profile", "routes/profile.tsx"),
+  route("track-order", "routes/track-order.tsx"),
+  route("admin", "routes/admin.tsx"),
+  route("dashboard", "routes/admin.tsx", { id: "dashboard-alias" }),
+  route("deshboard", "routes/admin.tsx", { id: "deshboard-alias" }),
 ] satisfies RouteConfig;

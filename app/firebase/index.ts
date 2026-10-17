@@ -6,3 +6,7 @@ export * from "./home";
 export * from "./about";
 export * from "./contact";
 export * from "./products";
+export * from "./orders";
+export * from "./shipping";
+export * from "./coupons";
+export * from "./storeSettings";
