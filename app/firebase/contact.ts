@@ -2,9 +2,15 @@ import {
   collection,
   doc,
   getDoc,
+  getDocs,
   setDoc,
   addDoc,
+  updateDoc,
+  deleteDoc,
+  query,
+  orderBy,
   serverTimestamp,
+  type DocumentData,
 } from "firebase/firestore";
 import { db } from "./firebase.config";
 
@@ -23,6 +29,8 @@ export interface ContactMessageRecord extends ContactMessagePayload {
   status: "new" | "in-review" | "resolved";
   createdAt?: unknown;
   submittedAt: string;
+  adminNote?: string;
+  repliedAt?: string;
 }
 
 export interface ContactChannel {
@@ -261,4 +269,177 @@ export const seedContactDataToFirestore = async (force: boolean = false) => {
     success: true,
     message: "Contact Us page data successfully saved to Firebase Firestore!",
   };
+};
+
+/**
+ * Initial sample contact messages for demonstration
+ */
+export const initialContactMessages: ContactMessageRecord[] = [
+  {
+    id: "msg-demo-1",
+    name: "Farhana Rahman",
+    email: "farhana.rahman@gmail.com",
+    phone: "+880 1711-889922",
+    category: "Bridal & Bespoke",
+    orderNumber: "",
+    subject: "Customizing Bridal Silk Saree for November Reception",
+    message: "Hello Fedoll atelier team, I am interested in customizing the Crimson Jamdani Bridal Saree with personalized zardozi embroidery on the pallu. Could you please advise if you can accommodate a fitting consultation at your Banani studio next week?",
+    status: "new",
+    submittedAt: new Date(Date.now() - 3600000 * 2).toISOString(),
+  },
+  {
+    id: "msg-demo-2",
+    name: "Tanvir Hasan",
+    email: "tanvir.hasan@yahoo.com",
+    phone: "+880 1819-445566",
+    category: "Customer Support & Orders",
+    orderNumber: "FED-2026-8819",
+    subject: "Delivery timeline check for Sylhet Sadar",
+    message: "Greetings, I placed an order FED-2026-8819 for the Platinum Royal Panjabi. Can you confirm if Steadfast Courier delivers to Sylhet within 48 hours as stated on the checkout confirmation?",
+    status: "new",
+    submittedAt: new Date(Date.now() - 3600000 * 5).toISOString(),
+  },
+  {
+    id: "msg-demo-3",
+    name: "Nusrat Jahan",
+    email: "nusrat.jahan@hotmail.com",
+    phone: "+880 1912-334455",
+    category: "Custom Tailoring & Sizing",
+    orderNumber: "",
+    subject: "Chest and sleeve measurements for Raw Silk Kurti",
+    message: "I am between size M and L for the Emerald Silk Kurti. Do you provide alteration services if the waist needs a slight adjustment after delivery in Dhanmondi?",
+    status: "in-review",
+    submittedAt: new Date(Date.now() - 3600000 * 24).toISOString(),
+    adminNote: "Reached out via WhatsApp to request her precise shoulder-to-shoulder measurements.",
+    repliedAt: new Date(Date.now() - 3600000 * 18).toISOString(),
+  },
+  {
+    id: "msg-demo-4",
+    name: "Mahbubul Alam",
+    email: "mahbubul.alam@textilesbd.com",
+    phone: "+880 1713-778899",
+    category: "Wholesale & Bulk Orders",
+    orderNumber: "",
+    subject: "Wholesale inquiry for boutique in GEC Circle Chittagong",
+    message: "We run a luxury ethnic boutique in Chittagong and are interested in carrying 50+ pieces of your Men's Heritage Panjabi collection. Kindly share your wholesale catalog and trade terms.",
+    status: "resolved",
+    submittedAt: new Date(Date.now() - 3600000 * 48).toISOString(),
+    adminNote: "Wholesale catalog PDF and tiered B2B pricing schedule sent via email.",
+    repliedAt: new Date(Date.now() - 3600000 * 36).toISOString(),
+  },
+];
+
+/**
+ * Admin: Fetch all customer contact messages from Cloud Firestore
+ */
+export const fetchContactMessagesFromFirestore = async (): Promise<ContactMessageRecord[]> => {
+  try {
+    const q = query(collection(db, "contact_messages"), orderBy("createdAt", "desc"));
+    const snap = await getDocs(q);
+    if (!snap.empty) {
+      return snap.docs.map((d) => {
+        const data = d.data() as DocumentData;
+        return {
+          id: d.id,
+          name: data.name || "Anonymous",
+          email: data.email || "",
+          phone: data.phone || "",
+          category: data.category || "General Inquiry",
+          orderNumber: data.orderNumber || "",
+          subject: data.subject || "No Subject",
+          message: data.message || "",
+          status: (data.status as "new" | "in-review" | "resolved") || "new",
+          submittedAt: data.submittedAt || new Date().toISOString(),
+          adminNote: data.adminNote || "",
+          repliedAt: data.repliedAt || "",
+        };
+      });
+    }
+
+    // Fallback without orderBy in case documents lack serverTimestamp
+    const fallbackSnap = await getDocs(collection(db, "contact_messages"));
+    if (!fallbackSnap.empty) {
+      const messages = fallbackSnap.docs.map((d) => {
+        const data = d.data() as DocumentData;
+        return {
+          id: d.id,
+          name: data.name || "Anonymous",
+          email: data.email || "",
+          phone: data.phone || "",
+          category: data.category || "General Inquiry",
+          orderNumber: data.orderNumber || "",
+          subject: data.subject || "No Subject",
+          message: data.message || "",
+          status: (data.status as "new" | "in-review" | "resolved") || "new",
+          submittedAt: data.submittedAt || new Date().toISOString(),
+          adminNote: data.adminNote || "",
+          repliedAt: data.repliedAt || "",
+        };
+      });
+      return messages.sort(
+        (a, b) => new Date(b.submittedAt).getTime() - new Date(a.submittedAt).getTime()
+      );
+    }
+
+    return initialContactMessages;
+  } catch (error) {
+    console.warn("Failed to query contact_messages with order, trying simple query:", error);
+    try {
+      const fallbackSnap = await getDocs(collection(db, "contact_messages"));
+      if (!fallbackSnap.empty) {
+        const messages = fallbackSnap.docs.map((d) => {
+          const data = d.data() as DocumentData;
+          return {
+            id: d.id,
+            name: data.name || "Anonymous",
+            email: data.email || "",
+            phone: data.phone || "",
+            category: data.category || "General Inquiry",
+            orderNumber: data.orderNumber || "",
+            subject: data.subject || "No Subject",
+            message: data.message || "",
+            status: (data.status as "new" | "in-review" | "resolved") || "new",
+            submittedAt: data.submittedAt || new Date().toISOString(),
+            adminNote: data.adminNote || "",
+            repliedAt: data.repliedAt || "",
+          };
+        });
+        return messages.sort(
+          (a, b) => new Date(b.submittedAt).getTime() - new Date(a.submittedAt).getTime()
+        );
+      }
+    } catch {
+      // ignore
+    }
+    return initialContactMessages;
+  }
+};
+
+/**
+ * Admin: Update status and optional admin reply note on a customer message
+ */
+export const updateContactMessageStatusInFirestore = async (
+  id: string,
+  status: "new" | "in-review" | "resolved",
+  adminNote?: string
+): Promise<void> => {
+  const ref = doc(db, "contact_messages", id);
+  const updateData: Record<string, unknown> = {
+    status,
+    updatedAt: serverTimestamp(),
+  };
+  if (adminNote !== undefined) {
+    updateData.adminNote = adminNote;
+    if (adminNote.trim()) {
+      updateData.repliedAt = new Date().toISOString();
+    }
+  }
+  await updateDoc(ref, updateData);
+};
+
+/**
+ * Admin: Delete customer message
+ */
+export const deleteContactMessageFromFirestore = async (id: string): Promise<void> => {
+  await deleteDoc(doc(db, "contact_messages", id));
 };

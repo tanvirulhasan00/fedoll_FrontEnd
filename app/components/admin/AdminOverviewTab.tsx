@@ -12,10 +12,15 @@ import {
   CheckCircleIcon,
   ExclamationCircleIcon,
 } from "@heroicons/react/24/outline";
-import type { Order, OrderStatus } from "~/firebase";
-import type { ProductItem, ProductCategoryItem } from "~/firebase";
-import type { FirestoreUserProfile } from "~/firebase";
-import type { ShippingProvider } from "~/firebase";
+import type {
+  Order,
+  OrderStatus,
+  ProductItem,
+  ProductCategoryItem,
+  FirestoreUserProfile,
+  ShippingProvider,
+  ContactMessageRecord,
+} from "~/firebase";
 import type { AdminTab } from "./AdminSidebar";
 
 interface AdminOverviewTabProps {
@@ -24,6 +29,7 @@ interface AdminOverviewTabProps {
   categories: ProductCategoryItem[];
   customers: FirestoreUserProfile[];
   shippingProviders: ShippingProvider[];
+  messages?: ContactMessageRecord[];
   onNavigateTab: (tab: AdminTab) => void;
   onOpenAddProduct: () => void;
   onOpenAddCategory: () => void;
@@ -36,11 +42,15 @@ export const AdminOverviewTab: React.FC<AdminOverviewTabProps> = ({
   categories,
   customers,
   shippingProviders,
+  messages = [],
   onNavigateTab,
   onOpenAddProduct,
   onOpenAddCategory,
   onUpdateOrderStatus,
 }) => {
+  // Messages metrics
+  const unreadMessagesCount = messages.filter((m) => m.status === "new").length;
+
   // Financial computations
   const totalRevenue = orders
     .filter((o) => o.orderStatus !== "cancelled")
@@ -155,7 +165,7 @@ export const AdminOverviewTab: React.FC<AdminOverviewTabProps> = ({
       </div>
 
       {/* Logistics & Operational Strip */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
         <div className="p-5 rounded-3xl bg-white dark:bg-neutral-900 border border-stone-200/80 dark:border-neutral-800 shadow-xs space-y-2">
           <div className="flex items-center justify-between text-xs font-bold text-gray-500 dark:text-neutral-400">
             <span>COURIER PROVIDERS</span>
@@ -169,11 +179,11 @@ export const AdminOverviewTab: React.FC<AdminOverviewTabProps> = ({
           </div>
           <div className="flex items-baseline gap-2">
             <span className="text-xl font-black text-gray-900 dark:text-white">
-              {activeCouriersCount} Active Providers
+              {activeCouriersCount} Active
             </span>
           </div>
           <p className="text-xs text-gray-500 dark:text-neutral-400">
-            Steadfast, Pathao &amp; RedX integrated for nationwide delivery.
+            Steadfast, Pathao &amp; RedX integrated.
           </p>
         </div>
 
@@ -185,37 +195,59 @@ export const AdminOverviewTab: React.FC<AdminOverviewTabProps> = ({
               onClick={() => onNavigateTab("orders")}
               className="text-orange-600 hover:underline text-[11px]"
             >
-              Track Orders &rarr;
+              Track &rarr;
             </button>
           </div>
           <div className="flex items-baseline gap-2">
             <span className="text-xl font-black text-orange-600 dark:text-orange-400">
-              {shippedOrders.length} Shipments on Road
+              {shippedOrders.length} On Road
             </span>
           </div>
           <p className="text-xs text-gray-500 dark:text-neutral-400">
-            {deliveredOrders.length} successfully delivered this period.
+            {deliveredOrders.length} successfully delivered.
           </p>
         </div>
 
         <div className="p-5 rounded-3xl bg-white dark:bg-neutral-900 border border-stone-200/80 dark:border-neutral-800 shadow-xs space-y-2">
           <div className="flex items-center justify-between text-xs font-bold text-gray-500 dark:text-neutral-400">
-            <span>PRODUCT CATEGORIES</span>
+            <span>COLLECTIONS</span>
             <button
               type="button"
               onClick={() => onNavigateTab("categories")}
               className="text-orange-600 hover:underline text-[11px]"
             >
-              View All &rarr;
+              View &rarr;
             </button>
           </div>
           <div className="flex items-baseline gap-2">
             <span className="text-xl font-black text-gray-900 dark:text-white">
-              {categories.length} Collections
+              {categories.length} Categories
             </span>
           </div>
           <p className="text-xs text-gray-500 dark:text-neutral-400">
-            Outerwear, Workwear, Denim, Knitwear &amp; Essentials.
+            Apparel catalogs &amp; seasonal lines.
+          </p>
+        </div>
+
+        <div className="p-5 rounded-3xl bg-white dark:bg-neutral-900 border border-stone-200/80 dark:border-neutral-800 shadow-xs space-y-2">
+          <div className="flex items-center justify-between text-xs font-bold text-gray-500 dark:text-neutral-400">
+            <span>INQUIRIES</span>
+            <button
+              type="button"
+              onClick={() => onNavigateTab("messages")}
+              className="text-orange-600 hover:underline text-[11px]"
+            >
+              Inbox &rarr;
+            </button>
+          </div>
+          <div className="flex items-baseline gap-2">
+            <span className="text-xl font-black text-amber-600 dark:text-amber-400">
+              {unreadMessagesCount} Unread
+            </span>
+            <span className="text-xs text-gray-400">({messages.length} total)</span>
+          </div>
+          <p className="text-xs text-gray-500 dark:text-neutral-400">
+            Contact form submissions &amp; inquiries.
           </p>
         </div>
       </div>

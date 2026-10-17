@@ -13,6 +13,7 @@ import {
   updateCustomerRoleInFirestore,
   fetchCouponsFromFirestore,
   fetchStoreSettings,
+  fetchContactMessagesFromFirestore,
   logout,
   type ProductItem,
   type ProductCategoryItem,
@@ -23,6 +24,7 @@ import {
   type FirestoreUserProfile,
   type CouponItem,
   type StoreGeneralSettings,
+  type ContactMessageRecord,
   defaultShippingSettings,
   defaultStoreSettings,
 } from "~/firebase";
@@ -34,6 +36,7 @@ import AdminOrdersTab from "~/components/admin/AdminOrdersTab";
 import AdminShippingTab from "~/components/admin/AdminShippingTab";
 import AdminCustomersTab from "~/components/admin/AdminCustomersTab";
 import AdminCouponsTab from "~/components/admin/AdminCouponsTab";
+import AdminMessagesTab from "~/components/admin/AdminMessagesTab";
 import AdminSettingsTab from "~/components/admin/AdminSettingsTab";
 import {
   Bars3Icon,
@@ -70,12 +73,22 @@ export default function AdminDashboardPage() {
     (state) => state.auth
   );
 
+  const validTabs: AdminTab[] = [
+    "overview",
+    "products",
+    "categories",
+    "orders",
+    "shipping",
+    "customers",
+    "coupons",
+    "messages",
+    "settings",
+  ];
+
   // Tab State
   const tabParam = (searchParams.get("tab") as AdminTab) || "overview";
   const [currentTab, setCurrentTab] = useState<AdminTab>(
-    ["overview", "products", "categories", "orders", "shipping", "customers", "coupons", "settings"].includes(tabParam)
-      ? tabParam
-      : "overview"
+    validTabs.includes(tabParam) ? tabParam : "overview"
   );
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
@@ -94,15 +107,13 @@ export default function AdminDashboardPage() {
   const [shippingProviders, setShippingProviders] = useState<ShippingProvider[]>([]);
   const [shippingSettings, setShippingSettings] = useState<ShippingSettings>(defaultShippingSettings);
   const [coupons, setCoupons] = useState<CouponItem[]>([]);
+  const [messages, setMessages] = useState<ContactMessageRecord[]>([]);
   const [storeSettings, setStoreSettings] = useState<StoreGeneralSettings>(defaultStoreSettings);
 
   // Sync tab with URL
   useEffect(() => {
     const tabFromUrl = searchParams.get("tab") as AdminTab;
-    if (
-      tabFromUrl &&
-      ["overview", "products", "categories", "orders", "shipping", "customers", "coupons", "settings"].includes(tabFromUrl)
-    ) {
+    if (tabFromUrl && validTabs.includes(tabFromUrl)) {
       setCurrentTab(tabFromUrl);
     }
   }, [searchParams]);
@@ -129,6 +140,7 @@ export default function AdminDashboardPage() {
         fetchedShipSettings,
         fetchedCoupons,
         fetchedStoreSettings,
+        fetchedMessages,
       ] = await Promise.all([
         fetchAllOrdersForAdmin(),
         fetchProductsFromFirestore(),
@@ -138,6 +150,7 @@ export default function AdminDashboardPage() {
         fetchShippingSettings(),
         fetchCouponsFromFirestore(),
         fetchStoreSettings(),
+        fetchContactMessagesFromFirestore(),
       ]);
 
       setOrders(fetchedOrders);
@@ -148,6 +161,7 @@ export default function AdminDashboardPage() {
       setShippingSettings(fetchedShipSettings);
       setCoupons(fetchedCoupons);
       setStoreSettings(fetchedStoreSettings);
+      setMessages(fetchedMessages);
     } catch (err) {
       console.warn("Error loading admin datasets:", err);
     } finally {
@@ -297,6 +311,7 @@ export default function AdminDashboardPage() {
             onSignOut={handleSignOut}
             mobileMenuOpen={mobileMenuOpen}
             onCloseMobileMenu={() => setMobileMenuOpen(false)}
+            unreadMessagesCount={messages.filter((m) => m.status === "new").length}
           />
 
           {/* Backdrop for mobile sidebar */}
@@ -336,6 +351,8 @@ export default function AdminDashboardPage() {
                     ? "Customer Accounts"
                     : currentTab === "coupons"
                     ? "Promo Codes & Discounts"
+                    : currentTab === "messages"
+                    ? "Customer Inquiries & Messages"
                     : "Store Settings"}
                 </h1>
               </div>
@@ -385,6 +402,7 @@ export default function AdminDashboardPage() {
                       categories={categories}
                       customers={customers}
                       shippingProviders={shippingProviders}
+                      messages={messages}
                       onNavigateTab={handleSelectTab}
                       onOpenAddProduct={() => setIsAddProductOpen(true)}
                       onOpenAddCategory={() => setIsAddCategoryOpen(true)}
@@ -437,6 +455,13 @@ export default function AdminDashboardPage() {
                   {currentTab === "coupons" && (
                     <AdminCouponsTab
                       coupons={coupons}
+                      onRefresh={loadAllAdminData}
+                    />
+                  )}
+
+                  {currentTab === "messages" && (
+                    <AdminMessagesTab
+                      messages={messages}
                       onRefresh={loadAllAdminData}
                     />
                   )}

@@ -12,6 +12,7 @@ import {
   ArrowRightStartOnRectangleIcon,
   ArrowTopRightOnSquareIcon,
   ShieldCheckIcon,
+  ChatBubbleLeftRightIcon,
 } from "@heroicons/react/24/outline";
 import type { AuthUser } from "~/redux/features/auth/authSlice";
 
@@ -23,6 +24,7 @@ export type AdminTab =
   | "shipping"
   | "customers"
   | "coupons"
+  | "messages"
   | "settings";
 
 interface AdminSidebarProps {
@@ -32,6 +34,7 @@ interface AdminSidebarProps {
   onSignOut: () => void;
   mobileMenuOpen?: boolean;
   onCloseMobileMenu?: () => void;
+  unreadMessagesCount?: number;
 }
 
 export const AdminSidebar: React.FC<AdminSidebarProps> = ({
@@ -41,6 +44,7 @@ export const AdminSidebar: React.FC<AdminSidebarProps> = ({
   onSignOut,
   mobileMenuOpen,
   onCloseMobileMenu,
+  unreadMessagesCount = 0,
 }) => {
   const navItems: { id: AdminTab; label: string; icon: React.ElementType; badge?: string }[] = [
     { id: "overview", label: "Dashboard Overview", icon: ChartBarIcon },
@@ -50,6 +54,12 @@ export const AdminSidebar: React.FC<AdminSidebarProps> = ({
     { id: "shipping", label: "Shipping & Couriers", icon: TruckIcon, badge: "Logistics" },
     { id: "customers", label: "Customers & Roles", icon: UsersIcon },
     { id: "coupons", label: "Coupons & Discounts", icon: TagIcon },
+    {
+      id: "messages",
+      label: "Customer Inquiries",
+      icon: ChatBubbleLeftRightIcon,
+      badge: unreadMessagesCount > 0 ? `${unreadMessagesCount} New` : undefined,
+    },
     { id: "settings", label: "Store Settings", icon: Cog6ToothIcon },
   ];
 
