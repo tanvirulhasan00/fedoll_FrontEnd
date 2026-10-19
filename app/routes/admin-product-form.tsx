@@ -62,7 +62,7 @@ export default function AdminProductFormPage() {
   const navigate = useNavigate();
   const dispatch = useAppDispatch();
 
-  const { user } = useAppSelector((state) => state.auth);
+  const { user, loading: authLoading } = useAppSelector((state) => state.auth);
   const isAdmin = user?.role === "admin";
 
   const isEditMode = Boolean(id && id !== "new" && id !== "add");
@@ -477,25 +477,45 @@ export default function AdminProductFormPage() {
     }
   };
 
+  // Prevent access flicker while resolving auth status
+  if (authLoading) {
+    return (
+      <div className="min-h-screen bg-stone-100 dark:bg-neutral-950 flex flex-col items-center justify-center p-8 space-y-3">
+        <Spinner className="size-10 text-orange-600 animate-spin" />
+        <p className="text-xs font-semibold text-gray-600 dark:text-neutral-400">
+          Verifying administrator credentials...
+        </p>
+      </div>
+    );
+  }
+
   // Access check
   if (!isAdmin) {
     return (
       <div className="min-h-screen bg-stone-100 dark:bg-neutral-950 text-gray-900 dark:text-neutral-100 flex items-center justify-center p-4">
         <div className="w-full max-w-md bg-white dark:bg-neutral-900 rounded-3xl border border-stone-200/80 dark:border-neutral-800 p-8 text-center space-y-4 shadow-xl">
-          <div className="size-16 rounded-full bg-orange-100 dark:bg-orange-950/60 text-orange-600 dark:text-orange-400 mx-auto flex items-center justify-center">
+          <div className="size-16 rounded-full bg-red-100 dark:bg-red-950/60 text-red-600 dark:text-red-400 mx-auto flex items-center justify-center">
             <ShieldCheckIcon className="size-8" />
           </div>
           <h2 className="text-xl font-bold">Admin Privileges Required</h2>
           <p className="text-xs text-gray-500 dark:text-neutral-400">
             You must be logged in as an administrator to manage catalog garments and product variants.
           </p>
-          <Link
-            to="/admin"
-            className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl bg-orange-600 hover:bg-orange-700 text-white font-bold text-xs shadow-md transition"
-          >
-            <ArrowLeftIcon className="size-4" />
-            <span>Go to Admin Portal</span>
-          </Link>
+          <div className="pt-2 flex flex-col sm:flex-row items-center justify-center gap-2">
+            <Link
+              to="/"
+              className="w-full sm:w-auto inline-flex items-center justify-center gap-2 px-5 py-2.5 rounded-xl bg-orange-600 hover:bg-orange-700 text-white font-bold text-xs shadow-md transition"
+            >
+              <ArrowLeftIcon className="size-4" />
+              <span>Return to Storefront</span>
+            </Link>
+            <Link
+              to="/admin"
+              className="w-full sm:w-auto inline-flex items-center justify-center gap-2 px-5 py-2.5 rounded-xl border border-stone-200 dark:border-neutral-800 hover:bg-stone-100 dark:hover:bg-neutral-800 text-gray-700 dark:text-neutral-300 font-semibold text-xs transition"
+            >
+              <span>Admin Portal</span>
+            </Link>
+          </div>
         </div>
       </div>
     );

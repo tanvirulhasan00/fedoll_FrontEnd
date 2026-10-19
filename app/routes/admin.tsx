@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from "react";
 import { useSearchParams, Link, useNavigate } from "react-router";
 import { useAppDispatch, useAppSelector } from "~/redux/hooks/hook";
-import { setUser, updateUserProfile } from "~/redux/features/auth/authSlice";
+import { setUser } from "~/redux/features/auth/authSlice";
 import {
   fetchProductsFromFirestore,
   fetchCategoriesFromFirestore,
@@ -10,7 +10,6 @@ import {
   fetchShippingProviders,
   fetchShippingSettings,
   fetchAllCustomersFromFirestore,
-  updateCustomerRoleInFirestore,
   fetchCouponsFromFirestore,
   fetchStoreSettings,
   fetchContactMessagesFromFirestore,
@@ -45,10 +44,10 @@ import {
   Bars3Icon,
   XMarkIcon,
   ShieldCheckIcon,
+  ShieldExclamationIcon,
   ArrowRightStartOnRectangleIcon,
   ArrowTopRightOnSquareIcon,
   LockClosedIcon,
-  SparklesIcon,
   ArrowPathIcon,
 } from "@heroicons/react/24/outline";
 import { toast } from "sonner";
@@ -75,6 +74,7 @@ export default function AdminDashboardPage() {
   const { user, isAuthenticated, loading: authLoading } = useAppSelector(
     (state) => state.auth
   );
+  const isAdmin = user?.role === "admin";
 
   const validTabs: AdminTab[] = [
     "overview",
@@ -100,7 +100,6 @@ export default function AdminDashboardPage() {
   const [isAddProductOpen, setIsAddProductOpen] = useState(false);
   const [isAddCategoryOpen, setIsAddCategoryOpen] = useState(false);
   const [authModalOpen, setAuthModalOpen] = useState(false);
-  const [grantingAdmin, setGrantingAdmin] = useState(false);
 
   // Datasets
   const [loadingData, setLoadingData] = useState(true);
@@ -178,8 +177,10 @@ export default function AdminDashboardPage() {
   };
 
   useEffect(() => {
-    loadAllAdminData();
-  }, []);
+    if (isAdmin) {
+      loadAllAdminData();
+    }
+  }, [isAdmin]);
 
   const handleUpdateOrderStatus = async (orderId: string, status: OrderStatus) => {
     try {
@@ -189,26 +190,6 @@ export default function AdminDashboardPage() {
     } catch (err: unknown) {
       const error = err as Error;
       toast.error(error.message || "Failed to update order status.");
-    }
-  };
-
-  const handleGrantAdminAccess = async () => {
-    if (!user) {
-      setAuthModalOpen(true);
-      return;
-    }
-
-    setGrantingAdmin(true);
-    try {
-      await updateCustomerRoleInFirestore(user.uid, "admin");
-      dispatch(updateUserProfile({ role: "admin" }));
-      toast.success(`🎉 Administrator privileges activated for ${user.displayName || user.email}!`);
-      await loadAllAdminData();
-    } catch (err: unknown) {
-      const error = err as Error;
-      toast.error(error.message || "Could not grant admin access.");
-    } finally {
-      setGrantingAdmin(false);
     }
   };
 
@@ -224,7 +205,17 @@ export default function AdminDashboardPage() {
     }
   };
 
-  const isAdmin = user?.role === "admin";
+  // Prevent flicker during initial authentication resolution
+  if (authLoading) {
+    return (
+      <div className="min-h-screen bg-stone-100 dark:bg-neutral-950 flex flex-col items-center justify-center p-8 space-y-3">
+        <Spinner className="size-10 text-orange-600 animate-spin" />
+        <p className="text-xs font-semibold text-gray-600 dark:text-neutral-400">
+          Verifying administrator credentials...
+        </p>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-stone-100 dark:bg-neutral-950 text-gray-900 dark:text-neutral-100 flex flex-col font-sans transition-colors selection:bg-orange-500 selection:text-white">
@@ -232,80 +223,97 @@ export default function AdminDashboardPage() {
       {!isAdmin ? (
         <div className="flex-1 flex items-center justify-center p-4 sm:p-8">
           <div className="w-full max-w-lg bg-white dark:bg-neutral-900 rounded-3xl border border-stone-200/80 dark:border-neutral-800 shadow-2xl p-8 sm:p-10 text-center space-y-6">
-            <div className="size-20 rounded-full bg-orange-100 dark:bg-orange-950/60 text-orange-600 dark:text-orange-400 mx-auto flex items-center justify-center ring-8 ring-orange-50 dark:ring-orange-950/30">
-              <ShieldCheckIcon className="size-10" />
-            </div>
-
-            <div className="space-y-2">
-              <span className="px-3 py-1 rounded-full bg-orange-100 dark:bg-orange-950/60 text-orange-800 dark:text-orange-300 text-xs font-bold uppercase tracking-wider">
-                Restricted Admin Access
-              </span>
-              <h1 className="text-2xl font-black text-gray-900 dark:text-white">
-                Fedoll Atelier Admin Portal
-              </h1>
-              <p className="text-xs text-gray-500 dark:text-neutral-400 max-w-sm mx-auto leading-relaxed">
-                Full-controlled administration to manage product catalogs, collections, customer orders, shipping providers (Steadfast, Pathao), customer roles, and store configurations.
-              </p>
-            </div>
-
-            {/* If logged in as customer, give 1-click admin promotion button */}
             {user ? (
-              <div className="p-4 rounded-2xl bg-stone-50 dark:bg-neutral-950 border border-stone-200/80 dark:border-neutral-800 text-left space-y-3 text-xs">
-                <div className="flex items-center justify-between">
-                  <span className="text-gray-500">Logged in as:</span>
-                  <span className="font-bold text-gray-900 dark:text-white">
-                    {user.displayName || user.email}
-                  </span>
-                </div>
-                <div className="flex items-center justify-between">
-                  <span className="text-gray-500">Current Role:</span>
-                  <span className="px-2 py-0.5 rounded-full bg-emerald-100 dark:bg-emerald-950/60 text-emerald-800 dark:text-emerald-300 font-bold uppercase text-[10px]">
-                    {user.role || "customer"}
-                  </span>
+              <>
+                <div className="size-20 rounded-full bg-red-100 dark:bg-red-950/60 text-red-600 dark:text-red-400 mx-auto flex items-center justify-center ring-8 ring-red-50 dark:ring-red-950/30">
+                  <ShieldExclamationIcon className="size-10" />
                 </div>
 
-                <div className="pt-2">
-                  <button
-                    type="button"
-                    disabled={grantingAdmin}
-                    onClick={handleGrantAdminAccess}
-                    className="w-full py-3 px-4 rounded-xl bg-orange-600 hover:bg-orange-700 active:scale-98 text-white font-bold text-xs shadow-md transition flex items-center justify-center gap-2 cursor-pointer"
-                  >
-                    {grantingAdmin ? (
-                      <Spinner className="size-4 text-white" />
-                    ) : (
-                      <>
-                        <SparklesIcon className="size-4" />
-                        <span>Activate Full Administrator Privileges</span>
-                      </>
-                    )}
-                  </button>
-                  <p className="text-[10px] text-gray-400 text-center mt-2">
-                    Clicking unlocks full administrative control over all products, orders, and couriers.
+                <div className="space-y-2">
+                  <span className="px-3 py-1 rounded-full bg-red-100 dark:bg-red-950/60 text-red-800 dark:text-red-300 text-xs font-bold uppercase tracking-wider">
+                    Access Denied
+                  </span>
+                  <h1 className="text-2xl font-black text-gray-900 dark:text-white">
+                    Administrator Privileges Required
+                  </h1>
+                  <p className="text-xs text-gray-500 dark:text-neutral-400 max-w-sm mx-auto leading-relaxed">
+                    This portal is restricted to registered administrators only. Customer accounts do not have permission to view or manage the store dashboard.
                   </p>
                 </div>
-              </div>
-            ) : (
-              <div className="space-y-3 pt-2">
-                <button
-                  type="button"
-                  onClick={() => setAuthModalOpen(true)}
-                  className="w-full py-3 px-4 rounded-xl bg-orange-600 hover:bg-orange-700 text-white font-bold text-xs shadow-md transition flex items-center justify-center gap-2 cursor-pointer"
-                >
-                  <LockClosedIcon className="size-4" />
-                  <span>Log In to Access Admin Dashboard</span>
-                </button>
-              </div>
-            )}
 
-            <div className="pt-2">
-              <Link
-                to="/"
-                className="text-xs font-semibold text-gray-500 dark:text-neutral-400 hover:text-orange-600 dark:hover:text-orange-400 transition"
-              >
-                &larr; Return to Fedoll Storefront
-              </Link>
-            </div>
+                <div className="p-4 rounded-2xl bg-stone-50 dark:bg-neutral-950 border border-stone-200/80 dark:border-neutral-800 text-left space-y-2.5 text-xs">
+                  <div className="flex items-center justify-between">
+                    <span className="text-gray-500">Logged in as:</span>
+                    <span className="font-bold text-gray-900 dark:text-white truncate max-w-[200px]">
+                      {user.displayName || user.email}
+                    </span>
+                  </div>
+                  <div className="flex items-center justify-between">
+                    <span className="text-gray-500">Account Role:</span>
+                    <span className="px-2 py-0.5 rounded-full bg-stone-200 dark:bg-neutral-800 text-stone-700 dark:text-neutral-300 font-bold uppercase text-[10px]">
+                      {user.role || "customer"}
+                    </span>
+                  </div>
+                  <div className="flex items-center justify-between">
+                    <span className="text-gray-500">Dashboard Access:</span>
+                    <span className="font-semibold text-red-600 dark:text-red-400 text-[11px]">
+                      Unauthorized
+                    </span>
+                  </div>
+                </div>
+
+                <div className="space-y-3 pt-2">
+                  <Link
+                    to="/"
+                    className="w-full py-3 px-4 rounded-xl bg-orange-600 hover:bg-orange-700 active:scale-98 text-white font-bold text-xs shadow-md transition flex items-center justify-center gap-2 cursor-pointer"
+                  >
+                    &larr; Return to Storefront
+                  </Link>
+                  <button
+                    type="button"
+                    onClick={handleSignOut}
+                    className="w-full py-2.5 px-4 rounded-xl border border-stone-200 dark:border-neutral-800 hover:bg-stone-100 dark:hover:bg-neutral-800 text-gray-700 dark:text-neutral-300 font-semibold text-xs transition cursor-pointer"
+                  >
+                    Sign Out / Switch Account
+                  </button>
+                </div>
+              </>
+            ) : (
+              <>
+                <div className="size-20 rounded-full bg-orange-100 dark:bg-orange-950/60 text-orange-600 dark:text-orange-400 mx-auto flex items-center justify-center ring-8 ring-orange-50 dark:ring-orange-950/30">
+                  <ShieldCheckIcon className="size-10" />
+                </div>
+
+                <div className="space-y-2">
+                  <span className="px-3 py-1 rounded-full bg-orange-100 dark:bg-orange-950/60 text-orange-800 dark:text-orange-300 text-xs font-bold uppercase tracking-wider">
+                    Restricted Admin Portal
+                  </span>
+                  <h1 className="text-2xl font-black text-gray-900 dark:text-white">
+                    Administrator Login
+                  </h1>
+                  <p className="text-xs text-gray-500 dark:text-neutral-400 max-w-sm mx-auto leading-relaxed">
+                    Please log in with an authorized administrator account to access store controls.
+                  </p>
+                </div>
+
+                <div className="space-y-3 pt-2">
+                  <button
+                    type="button"
+                    onClick={() => setAuthModalOpen(true)}
+                    className="w-full py-3 px-4 rounded-xl bg-orange-600 hover:bg-orange-700 text-white font-bold text-xs shadow-md transition flex items-center justify-center gap-2 cursor-pointer"
+                  >
+                    <LockClosedIcon className="size-4" />
+                    <span>Log In to Access Admin Dashboard</span>
+                  </button>
+                  <Link
+                    to="/"
+                    className="block text-xs font-semibold text-gray-500 dark:text-neutral-400 hover:text-orange-600 dark:hover:text-orange-400 transition pt-1"
+                  >
+                    &larr; Return to Fedoll Storefront
+                  </Link>
+                </div>
+              </>
+            )}
           </div>
         </div>
       ) : (

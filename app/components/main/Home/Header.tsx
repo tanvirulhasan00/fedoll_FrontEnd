@@ -299,16 +299,18 @@ export default function Header() {
                       >
                         Track Courier Shipment
                       </Link>
-                      <Link
-                        to="/admin"
-                        onClick={() => setMobileMenuOpen(false)}
-                        className="-mx-3 flex items-center justify-between rounded-lg px-3 py-2 text-sm font-bold text-neutral-900 dark:text-white bg-neutral-100 dark:bg-neutral-800 hover:bg-neutral-200 dark:hover:bg-neutral-700"
-                      >
-                        <span>Admin Dashboard</span>
-                        <span className="text-[10px] uppercase font-bold tracking-wider px-1.5 py-0.5 rounded-sm bg-orange-700 text-white">
-                          Staff
-                        </span>
-                      </Link>
+                      {user.role === "admin" && (
+                        <Link
+                          to="/admin"
+                          onClick={() => setMobileMenuOpen(false)}
+                          className="-mx-3 flex items-center justify-between rounded-lg px-3 py-2 text-sm font-bold text-neutral-900 dark:text-white bg-neutral-100 dark:bg-neutral-800 hover:bg-neutral-200 dark:hover:bg-neutral-700"
+                        >
+                          <span>Admin Dashboard</span>
+                          <span className="text-[10px] uppercase font-bold tracking-wider px-1.5 py-0.5 rounded-sm bg-orange-700 text-white">
+                            Admin
+                          </span>
+                        </Link>
+                      )}
                     </div>
 
                     <button

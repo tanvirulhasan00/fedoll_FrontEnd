@@ -141,32 +141,28 @@ export const UserMenu: React.FC<UserMenuProps> = ({ user }) => {
               )}
             </MenuItem>
 
-            <MenuItem>
-              {({ focus }) => (
-                <Link
-                  to="/admin"
-                  className={`flex items-center justify-between rounded-xl px-3 py-2 text-xs font-semibold transition ${
-                    user.role === "admin"
-                      ? focus
+            {user.role === "admin" && (
+              <MenuItem>
+                {({ focus }) => (
+                  <Link
+                    to="/admin"
+                    className={`flex items-center justify-between rounded-xl px-3 py-2 text-xs font-semibold transition ${
+                      focus
                         ? "bg-orange-500/15 text-orange-600 dark:text-orange-400"
                         : "text-orange-600 dark:text-orange-400 bg-orange-50/50 dark:bg-orange-950/20"
-                      : focus
-                      ? "bg-gray-100 dark:bg-neutral-800 text-gray-900 dark:text-white"
-                      : "text-gray-700 dark:text-neutral-300"
-                  }`}
-                >
-                  <div className="flex items-center gap-2.5">
-                    <Cog6ToothIcon className="size-4 text-orange-600 dark:text-orange-400" />
-                    <span>Admin Dashboard</span>
-                  </div>
-                  {user.role === "admin" && (
+                    }`}
+                  >
+                    <div className="flex items-center gap-2.5">
+                      <Cog6ToothIcon className="size-4 text-orange-600 dark:text-orange-400" />
+                      <span>Admin Dashboard</span>
+                    </div>
                     <span className="text-[10px] uppercase font-bold tracking-wider px-1.5 py-0.5 rounded-sm bg-orange-700 text-white">
                       Admin
                     </span>
-                  )}
-                </Link>
-              )}
-            </MenuItem>
+                  </Link>
+                )}
+              </MenuItem>
+            )}
           </div>
 
           {/* Sign Out */}
