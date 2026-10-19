@@ -303,8 +303,15 @@ export default function ProfilePage() {
             </span>
           </nav>
 
-          {/* GUEST VIEW: If not authenticated */}
-          {!isAuthenticated || !user ? (
+          {/* Loading customer session check */}
+          {authLoading ? (
+            <div className="max-w-3xl mx-auto py-24 flex flex-col items-center justify-center space-y-4">
+              <Spinner className="size-10 text-orange-600 dark:text-orange-400 animate-spin" />
+              <p className="text-sm font-semibold text-gray-600 dark:text-neutral-400">
+                Verifying customer account...
+              </p>
+            </div>
+          ) : !isAuthenticated || !user ? (
             <div className="max-w-3xl mx-auto py-12">
               <div className="rounded-3xl bg-white dark:bg-neutral-900 border border-stone-200/80 dark:border-neutral-800 shadow-xl p-8 sm:p-12 text-center space-y-6">
                 <div className="size-20 rounded-full bg-orange-50 dark:bg-orange-950/60 text-orange-600 dark:text-orange-400 mx-auto flex items-center justify-center ring-8 ring-orange-50/50 dark:ring-orange-950/30">

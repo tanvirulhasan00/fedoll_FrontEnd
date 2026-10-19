@@ -18,13 +18,6 @@ export interface CartState {
   isCartOpen: boolean;
 }
 
-const initialState: CartState = {
-  items: [],
-  totalQuantity: 0,
-  totalAmount: 0,
-  isCartOpen: false,
-};
-
 const calculateTotals = (items: CartItem[]) => {
   const totalQuantity = items.reduce((acc, item) => acc + item.quantity, 0);
   const totalAmount = items.reduce(
@@ -32,6 +25,44 @@ const calculateTotals = (items: CartItem[]) => {
     0
   );
   return { totalQuantity, totalAmount: Number(totalAmount.toFixed(2)) };
+};
+
+const loadInitialCart = (): {
+  items: CartItem[];
+  totalQuantity: number;
+  totalAmount: number;
+} => {
+  if (typeof window === "undefined") {
+    return { items: [], totalQuantity: 0, totalAmount: 0 };
+  }
+  try {
+    const raw = localStorage.getItem("fedoll_cart");
+    if (!raw) return { items: [], totalQuantity: 0, totalAmount: 0 };
+    const items = JSON.parse(raw);
+    if (!Array.isArray(items)) return { items: [], totalQuantity: 0, totalAmount: 0 };
+    return { items, ...calculateTotals(items) };
+  } catch {
+    return { items: [], totalQuantity: 0, totalAmount: 0 };
+  }
+};
+
+const persistCart = (items: CartItem[]) => {
+  if (typeof window !== "undefined") {
+    try {
+      localStorage.setItem("fedoll_cart", JSON.stringify(items));
+    } catch {
+      // ignore
+    }
+  }
+};
+
+const initialCart = loadInitialCart();
+
+const initialState: CartState = {
+  items: initialCart.items,
+  totalQuantity: initialCart.totalQuantity,
+  totalAmount: initialCart.totalAmount,
+  isCartOpen: false,
 };
 
 export const cartSlice = createSlice({
@@ -57,12 +88,14 @@ export const cartSlice = createSlice({
       state.totalQuantity = totals.totalQuantity;
       state.totalAmount = totals.totalAmount;
       state.isCartOpen = true; // Automatically open cart drawer on add
+      persistCart(state.items);
     },
     removeFromCart: (state, action: PayloadAction<string | number>) => {
       state.items = state.items.filter((item) => item.id !== action.payload);
       const totals = calculateTotals(state.items);
       state.totalQuantity = totals.totalQuantity;
       state.totalAmount = totals.totalAmount;
+      persistCart(state.items);
     },
     updateQuantity: (
       state,
@@ -79,11 +112,13 @@ export const cartSlice = createSlice({
       const totals = calculateTotals(state.items);
       state.totalQuantity = totals.totalQuantity;
       state.totalAmount = totals.totalAmount;
+      persistCart(state.items);
     },
     clearCart: (state) => {
       state.items = [];
       state.totalQuantity = 0;
       state.totalAmount = 0;
+      persistCart([]);
     },
     openCart: (state) => {
       state.isCartOpen = true;

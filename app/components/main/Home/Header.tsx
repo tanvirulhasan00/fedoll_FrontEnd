@@ -1,7 +1,11 @@
 import { useEffect, useState } from "react";
 import { Dialog, DialogPanel } from "@headlessui/react";
-import { Bars3Icon, XMarkIcon, ShoppingBagIcon } from "@heroicons/react/24/outline";
-import { ArrowRightStartOnRectangleIcon } from "@heroicons/react/24/outline";
+import {
+  Bars3Icon,
+  XMarkIcon,
+  ShoppingBagIcon,
+  ArrowRightStartOnRectangleIcon,
+} from "@heroicons/react/24/outline";
 import { Link, useLocation } from "react-router";
 import clsx from "clsx";
 import { toast } from "sonner";
@@ -29,11 +33,18 @@ export default function Header() {
   const [hasBounced, setHasBounced] = useState(false);
   const [authModalOpen, setAuthModalOpen] = useState(false);
   const [authModalTab, setAuthModalTab] = useState<"login" | "signup">("login");
+  const [isMounted, setIsMounted] = useState(false);
 
   const location = useLocation();
   const dispatch = useAppDispatch();
-  const { user, isAuthenticated } = useAppSelector((state) => state.auth);
+  const { user, isAuthenticated, loading: authLoading } = useAppSelector(
+    (state) => state.auth
+  );
   const { totalQuantity } = useAppSelector((state) => state.cart);
+
+  useEffect(() => {
+    setIsMounted(true);
+  }, []);
 
   const isNavActive = (href: string) => {
     if (href === "/") {
@@ -158,15 +169,21 @@ export default function Header() {
             title="Shopping Bag"
           >
             <ShoppingBagIcon className="size-6 text-gray-800 dark:text-neutral-200 group-hover:text-orange-700 dark:group-hover:text-orange-400 transition" />
-            {totalQuantity > 0 && (
+            {isMounted && totalQuantity > 0 && (
               <span className="absolute -top-1 -right-1 flex size-5 items-center justify-center rounded-full bg-orange-700 text-[11px] font-bold text-white shadow-xs animate-in zoom-in-75">
                 {totalQuantity}
               </span>
             )}
           </button>
 
-          {isAuthenticated && user ? (
+          {!isMounted ? (
+            /* Neutral placeholder matching user pill dimensions to prevent layout flash on SSR/reload */
+            <div className="h-8 w-24 rounded-full bg-neutral-100/50 dark:bg-neutral-800/50" />
+          ) : isAuthenticated && user ? (
             <UserMenu user={user} />
+          ) : authLoading ? (
+            /* Subtle placeholder while Firebase auth session verifies */
+            <div className="h-8 w-24 rounded-full bg-neutral-100/50 dark:bg-neutral-800/50" />
           ) : (
             <div className="flex items-center gap-x-3">
               <button
@@ -246,7 +263,11 @@ export default function Header() {
 
               {/* Mobile Auth Section */}
               <div className="py-6">
-                {isAuthenticated && user ? (
+                {!isMounted || (authLoading && !user) ? (
+                  <div className="py-4 flex justify-center">
+                    <div className="h-10 w-48 rounded-xl bg-neutral-100 dark:bg-neutral-800 animate-pulse" />
+                  </div>
+                ) : isAuthenticated && user ? (
                   <div className="space-y-3">
                     <div className="flex items-center gap-3 px-1">
                       {user.photoURL ? (
@@ -263,7 +284,7 @@ export default function Header() {
                         </div>
                       )}
                       <div className="truncate">
-                        <p className="text-sm font-semibold text-gray-900 truncate">
+                        <p className="text-sm font-semibold text-gray-900 dark:text-white truncate">
                           {user.displayName || "My Account"}
                         </p>
                         {user.email && (
@@ -340,7 +361,7 @@ export default function Header() {
                         setMobileMenuOpen(false);
                         handleOpenAuth("login");
                       }}
-                      className="-mx-3 block w-full rounded-lg px-3 py-2.5 text-center text-base font-semibold text-gray-900 hover:bg-gray-50 border border-gray-200 transition"
+                      className="-mx-3 block w-full rounded-lg px-3 py-2.5 text-center text-base font-semibold text-gray-900 dark:text-neutral-200 hover:bg-gray-50 dark:hover:bg-neutral-800 border border-gray-200 dark:border-neutral-700 transition"
                     >
                       Log In
                     </button>

@@ -106,7 +106,7 @@ export default function ProductDetailPage() {
     return getProductVariant(currentProduct, selectedColor, selectedSize);
   }, [currentProduct, selectedColor, selectedSize]);
 
-  if (loadingProduct) {
+  if (loadingProduct || (!currentProduct && !productError)) {
     return (
       <div className="min-h-screen bg-white dark:bg-neutral-950 text-gray-900 dark:text-white flex flex-col font-sans transition-colors">
         <Topbar />

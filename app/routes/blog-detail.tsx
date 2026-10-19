@@ -259,7 +259,7 @@ export default function BlogDetailPage() {
           </div>
         </div>
 
-        {detailLoading ? (
+        {detailLoading || (!selectedBlog && !detailError) ? (
           /* Loading state */
           <div className="max-w-4xl mx-auto px-4 sm:px-6 py-16 animate-pulse space-y-8">
             <div className="h-6 w-32 bg-gray-200 dark:bg-neutral-800 rounded-full" />

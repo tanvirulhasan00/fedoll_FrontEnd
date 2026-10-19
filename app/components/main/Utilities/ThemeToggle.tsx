@@ -19,7 +19,7 @@ export function ThemeToggle({
   if (!mounted) {
     return (
       <div
-        className={`size-9 rounded-full bg-neutral-200/60 dark:bg-neutral-800/60 animate-pulse ${className}`}
+        className={`size-9 rounded-full border border-neutral-200/50 dark:border-neutral-700/50 bg-neutral-100/40 dark:bg-neutral-800/40 ${className}`}
         aria-hidden="true"
       />
     );

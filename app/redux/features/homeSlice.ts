@@ -36,6 +36,18 @@ export interface HomeState {
   syncing: boolean;
 }
 
+const loadInitialWishlist = (): string[] => {
+  if (typeof window === "undefined") return [];
+  try {
+    const raw = localStorage.getItem("fedoll_wishlist");
+    if (!raw) return [];
+    const list = JSON.parse(raw);
+    return Array.isArray(list) ? list : [];
+  } catch {
+    return [];
+  }
+};
+
 const initialState: HomeState = {
   heroBanners: initialHeroBanners,
   featuredCategories: initialFeaturedCategories,
@@ -46,7 +58,7 @@ const initialState: HomeState = {
   activeProductTab: "All",
   activeHeroIndex: 0,
   quickViewProduct: null,
-  wishlistIds: [],
+  wishlistIds: loadInitialWishlist(),
   loading: false,
   error: null,
   syncing: false,
@@ -121,6 +133,13 @@ export const homeSlice = createSlice({
         state.wishlistIds = state.wishlistIds.filter((item) => item !== id);
       } else {
         state.wishlistIds.push(id);
+      }
+      if (typeof window !== "undefined") {
+        try {
+          localStorage.setItem("fedoll_wishlist", JSON.stringify(state.wishlistIds));
+        } catch {
+          // ignore
+        }
       }
     },
   },

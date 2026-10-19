@@ -36,8 +36,8 @@ const Topbar = () => {
             className="group flex items-center gap-1 hover:underline transition"
           >
             <EnvelopeIcon className="h-4 w-4 text-gray-100 transition group-hover:text-red-500" />
-            {loading || !data?.result ? (
-              <Skeleton className="h-4 w-32" />
+            {!data?.result?.email ? (
+              <Skeleton className="h-4 w-32 bg-orange-600/50" />
             ) : (
               data?.result?.email
             )}

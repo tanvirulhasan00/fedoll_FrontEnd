@@ -25,10 +25,23 @@ export interface AuthState {
   error: string | null;
 }
 
+const loadCachedUser = (): AuthUser | null => {
+  if (typeof window === "undefined") return null;
+  try {
+    const raw = localStorage.getItem("fedoll_auth_user");
+    if (!raw) return null;
+    return JSON.parse(raw);
+  } catch {
+    return null;
+  }
+};
+
+const initialCachedUser = loadCachedUser();
+
 const initialState: AuthState = {
-  user: null,
-  isAuthenticated: false,
-  loading: true,
+  user: initialCachedUser,
+  isAuthenticated: !!initialCachedUser,
+  loading: !initialCachedUser,
   error: null,
 };
 
@@ -41,6 +54,17 @@ export const authSlice = createSlice({
       state.isAuthenticated = !!action.payload;
       state.loading = false;
       state.error = null;
+      if (typeof window !== "undefined") {
+        try {
+          if (action.payload) {
+            localStorage.setItem("fedoll_auth_user", JSON.stringify(action.payload));
+          } else {
+            localStorage.removeItem("fedoll_auth_user");
+          }
+        } catch {
+          // ignore storage quota error
+        }
+      }
     },
     updateUserProfile: (state, action: PayloadAction<Partial<AuthUser>>) => {
       if (state.user) {
@@ -48,6 +72,13 @@ export const authSlice = createSlice({
           ...state.user,
           ...action.payload,
         };
+        if (typeof window !== "undefined") {
+          try {
+            localStorage.setItem("fedoll_auth_user", JSON.stringify(state.user));
+          } catch {
+            // ignore storage quota error
+          }
+        }
       }
     },
     setLoading: (state, action: PayloadAction<boolean>) => {
@@ -62,6 +93,13 @@ export const authSlice = createSlice({
       state.isAuthenticated = false;
       state.loading = false;
       state.error = null;
+      if (typeof window !== "undefined") {
+        try {
+          localStorage.removeItem("fedoll_auth_user");
+        } catch {
+          // ignore storage quota error
+        }
+      }
     },
   },
 });

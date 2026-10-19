@@ -11,35 +11,31 @@ function AuthSync({ children }: { children: React.ReactNode }) {
   useEffect(() => {
     const unsubscribe = subscribeToAuthChanges(async (firebaseUser) => {
       if (firebaseUser) {
-        // Optimistically set user
-        dispatch(
-          setUser({
-            uid: firebaseUser.uid,
-            email: firebaseUser.email,
-            displayName: firebaseUser.displayName,
-            photoURL: firebaseUser.photoURL,
-            role: "customer", // Default registered role
-          })
-        );
-
-        // Fetch detailed profile with role, phone, and saved delivery addresses
+        // Fetch verified user profile including admin/customer role from Firestore
         try {
           const profile = await getUserProfileFromFirestore(firebaseUser.uid);
-          if (profile) {
-            dispatch(
-              setUser({
-                uid: firebaseUser.uid,
-                email: firebaseUser.email,
-                displayName: profile.displayName || firebaseUser.displayName,
-                photoURL: profile.photoURL || firebaseUser.photoURL,
-                role: profile.role || "customer",
-                phoneNumber: profile.phoneNumber || null,
-                deliveryAddress: profile.deliveryAddress || null,
-              })
-            );
-          }
+          dispatch(
+            setUser({
+              uid: firebaseUser.uid,
+              email: firebaseUser.email,
+              displayName: profile?.displayName || firebaseUser.displayName,
+              photoURL: profile?.photoURL || firebaseUser.photoURL,
+              role: profile?.role || "customer",
+              phoneNumber: profile?.phoneNumber || null,
+              deliveryAddress: profile?.deliveryAddress || null,
+            })
+          );
         } catch (err) {
           console.warn("Could not load user profile from Firestore:", err);
+          dispatch(
+            setUser({
+              uid: firebaseUser.uid,
+              email: firebaseUser.email,
+              displayName: firebaseUser.displayName,
+              photoURL: firebaseUser.photoURL,
+              role: "customer",
+            })
+          );
         }
       } else {
         dispatch(setUser(null));
