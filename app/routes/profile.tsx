@@ -29,12 +29,15 @@ import {
   TagIcon,
   Cog6ToothIcon,
   DocumentDuplicateIcon,
+  ClockIcon,
+  ExclamationTriangleIcon,
 } from "@heroicons/react/24/outline";
 import { toast } from "sonner";
 import { Spinner } from "~/components/ui/spinner";
 import { AuthModal } from "~/components/main/Auth/AuthModal";
 import OrderTrackerView from "~/components/main/Profile/OrderTrackerView";
 import ProfileSettings from "~/components/main/Profile/ProfileSettings";
+import OrderCancelRequestModal from "~/components/main/Profile/OrderCancelRequestModal";
 
 export function meta() {
   return [
@@ -75,6 +78,7 @@ export default function ProfilePage() {
     "all" | "active" | "delivered" | "cancelled"
   >("all");
   const [orderSearchQuery, setOrderSearchQuery] = useState("");
+  const [cancelModalOrder, setCancelModalOrder] = useState<Order | null>(null);
 
   // Tracking Tab State
   const [trackingInput, setTrackingInput] = useState(
@@ -180,21 +184,9 @@ export default function ProfilePage() {
     }
   };
 
-  // Cancel order handler
-  const handleCancelOrder = async (orderId: string) => {
-    const confirmCancel = window.confirm(
-      "Are you sure you want to cancel this order? This will release items back into inventory."
-    );
-    if (!confirmCancel) return;
-
-    try {
-      await cancelOrderInFirestore(orderId);
-      toast.success("Order has been cancelled.");
-      await loadOrders();
-    } catch (err: unknown) {
-      const error = err as Error;
-      toast.error(error.message || "Could not cancel order.");
-    }
+  // Cancel order modal opener (cancellation requires proper reason and admin review)
+  const handleOpenCancelModal = (order: Order) => {
+    setCancelModalOrder(order);
   };
 
   // Reorder handler
@@ -602,9 +594,13 @@ export default function ProfilePage() {
                     <div className="space-y-4">
                       {filteredOrders.map((order) => {
                         const badge = getStatusBadge(order.orderStatus);
-                        const canCancel = ["placed", "confirmed"].includes(
-                          order.orderStatus
-                        );
+                        const cancelReq = order.cancellationRequest;
+                        const isCancelPending = cancelReq?.status === "pending";
+                        const isCancelRejected = cancelReq?.status === "rejected";
+                        const canRequestCancel =
+                          ["placed", "confirmed", "processing"].includes(order.orderStatus) &&
+                          !isCancelPending &&
+                          order.orderStatus !== "cancelled";
 
                         return (
                           <div
@@ -661,17 +657,57 @@ export default function ProfilePage() {
                                   Reorder
                                 </button>
 
-                                {canCancel && (
+                                {isCancelPending ? (
+                                  <div className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-amber-50 dark:bg-amber-950/40 border border-amber-200 dark:border-amber-800 text-amber-700 dark:text-amber-300 text-xs font-semibold">
+                                    <ClockIcon className="size-3.5 text-amber-600 dark:text-amber-400" />
+                                    <span>Cancel Pending Review</span>
+                                  </div>
+                                ) : isCancelRejected ? (
+                                  <div
+                                    className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-stone-100 dark:bg-neutral-800 border border-stone-200 dark:border-neutral-700 text-stone-600 dark:text-neutral-400 text-xs font-medium cursor-help"
+                                    title={cancelReq?.adminNote || "Cancellation declined by atelier admin"}
+                                  >
+                                    <span className="text-rose-500 font-bold">✕</span>
+                                    <span>Cancel Declined</span>
+                                  </div>
+                                ) : canRequestCancel ? (
                                   <button
                                     type="button"
-                                    onClick={() => handleCancelOrder(order.id)}
+                                    onClick={() => handleOpenCancelModal(order)}
                                     className="px-3 py-1.5 rounded-xl border border-rose-200 dark:border-rose-900/60 text-rose-600 dark:text-rose-400 hover:bg-rose-50 dark:hover:bg-rose-950/40 text-xs font-semibold transition cursor-pointer"
                                   >
-                                    Cancel
+                                    Request Cancellation
                                   </button>
-                                )}
+                                ) : null}
                               </div>
                             </div>
+
+                            {/* Cancellation Request Alert Banner */}
+                            {isCancelPending && (
+                              <div className="p-3.5 rounded-2xl bg-amber-50 dark:bg-amber-950/30 border border-amber-200/80 dark:border-amber-800/60 text-xs text-amber-900 dark:text-amber-200 flex items-start gap-2.5">
+                                <ClockIcon className="size-4 text-amber-600 dark:text-amber-400 shrink-0 mt-0.5" />
+                                <div>
+                                  <p className="font-bold">Cancellation Request Under Review</p>
+                                  <p className="text-[11px] text-amber-800/90 dark:text-amber-300/80 mt-0.5">
+                                    Reason: <span className="font-semibold">"{cancelReq?.reason}"</span>
+                                    {cancelReq?.details ? ` • "${cancelReq.details}"` : ""}.
+                                    Our atelier admin team will review whether packaging/dispatch has begun.
+                                  </p>
+                                </div>
+                              </div>
+                            )}
+
+                            {isCancelRejected && cancelReq?.adminNote && (
+                              <div className="p-3.5 rounded-2xl bg-stone-100 dark:bg-neutral-800/60 border border-stone-200 dark:border-neutral-700 text-xs text-stone-700 dark:text-neutral-300 flex items-start gap-2.5">
+                                <ExclamationTriangleIcon className="size-4 text-stone-500 shrink-0 mt-0.5" />
+                                <div>
+                                  <p className="font-bold">Cancellation Request Declined by Admin</p>
+                                  <p className="text-[11px] text-stone-600 dark:text-neutral-400 mt-0.5">
+                                    {cancelReq.adminNote}
+                                  </p>
+                                </div>
+                              </div>
+                            )}
 
                             {/* Items List */}
                             <div className="space-y-3">
@@ -864,6 +900,18 @@ export default function ProfilePage() {
         isOpen={authModalOpen}
         onClose={() => setAuthModalOpen(false)}
         initialTab={authInitialTab}
+      />
+
+      {/* Customer Cancellation Request Modal */}
+      <OrderCancelRequestModal
+        isOpen={!!cancelModalOrder}
+        order={cancelModalOrder}
+        onClose={() => setCancelModalOrder(null)}
+        onSuccess={(updated) => {
+          setOrders((prev) => prev.map((o) => (o.id === updated.id ? updated : o)));
+          if (trackedOrder?.id === updated.id) setTrackedOrder(updated);
+          setCancelModalOrder(null);
+        }}
       />
     </div>
   );

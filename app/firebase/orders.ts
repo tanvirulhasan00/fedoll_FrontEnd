@@ -46,6 +46,15 @@ export interface OrderTrackingTimelineStep {
   isCurrent?: boolean;
 }
 
+export interface OrderCancellationRequest {
+  requestedAt: string;
+  reason: string;
+  details?: string;
+  status: "pending" | "approved" | "rejected";
+  reviewedAt?: string;
+  adminNote?: string;
+}
+
 export interface Order {
   id: string;
   orderNumber: string; // e.g. "FED-839201"
@@ -69,6 +78,7 @@ export interface Order {
   estimatedDeliveryDate: string;
   createdAt: string;
   trackingTimeline: OrderTrackingTimelineStep[];
+  cancellationRequest?: OrderCancellationRequest;
 }
 
 export interface CreateOrderInput {
@@ -377,6 +387,175 @@ export const cancelOrderInFirestore = async (
   localStorage.setItem(LOCAL_STORAGE_KEY, JSON.stringify(updated));
 
   return true;
+};
+
+/**
+ * Customer: Submit a cancellation request with proper reason for admin review
+ */
+export const requestOrderCancellationInFirestore = async (
+  orderId: string,
+  reason: string,
+  details?: string
+): Promise<Order | null> => {
+  const local = getLocalOrders();
+  const existingOrder = local.find((o) => o.id === orderId);
+
+  const now = new Date();
+  const timestampStr = now.toLocaleString("en-US", {
+    month: "short",
+    day: "numeric",
+    hour: "numeric",
+    minute: "2-digit",
+    hour12: true,
+  });
+
+  const cancellationRequest: OrderCancellationRequest = {
+    requestedAt: now.toISOString(),
+    reason: reason.trim(),
+    details: details?.trim() || "",
+    status: "pending",
+  };
+
+  const updatedTimeline: OrderTrackingTimelineStep[] = existingOrder
+    ? [
+        ...existingOrder.trackingTimeline.map((step) => ({
+          ...step,
+          isCurrent: false,
+        })),
+        {
+          status: existingOrder.orderStatus,
+          title: "Cancellation Requested",
+          description: `Customer submitted cancellation request: "${reason.trim()}". Awaiting admin review.`,
+          timestamp: timestampStr,
+          completed: true,
+          isCurrent: true,
+        },
+      ]
+    : [];
+
+  const updateFields: Partial<Order> = {
+    cancellationRequest,
+    trackingTimeline: updatedTimeline,
+  };
+
+  try {
+    const docRef = doc(db, "orders", orderId);
+    await updateDoc(docRef, {
+      cancellationRequest,
+      trackingTimeline: updatedTimeline,
+      updatedAt: serverTimestamp(),
+    });
+  } catch (err) {
+    console.warn("Could not record cancellation request in Firestore:", err);
+  }
+
+  // Update in local cache
+  let updatedOrderResult: Order | null = null;
+  const updatedList = local.map((o) => {
+    if (o.id === orderId) {
+      const merged = { ...o, ...updateFields };
+      updatedOrderResult = merged;
+      return merged;
+    }
+    return o;
+  });
+
+  localStorage.setItem(LOCAL_STORAGE_KEY, JSON.stringify(updatedList));
+  return updatedOrderResult;
+};
+
+/**
+ * Admin: Review and decide on a customer cancellation request (approve or reject)
+ */
+export const reviewOrderCancellationInFirestore = async (
+  orderId: string,
+  action: "approve" | "reject",
+  adminNote?: string
+): Promise<Order | null> => {
+  const local = getLocalOrders();
+  const existingOrder = local.find((o) => o.id === orderId);
+  if (!existingOrder) return null;
+
+  const now = new Date();
+  const timestampStr = now.toLocaleString("en-US", {
+    month: "short",
+    day: "numeric",
+    hour: "numeric",
+    minute: "2-digit",
+    hour12: true,
+  });
+
+  const updatedCancellationRequest: OrderCancellationRequest = {
+    ...(existingOrder.cancellationRequest || {
+      requestedAt: now.toISOString(),
+      reason: "Cancellation Request",
+      details: "",
+      status: "pending",
+    }),
+    status: action === "approve" ? "approved" : "rejected",
+    reviewedAt: now.toISOString(),
+    adminNote: adminNote?.trim() || (action === "approve" ? "Cancellation request approved." : "Cancellation request declined."),
+  };
+
+  const newStatus: OrderStatus = action === "approve" ? "cancelled" : existingOrder.orderStatus;
+
+  const updatedTimeline: OrderTrackingTimelineStep[] = [
+    ...existingOrder.trackingTimeline.map((step) => ({
+      ...step,
+      isCurrent: false,
+    })),
+    action === "approve"
+      ? {
+          status: "cancelled",
+          title: "Order Cancelled (Approved by Admin)",
+          description: adminNote?.trim()
+            ? `Admin approved cancellation: ${adminNote.trim()}`
+            : "Cancellation approved by admin. Order is now cancelled and items restocked.",
+          timestamp: timestampStr,
+          completed: true,
+          isCurrent: true,
+        }
+      : {
+          status: existingOrder.orderStatus,
+          title: "Cancellation Request Declined",
+          description: adminNote?.trim()
+            ? `Admin declined request: ${adminNote.trim()}`
+            : "Cancellation request was declined. Processing and dispatch continue.",
+          timestamp: timestampStr,
+          completed: true,
+          isCurrent: true,
+        },
+  ];
+
+  const updateFields: Partial<Order> = {
+    orderStatus: newStatus,
+    cancellationRequest: updatedCancellationRequest,
+    trackingTimeline: updatedTimeline,
+  };
+
+  try {
+    const docRef = doc(db, "orders", orderId);
+    await updateDoc(docRef, {
+      ...updateFields,
+      updatedAt: serverTimestamp(),
+    });
+  } catch (err) {
+    console.warn("Could not update cancellation review in Firestore:", err);
+  }
+
+  // Update in local cache
+  let updatedOrderResult: Order | null = null;
+  const updatedList = local.map((o) => {
+    if (o.id === orderId) {
+      const merged = { ...o, ...updateFields };
+      updatedOrderResult = merged;
+      return merged;
+    }
+    return o;
+  });
+
+  localStorage.setItem(LOCAL_STORAGE_KEY, JSON.stringify(updatedList));
+  return updatedOrderResult;
 };
 
 /**

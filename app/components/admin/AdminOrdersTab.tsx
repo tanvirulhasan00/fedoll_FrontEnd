@@ -11,11 +11,18 @@ import {
   DocumentDuplicateIcon,
   ArrowPathIcon,
   TagIcon,
+  ExclamationTriangleIcon,
+  XCircleIcon,
+  ClockIcon,
 } from "@heroicons/react/24/outline";
 import { Dialog, DialogPanel, DialogTitle, Transition, TransitionChild } from "@headlessui/react";
 import { toast } from "sonner";
 import type { Order, OrderStatus, StoreGeneralSettings } from "~/firebase";
-import { updateOrderStatusInFirestore, deleteOrderInFirestore } from "~/firebase";
+import {
+  updateOrderStatusInFirestore,
+  deleteOrderInFirestore,
+  reviewOrderCancellationInFirestore,
+} from "~/firebase";
 import { Spinner } from "~/components/ui/spinner";
 import OrderPackagingStickerModal from "./OrderPackagingStickerModal";
 
@@ -31,7 +38,7 @@ export const AdminOrdersTab: React.FC<AdminOrdersTabProps> = ({
   storeSettings,
 }) => {
   const [searchQuery, setSearchQuery] = useState("");
-  const [selectedStatus, setSelectedStatus] = useState<"all" | OrderStatus>("all");
+  const [selectedStatus, setSelectedStatus] = useState<"all" | OrderStatus | "cancel_requests">("all");
 
   // Detail Modal State
   const [selectedOrder, setSelectedOrder] = useState<Order | null>(null);
@@ -41,6 +48,10 @@ export const AdminOrdersTab: React.FC<AdminOrdersTabProps> = ({
   const [courierDraft, setCourierDraft] = useState("");
   const [trackingDraft, setTrackingDraft] = useState("");
   const [statusNoteDraft, setStatusNoteDraft] = useState("");
+
+  // Cancellation Review State
+  const [adminCancelNote, setAdminCancelNote] = useState("");
+  const [isReviewingCancel, setIsReviewingCancel] = useState(false);
 
   // Packaging Sticker Modal State
   const [stickerOrder, setStickerOrder] = useState<Order | null>(null);
@@ -63,6 +74,43 @@ export const AdminOrdersTab: React.FC<AdminOrdersTabProps> = ({
     setCourierDraft(order.courierName);
     setTrackingDraft(order.trackingNumber);
     setStatusNoteDraft("");
+    setAdminCancelNote("");
+  };
+
+  const handleReviewCancellation = async (action: "approve" | "reject") => {
+    if (!selectedOrder) return;
+
+    if (action === "reject" && !adminCancelNote.trim()) {
+      toast.error("Please provide a note or reason for declining the cancellation request (e.g. package already dispatched).");
+      return;
+    }
+
+    setIsReviewingCancel(true);
+    try {
+      const updated = await reviewOrderCancellationInFirestore(
+        selectedOrder.id,
+        action,
+        adminCancelNote.trim() || undefined
+      );
+
+      toast.success(
+        action === "approve"
+          ? `Order #${selectedOrder.orderNumber} cancellation approved and marked as CANCELLED.`
+          : `Order #${selectedOrder.orderNumber} cancellation request declined.`
+      );
+
+      if (updated) {
+        setSelectedOrder(updated);
+        setStatusDraft(updated.orderStatus);
+      }
+      setAdminCancelNote("");
+      onRefresh();
+    } catch (err: unknown) {
+      const error = err as Error;
+      toast.error(error.message || "Failed to review cancellation request.");
+    } finally {
+      setIsReviewingCancel(false);
+    }
   };
 
   const handleCloseDetail = () => {
@@ -113,9 +161,16 @@ export const AdminOrdersTab: React.FC<AdminOrdersTabProps> = ({
     toast.success(`${label} copied!`);
   };
 
+  // Count pending cancellation requests
+  const pendingCancelCount = orders.filter(
+    (o) => o.cancellationRequest?.status === "pending"
+  ).length;
+
   // Filter orders
   const filteredOrders = orders.filter((o) => {
-    if (selectedStatus !== "all" && o.orderStatus !== selectedStatus) {
+    if (selectedStatus === "cancel_requests") {
+      if (o.cancellationRequest?.status !== "pending") return false;
+    } else if (selectedStatus !== "all" && o.orderStatus !== selectedStatus) {
       return false;
     }
     if (searchQuery.trim()) {
@@ -125,7 +180,8 @@ export const AdminOrdersTab: React.FC<AdminOrdersTabProps> = ({
       const matchCustomer = o.customerName.toLowerCase().includes(q);
       const matchEmail = o.customerEmail.toLowerCase().includes(q);
       const matchPhone = o.customerPhone.toLowerCase().includes(q);
-      if (!matchNo && !matchTrack && !matchCustomer && !matchEmail && !matchPhone) {
+      const matchReason = o.cancellationRequest?.reason.toLowerCase().includes(q);
+      if (!matchNo && !matchTrack && !matchCustomer && !matchEmail && !matchPhone && !matchReason) {
         return false;
       }
     }
@@ -160,7 +216,7 @@ export const AdminOrdersTab: React.FC<AdminOrdersTabProps> = ({
             Orders &amp; Courier Dispatch Control
           </h2>
           <p className="text-xs text-gray-500 dark:text-neutral-400 mt-0.5">
-            Process incoming orders, assign logistics partners, advance milestones, and generate customer receipts.
+            Process incoming orders, review customer cancellation requests, assign logistics partners, and manage dispatches.
           </p>
         </div>
 
@@ -179,6 +235,12 @@ export const AdminOrdersTab: React.FC<AdminOrdersTabProps> = ({
         <div className="flex items-center gap-1.5 overflow-x-auto pb-1 sm:pb-0">
           {[
             { key: "all", label: "All" },
+            {
+              key: "cancel_requests",
+              label: "Cancel Requests",
+              count: pendingCancelCount,
+              highlight: pendingCancelCount > 0,
+            },
             { key: "placed", label: "Placed" },
             { key: "confirmed", label: "Confirmed" },
             { key: "processing", label: "Processing" },
@@ -190,13 +252,20 @@ export const AdminOrdersTab: React.FC<AdminOrdersTabProps> = ({
               key={tab.key}
               type="button"
               onClick={() => setSelectedStatus(tab.key as any)}
-              className={`px-3 py-1.5 rounded-xl text-xs font-semibold whitespace-nowrap transition cursor-pointer ${
+              className={`px-3 py-1.5 rounded-xl text-xs font-semibold whitespace-nowrap transition cursor-pointer flex items-center gap-1.5 ${
                 selectedStatus === tab.key
                   ? "bg-stone-900 dark:bg-white text-white dark:text-stone-900 shadow-xs"
+                  : tab.highlight
+                  ? "bg-amber-100 dark:bg-amber-950/60 text-amber-800 dark:text-amber-300 border border-amber-300 dark:border-amber-700"
                   : "bg-stone-100 dark:bg-neutral-800 text-gray-600 dark:text-neutral-300 hover:bg-stone-200"
               }`}
             >
-              {tab.label}
+              <span>{tab.label}</span>
+              {tab.count !== undefined && tab.count > 0 && (
+                <span className="px-1.5 py-0.2 rounded-full bg-rose-600 text-white text-[10px] font-bold">
+                  {tab.count}
+                </span>
+              )}
             </button>
           ))}
         </div>
@@ -241,7 +310,24 @@ export const AdminOrdersTab: React.FC<AdminOrdersTabProps> = ({
                 filteredOrders.map((o) => (
                   <tr key={o.id} className="hover:bg-stone-50/50 dark:hover:bg-neutral-800/30">
                     <td className="py-3.5 px-4 font-mono font-bold text-gray-900 dark:text-white">
-                      #{o.orderNumber}
+                      <div className="flex flex-col gap-1">
+                        <span>#{o.orderNumber}</span>
+                        {o.cancellationRequest?.status === "pending" && (
+                          <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[9px] font-bold bg-amber-100 text-amber-800 dark:bg-amber-950 dark:text-amber-300 border border-amber-300 dark:border-amber-700 animate-pulse w-max">
+                            ⚠️ Cancel Req
+                          </span>
+                        )}
+                        {o.cancellationRequest?.status === "rejected" && (
+                          <span className="inline-flex items-center gap-1 px-1.5 py-0.2 rounded-full text-[9px] font-semibold bg-stone-100 text-stone-600 dark:bg-neutral-800 dark:text-neutral-400 w-max">
+                            Cancel Declined
+                          </span>
+                        )}
+                        {o.cancellationRequest?.status === "approved" && (
+                          <span className="inline-flex items-center gap-1 px-1.5 py-0.2 rounded-full text-[9px] font-semibold bg-rose-50 text-rose-700 dark:bg-rose-950/60 dark:text-rose-300 w-max">
+                            Cancel Approved
+                          </span>
+                        )}
+                      </div>
                     </td>
 
                     <td className="py-3.5 px-4 text-[11px] text-gray-500">
@@ -311,14 +397,26 @@ export const AdminOrdersTab: React.FC<AdminOrdersTabProps> = ({
                           <PrinterIcon className="size-3.5 text-orange-600 dark:text-orange-400" />
                           <span className="hidden sm:inline">Sticker</span>
                         </button>
-                        <button
-                          type="button"
-                          onClick={() => handleOpenDetail(o)}
-                          className="px-2.5 py-1 rounded-lg bg-orange-600 hover:bg-orange-700 text-white font-bold text-[11px] transition cursor-pointer flex items-center gap-1"
-                        >
-                          <EyeIcon className="size-3.5" />
-                          <span>Manage</span>
-                        </button>
+                        {o.cancellationRequest?.status === "pending" ? (
+                          <button
+                            type="button"
+                            onClick={() => handleOpenDetail(o)}
+                            className="px-2.5 py-1 rounded-lg bg-amber-600 hover:bg-amber-700 text-white font-bold text-[11px] transition cursor-pointer flex items-center gap-1 shadow-xs"
+                            title="Review customer cancellation request"
+                          >
+                            <ExclamationTriangleIcon className="size-3.5" />
+                            <span>Review Req</span>
+                          </button>
+                        ) : (
+                          <button
+                            type="button"
+                            onClick={() => handleOpenDetail(o)}
+                            className="px-2.5 py-1 rounded-lg bg-orange-600 hover:bg-orange-700 text-white font-bold text-[11px] transition cursor-pointer flex items-center gap-1"
+                          >
+                            <EyeIcon className="size-3.5" />
+                            <span>Manage</span>
+                          </button>
+                        )}
                         <button
                           type="button"
                           onClick={() => handleDeleteOrder(o.id, o.orderNumber)}
@@ -405,6 +503,153 @@ export const AdminOrdersTab: React.FC<AdminOrdersTabProps> = ({
                           </button>
                         </div>
                       </div>
+
+                      {/* Customer Cancellation Request Review Card */}
+                      {selectedOrder.cancellationRequest && (
+                        <div
+                          className={`p-5 rounded-2xl border text-xs space-y-4 ${
+                            selectedOrder.cancellationRequest.status === "pending"
+                              ? "bg-amber-50/90 dark:bg-amber-950/40 border-amber-300 dark:border-amber-800 shadow-sm"
+                              : selectedOrder.cancellationRequest.status === "approved"
+                              ? "bg-rose-50/80 dark:bg-rose-950/30 border-rose-200 dark:border-rose-900/60"
+                              : "bg-stone-50 dark:bg-neutral-950 border-stone-200 dark:border-neutral-800"
+                          }`}
+                        >
+                          <div className="flex items-center justify-between pb-3 border-b border-black/5 dark:border-white/5">
+                            <div className="flex items-center gap-2.5">
+                              {selectedOrder.cancellationRequest.status === "pending" ? (
+                                <div className="p-2 rounded-xl bg-amber-100 dark:bg-amber-900/60 text-amber-600 dark:text-amber-400">
+                                  <ExclamationTriangleIcon className="size-5 shrink-0" />
+                                </div>
+                              ) : selectedOrder.cancellationRequest.status === "approved" ? (
+                                <div className="p-2 rounded-xl bg-rose-100 dark:bg-rose-900/60 text-rose-600 dark:text-rose-400">
+                                  <CheckCircleIcon className="size-5 shrink-0" />
+                                </div>
+                              ) : (
+                                <div className="p-2 rounded-xl bg-stone-200 dark:bg-neutral-800 text-stone-500">
+                                  <XCircleIcon className="size-5 shrink-0" />
+                                </div>
+                              )}
+                              <div>
+                                <h4 className="font-black text-sm text-gray-900 dark:text-white">
+                                  {selectedOrder.cancellationRequest.status === "pending"
+                                    ? "Customer Cancellation Request (Action Required)"
+                                    : selectedOrder.cancellationRequest.status === "approved"
+                                    ? "Cancellation Request Approved"
+                                    : "Cancellation Request Declined"}
+                                </h4>
+                                <p className="text-[11px] text-gray-500 dark:text-neutral-400">
+                                  Submitted on{" "}
+                                  {new Date(
+                                    selectedOrder.cancellationRequest.requestedAt
+                                  ).toLocaleString()}
+                                </p>
+                              </div>
+                            </div>
+
+                            <span
+                              className={`px-2.5 py-0.5 rounded-full font-bold text-[10px] uppercase border ${
+                                selectedOrder.cancellationRequest.status === "pending"
+                                  ? "bg-amber-100 text-amber-900 border-amber-300 dark:bg-amber-900 dark:text-amber-100"
+                                  : selectedOrder.cancellationRequest.status === "approved"
+                                  ? "bg-rose-100 text-rose-800 border-rose-300 dark:bg-rose-950 dark:text-rose-300"
+                                  : "bg-stone-200 text-stone-700 border-stone-300 dark:bg-neutral-800 dark:text-neutral-300"
+                              }`}
+                            >
+                              {selectedOrder.cancellationRequest.status}
+                            </span>
+                          </div>
+
+                          {/* Reason details */}
+                          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 bg-white/70 dark:bg-neutral-900/70 p-3.5 rounded-xl border border-black/5 dark:border-white/5">
+                            <div>
+                              <span className="text-[10px] uppercase font-bold text-gray-400 block mb-0.5">
+                                Primary Reason:
+                              </span>
+                              <p className="font-bold text-gray-900 dark:text-white">
+                                {selectedOrder.cancellationRequest.reason}
+                              </p>
+                            </div>
+                            <div>
+                              <span className="text-[10px] uppercase font-bold text-gray-400 block mb-0.5">
+                                Customer's Detailed Note:
+                              </span>
+                              <p className="text-gray-700 dark:text-neutral-300 italic">
+                                "{selectedOrder.cancellationRequest.details || "No explanation provided."}"
+                              </p>
+                            </div>
+                          </div>
+
+                          {/* If already reviewed */}
+                          {selectedOrder.cancellationRequest.status !== "pending" && (
+                            <div className="text-xs text-gray-600 dark:text-neutral-300 pt-1">
+                              <span className="font-bold text-gray-800 dark:text-neutral-200">
+                                Admin Decision Note:{" "}
+                              </span>
+                              <span>
+                                {selectedOrder.cancellationRequest.adminNote || "No note recorded."}
+                              </span>
+                              {selectedOrder.cancellationRequest.reviewedAt && (
+                                <span className="text-[11px] text-gray-400 block mt-0.5">
+                                  Reviewed on:{" "}
+                                  {new Date(
+                                    selectedOrder.cancellationRequest.reviewedAt
+                                  ).toLocaleString()}
+                                </span>
+                              )}
+                            </div>
+                          )}
+
+                          {/* If Pending: Admin Action Controls */}
+                          {selectedOrder.cancellationRequest.status === "pending" && (
+                            <div className="pt-2 border-t border-amber-200/60 dark:border-amber-800/40 space-y-3">
+                              <div>
+                                <label className="block font-bold text-gray-800 dark:text-neutral-200 mb-1">
+                                  Admin Decision / Restock / Logistics Note:
+                                </label>
+                                <input
+                                  type="text"
+                                  value={adminCancelNote}
+                                  onChange={(e) => setAdminCancelNote(e.target.value)}
+                                  placeholder="e.g. Items returned to inventory / Declined: parcel already picked up by Steadfast Courier"
+                                  className="w-full px-3 py-2 bg-white dark:bg-neutral-800 border border-amber-300 dark:border-neutral-700 rounded-xl text-xs text-gray-900 dark:text-white focus:outline-none focus:ring-1 focus:ring-amber-500"
+                                />
+                              </div>
+
+                              <div className="flex flex-wrap items-center justify-end gap-2.5">
+                                <button
+                                  type="button"
+                                  onClick={() => handleReviewCancellation("reject")}
+                                  disabled={isReviewingCancel}
+                                  className="px-4 py-2 rounded-xl border border-stone-300 dark:border-neutral-700 hover:bg-stone-100 dark:hover:bg-neutral-800 text-stone-700 dark:text-neutral-200 font-bold transition flex items-center gap-1.5 cursor-pointer disabled:opacity-50"
+                                >
+                                  <XMarkIcon className="size-4 text-stone-500" />
+                                  <span>Decline Cancellation</span>
+                                </button>
+
+                                <button
+                                  type="button"
+                                  onClick={() => handleReviewCancellation("approve")}
+                                  disabled={isReviewingCancel}
+                                  className="px-4 py-2 rounded-xl bg-rose-600 hover:bg-rose-700 text-white font-bold transition shadow-sm flex items-center gap-1.5 cursor-pointer disabled:opacity-50"
+                                >
+                                  {isReviewingCancel ? (
+                                    <>
+                                      <Spinner className="size-4" />
+                                      <span>Processing...</span>
+                                    </>
+                                  ) : (
+                                    <>
+                                      <CheckCircleIcon className="size-4" />
+                                      <span>Approve &amp; Cancel Order</span>
+                                    </>
+                                  )}
+                                </button>
+                              </div>
+                            </div>
+                          )}
+                        </div>
+                      )}
 
                       {/* Recipient & Courier Logistics Box */}
                       <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 p-4 rounded-2xl bg-stone-50 dark:bg-neutral-950 border border-stone-200/60 dark:border-neutral-800 text-xs">

@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useState, useEffect } from "react";
 import { Link } from "react-router";
 import {
   TruckIcon,
@@ -10,9 +10,11 @@ import {
   DocumentDuplicateIcon,
   ArrowTopRightOnSquareIcon,
   ArrowPathIcon,
+  ExclamationTriangleIcon,
 } from "@heroicons/react/24/outline";
 import { toast } from "sonner";
 import type { Order, OrderTrackingTimelineStep } from "~/firebase";
+import OrderCancelRequestModal from "./OrderCancelRequestModal";
 
 export interface OrderTrackerViewProps {
   order: Order;
@@ -21,10 +23,16 @@ export interface OrderTrackerViewProps {
 }
 
 export const OrderTrackerView: React.FC<OrderTrackerViewProps> = ({
-  order,
+  order: initialOrder,
   onRefresh,
   isRefreshing = false,
 }) => {
+  const [order, setOrder] = useState<Order>(initialOrder);
+  const [isCancelModalOpen, setIsCancelModalOpen] = useState(false);
+
+  useEffect(() => {
+    setOrder(initialOrder);
+  }, [initialOrder]);
   const copyToClipboard = (text: string, label: string) => {
     navigator.clipboard.writeText(text);
     toast.success(`${label} copied to clipboard!`);
@@ -99,7 +107,18 @@ export const OrderTrackerView: React.FC<OrderTrackerViewProps> = ({
           </p>
         </div>
 
-        <div className="flex items-center gap-2">
+        <div className="flex flex-wrap items-center gap-2">
+          {["placed", "confirmed", "processing"].includes(order.orderStatus) &&
+            !order.cancellationRequest && (
+              <button
+                type="button"
+                onClick={() => setIsCancelModalOpen(true)}
+                className="inline-flex items-center gap-1.5 px-3 py-2 rounded-xl border border-rose-200 dark:border-rose-900/60 hover:bg-rose-50 dark:hover:bg-rose-950/40 text-xs font-semibold text-rose-600 dark:text-rose-400 transition cursor-pointer"
+              >
+                <span>Request Cancellation</span>
+              </button>
+            )}
+
           {onRefresh && (
             <button
               type="button"
@@ -124,6 +143,34 @@ export const OrderTrackerView: React.FC<OrderTrackerViewProps> = ({
           </button>
         </div>
       </div>
+
+      {/* Cancellation Request Alert Banner if Active */}
+      {order.cancellationRequest?.status === "pending" && (
+        <div className="p-4 rounded-2xl bg-amber-50 dark:bg-amber-950/40 border border-amber-200 dark:border-amber-800 text-xs text-amber-900 dark:text-amber-200 space-y-1">
+          <div className="flex items-center gap-2 font-bold text-amber-800 dark:text-amber-300">
+            <ClockIcon className="size-4 shrink-0 text-amber-600 dark:text-amber-400" />
+            <span>Cancellation Request Pending Admin Review</span>
+          </div>
+          <p className="text-[11px] text-amber-800/90 dark:text-amber-300/80 leading-relaxed">
+            You submitted a cancellation request for reason: <strong>"{order.cancellationRequest.reason}"</strong>
+            {order.cancellationRequest.details ? ` ("${order.cancellationRequest.details}")` : ""}.
+            Our atelier admin team will review whether packaging or courier handover has begun.
+          </p>
+        </div>
+      )}
+
+      {order.cancellationRequest?.status === "rejected" && (
+        <div className="p-4 rounded-2xl bg-stone-100 dark:bg-neutral-800 border border-stone-200 dark:border-neutral-700 text-xs text-stone-700 dark:text-neutral-300 space-y-1">
+          <div className="flex items-center gap-2 font-bold">
+            <ExclamationTriangleIcon className="size-4 shrink-0 text-stone-500" />
+            <span>Cancellation Request Declined by Admin</span>
+          </div>
+          <p className="text-[11px] text-stone-600 dark:text-neutral-400 leading-relaxed">
+            {order.cancellationRequest.adminNote ||
+              "Your cancellation request was reviewed and declined. Dispatch and delivery are proceeding."}
+          </p>
+        </div>
+      )}
 
       {/* Courier & Dispatch Partner Box */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4 p-4 rounded-2xl bg-stone-50/70 dark:bg-neutral-950/60 border border-stone-200/60 dark:border-neutral-800 text-xs">
@@ -299,6 +346,18 @@ export const OrderTrackerView: React.FC<OrderTrackerViewProps> = ({
           </Link>
         </div>
       </div>
+
+      {/* Cancellation Request Modal */}
+      <OrderCancelRequestModal
+        isOpen={isCancelModalOpen}
+        order={order}
+        onClose={() => setIsCancelModalOpen(false)}
+        onSuccess={(updated) => {
+          setOrder(updated);
+          setIsCancelModalOpen(false);
+          onRefresh?.();
+        }}
+      />
     </div>
   );
 };
