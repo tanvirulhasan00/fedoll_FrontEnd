@@ -66,7 +66,7 @@ const SUPPORT_LINKS = [
   { name: "Contact Customer Care", href: "/contact-us" },
   { name: "Shipping & Delivery Info", href: "/contact-us" },
   { name: "Returns & Exchanges", href: "/contact-us" },
-  { name: "Size Guide & Fit Advice", href: "/contact-us" },
+  { name: "Size Guide & Fit Advice", href: "/size-guide" },
   { name: "Help & FAQs", href: "/contact-us" },
 ];
 

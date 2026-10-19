@@ -1,4 +1,5 @@
 import React, { useState } from "react";
+import { Link } from "react-router";
 import {
   Dialog,
   DialogPanel,
@@ -502,16 +503,26 @@ export default function SizeGuideModal({
 
                 {/* Footer Assurance */}
                 <div className="mt-6 pt-4 border-t border-stone-200 dark:border-neutral-800 flex flex-col sm:flex-row items-center justify-between gap-3 text-xs">
-                  <div className="flex items-center gap-2 text-gray-600 dark:text-neutral-400">
-                    <ShieldCheckIcon className="size-5 text-emerald-600 dark:text-emerald-400 shrink-0" />
-                    <span className="text-[11px]">
-                      Hassle-free <strong>7-Day Size Exchange</strong> across Bangladesh.
-                    </span>
+                  <div className="flex flex-col sm:flex-row items-start sm:items-center gap-2 text-gray-600 dark:text-neutral-400">
+                    <div className="flex items-center gap-2">
+                      <ShieldCheckIcon className="size-5 text-emerald-600 dark:text-emerald-400 shrink-0" />
+                      <span className="text-[11px]">
+                        Hassle-free <strong>7-Day Size Exchange</strong> across Bangladesh.
+                      </span>
+                    </div>
+                    <span className="hidden sm:inline text-stone-300 dark:text-neutral-700">|</span>
+                    <Link
+                      to="/size-guide"
+                      onClick={onClose}
+                      className="text-amber-700 dark:text-amber-400 hover:underline font-semibold text-[11px]"
+                    >
+                      Open Full Size Guide &amp; Fit Advice &rarr;
+                    </Link>
                   </div>
                   <button
                     type="button"
                     onClick={onClose}
-                    className="w-full sm:w-auto px-5 py-2.5 rounded-xl bg-stone-900 dark:bg-white text-white dark:text-stone-900 font-bold hover:bg-stone-800 dark:hover:bg-stone-100 transition cursor-pointer text-xs"
+                    className="w-full sm:w-auto px-5 py-2.5 rounded-xl bg-stone-900 dark:bg-white text-white dark:text-stone-900 font-bold hover:bg-stone-800 dark:hover:bg-stone-100 transition cursor-pointer text-xs shrink-0"
                   >
                     Got It, Close
                   </button>
