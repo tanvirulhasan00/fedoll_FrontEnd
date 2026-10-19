@@ -450,6 +450,7 @@ export default function AdminDashboardPage() {
                   {currentTab === "orders" && (
                     <AdminOrdersTab
                       orders={orders}
+                      storeSettings={storeSettings}
                       onRefresh={loadAllAdminData}
                     />
                   )}

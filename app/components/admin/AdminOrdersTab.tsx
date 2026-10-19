@@ -10,21 +10,25 @@ import {
   CheckCircleIcon,
   DocumentDuplicateIcon,
   ArrowPathIcon,
+  TagIcon,
 } from "@heroicons/react/24/outline";
 import { Dialog, DialogPanel, DialogTitle, Transition, TransitionChild } from "@headlessui/react";
 import { toast } from "sonner";
-import type { Order, OrderStatus } from "~/firebase";
+import type { Order, OrderStatus, StoreGeneralSettings } from "~/firebase";
 import { updateOrderStatusInFirestore, deleteOrderInFirestore } from "~/firebase";
 import { Spinner } from "~/components/ui/spinner";
+import OrderPackagingStickerModal from "./OrderPackagingStickerModal";
 
 interface AdminOrdersTabProps {
   orders: Order[];
   onRefresh: () => void;
+  storeSettings?: StoreGeneralSettings;
 }
 
 export const AdminOrdersTab: React.FC<AdminOrdersTabProps> = ({
   orders,
   onRefresh,
+  storeSettings,
 }) => {
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedStatus, setSelectedStatus] = useState<"all" | OrderStatus>("all");
@@ -37,6 +41,20 @@ export const AdminOrdersTab: React.FC<AdminOrdersTabProps> = ({
   const [courierDraft, setCourierDraft] = useState("");
   const [trackingDraft, setTrackingDraft] = useState("");
   const [statusNoteDraft, setStatusNoteDraft] = useState("");
+
+  // Packaging Sticker Modal State
+  const [stickerOrder, setStickerOrder] = useState<Order | null>(null);
+  const [isStickerOpen, setIsStickerOpen] = useState(false);
+
+  const handleOpenSticker = (order: Order) => {
+    setStickerOrder(order);
+    setIsStickerOpen(true);
+  };
+
+  const handleCloseSticker = () => {
+    setIsStickerOpen(false);
+    setStickerOrder(null);
+  };
 
   const handleOpenDetail = (order: Order) => {
     setSelectedOrder(order);
@@ -286,6 +304,15 @@ export const AdminOrdersTab: React.FC<AdminOrdersTabProps> = ({
                       <div className="flex items-center justify-end gap-1.5">
                         <button
                           type="button"
+                          onClick={() => handleOpenSticker(o)}
+                          className="px-2.5 py-1 rounded-lg border border-stone-200 dark:border-neutral-700 hover:bg-orange-50 dark:hover:bg-orange-950/30 text-gray-800 dark:text-neutral-200 hover:text-orange-600 dark:hover:text-orange-400 font-bold text-[11px] transition cursor-pointer flex items-center gap-1 shadow-2xs"
+                          title="Print Shipping Sticker / Parcel Label"
+                        >
+                          <PrinterIcon className="size-3.5 text-orange-600 dark:text-orange-400" />
+                          <span className="hidden sm:inline">Sticker</span>
+                        </button>
+                        <button
+                          type="button"
                           onClick={() => handleOpenDetail(o)}
                           className="px-2.5 py-1 rounded-lg bg-orange-600 hover:bg-orange-700 text-white font-bold text-[11px] transition cursor-pointer flex items-center gap-1"
                         >
@@ -362,11 +389,12 @@ export const AdminOrdersTab: React.FC<AdminOrdersTabProps> = ({
                         <div className="flex items-center gap-2">
                           <button
                             type="button"
-                            onClick={() => window.print()}
-                            className="p-2 rounded-xl border border-gray-200 dark:border-neutral-700 text-gray-600 dark:text-neutral-300 hover:bg-stone-50 transition cursor-pointer"
-                            title="Print Invoice / Packing Slip"
+                            onClick={() => handleOpenSticker(selectedOrder)}
+                            className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-orange-600 hover:bg-orange-700 text-white text-xs font-bold transition cursor-pointer shadow-xs"
+                            title="Print Packaging & Courier Shipping Sticker"
                           >
                             <PrinterIcon className="size-4" />
+                            <span>Print Sticker</span>
                           </button>
                           <button
                             type="button"
@@ -425,6 +453,16 @@ export const AdminOrdersTab: React.FC<AdminOrdersTabProps> = ({
                           <p className="text-gray-500 text-[11px] mt-1">
                             Estimated: {selectedOrder.estimatedDeliveryDate}
                           </p>
+                          <div className="pt-2 mt-2 border-t border-stone-200/60 dark:border-neutral-800">
+                            <button
+                              type="button"
+                              onClick={() => handleOpenSticker(selectedOrder)}
+                              className="inline-flex items-center gap-1.5 text-xs font-bold text-orange-600 dark:text-orange-400 hover:underline cursor-pointer"
+                            >
+                              <TagIcon className="size-3.5" />
+                              <span>Print Courier Packaging Sticker &rarr;</span>
+                            </button>
+                          </div>
                         </div>
                       </div>
 
@@ -574,6 +612,14 @@ export const AdminOrdersTab: React.FC<AdminOrdersTabProps> = ({
           </div>
         </Dialog>
       </Transition>
+
+      {/* Packaging & Courier Shipping Sticker Modal */}
+      <OrderPackagingStickerModal
+        order={stickerOrder}
+        isOpen={isStickerOpen}
+        onClose={handleCloseSticker}
+        storeSettings={storeSettings}
+      />
     </div>
   );
 };
