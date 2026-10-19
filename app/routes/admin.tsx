@@ -416,7 +416,7 @@ export default function AdminDashboardPage() {
                       messages={messages}
                       subscribers={subscribers}
                       onNavigateTab={handleSelectTab}
-                      onOpenAddProduct={() => setIsAddProductOpen(true)}
+                      onOpenAddProduct={() => navigate("/admin/products/new")}
                       onOpenAddCategory={() => setIsAddCategoryOpen(true)}
                       onUpdateOrderStatus={handleUpdateOrderStatus}
                     />
@@ -427,8 +427,6 @@ export default function AdminDashboardPage() {
                       products={products}
                       categories={categories}
                       onRefresh={loadAllAdminData}
-                      isAddModalOpen={isAddProductOpen}
-                      onCloseAddModal={() => setIsAddProductOpen(false)}
                     />
                   )}
 

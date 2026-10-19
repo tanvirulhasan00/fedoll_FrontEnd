@@ -13,6 +13,10 @@ export default [
   route("profile", "routes/profile.tsx"),
   route("track-order", "routes/track-order.tsx"),
   route("admin", "routes/admin.tsx"),
+  route("admin/products/new", "routes/admin-product-form.tsx"),
+  route("admin/products/add", "routes/admin-product-form.tsx", { id: "admin-product-add-alias" }),
+  route("admin/products/:id/edit", "routes/admin-product-form.tsx", { id: "admin-product-edit" }),
+  route("admin/products/edit/:id", "routes/admin-product-form.tsx", { id: "admin-product-edit-alias" }),
   route("dashboard", "routes/admin.tsx", { id: "dashboard-alias" }),
   route("deshboard", "routes/admin.tsx", { id: "deshboard-alias" }),
 ] satisfies RouteConfig;
