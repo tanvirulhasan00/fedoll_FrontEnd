@@ -11,3 +11,4 @@ export * from "./shipping";
 export * from "./coupons";
 export * from "./storeSettings";
 export * from "./newsletter";
+export * from "./legalPolicies";

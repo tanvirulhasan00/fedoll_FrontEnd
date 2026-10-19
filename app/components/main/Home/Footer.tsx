@@ -318,17 +318,17 @@ const Footer = () => {
             </div>
           </div>
 
-          <div className="flex items-center gap-6 text-xs text-neutral-400">
-            <Link to="/contact-us" className="hover:text-orange-400 transition-colors">
+          <div className="flex flex-wrap items-center justify-center sm:justify-start gap-4 sm:gap-6 text-xs text-neutral-400">
+            <Link to="/privacy-policy" className="hover:text-orange-400 transition-colors">
               Privacy Policy
             </Link>
             <span className="text-neutral-700">•</span>
-            <Link to="/contact-us" className="hover:text-orange-400 transition-colors">
+            <Link to="/terms-of-service" className="hover:text-orange-400 transition-colors">
               Terms of Service
             </Link>
             <span className="text-neutral-700">•</span>
-            <Link to="/contact-us" className="hover:text-orange-400 transition-colors">
-              Security & Compliance
+            <Link to="/security" className="hover:text-orange-400 transition-colors">
+              Security &amp; Compliance
             </Link>
           </div>
         </div>

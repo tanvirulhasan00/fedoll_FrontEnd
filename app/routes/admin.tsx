@@ -39,6 +39,7 @@ import AdminCustomersTab from "~/components/admin/AdminCustomersTab";
 import AdminCouponsTab from "~/components/admin/AdminCouponsTab";
 import AdminMessagesTab from "~/components/admin/AdminMessagesTab";
 import AdminNewsletterTab from "~/components/admin/AdminNewsletterTab";
+import AdminLegalTab from "~/components/admin/AdminLegalTab";
 import AdminSettingsTab from "~/components/admin/AdminSettingsTab";
 import {
   Bars3Icon,
@@ -61,7 +62,7 @@ export function meta() {
     {
       name: "description",
       content:
-        "Full controlled admin dashboard for Fedoll: products, categories, orders, shipping providers, customer roles, and store settings.",
+        "Full controlled admin dashboard for Fedoll: products, categories, orders, shipping providers, customer roles, legal policies, and store settings.",
     },
   ];
 }
@@ -86,6 +87,7 @@ export default function AdminDashboardPage() {
     "coupons",
     "messages",
     "newsletters",
+    "legal",
     "settings",
   ];
 
@@ -490,6 +492,10 @@ export default function AdminDashboardPage() {
                       subscribers={subscribers}
                       onRefresh={loadAllAdminData}
                     />
+                  )}
+
+                  {currentTab === "legal" && (
+                    <AdminLegalTab />
                   )}
 
                   {currentTab === "settings" && (

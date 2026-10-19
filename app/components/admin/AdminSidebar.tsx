@@ -14,6 +14,7 @@ import {
   ShieldCheckIcon,
   ChatBubbleLeftRightIcon,
   EnvelopeOpenIcon,
+  ScaleIcon,
 } from "@heroicons/react/24/outline";
 import type { AuthUser } from "~/redux/features/auth/authSlice";
 
@@ -27,6 +28,7 @@ export type AdminTab =
   | "coupons"
   | "messages"
   | "newsletters"
+  | "legal"
   | "settings";
 
 interface AdminSidebarProps {
@@ -69,6 +71,12 @@ export const AdminSidebar: React.FC<AdminSidebarProps> = ({
       label: "Newsletter Subscribers",
       icon: EnvelopeOpenIcon,
       badge: subscribersCount > 0 ? `${subscribersCount}` : undefined,
+    },
+    {
+      id: "legal",
+      label: "Legal & Policies",
+      icon: ScaleIcon,
+      badge: "Live",
     },
     { id: "settings", label: "Store Settings", icon: Cog6ToothIcon },
   ];
