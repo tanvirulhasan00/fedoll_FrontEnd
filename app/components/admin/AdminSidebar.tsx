@@ -15,6 +15,7 @@ import {
   ChatBubbleLeftRightIcon,
   EnvelopeOpenIcon,
   ScaleIcon,
+  ArrowPathRoundedSquareIcon,
 } from "@heroicons/react/24/outline";
 import type { AuthUser } from "~/redux/features/auth/authSlice";
 
@@ -23,6 +24,7 @@ export type AdminTab =
   | "products"
   | "categories"
   | "orders"
+  | "returns"
   | "shipping"
   | "customers"
   | "coupons"
@@ -40,6 +42,7 @@ interface AdminSidebarProps {
   onCloseMobileMenu?: () => void;
   unreadMessagesCount?: number;
   subscribersCount?: number;
+  pendingReturnsCount?: number;
 }
 
 export const AdminSidebar: React.FC<AdminSidebarProps> = ({
@@ -51,12 +54,19 @@ export const AdminSidebar: React.FC<AdminSidebarProps> = ({
   onCloseMobileMenu,
   unreadMessagesCount = 0,
   subscribersCount = 0,
+  pendingReturnsCount = 0,
 }) => {
   const navItems: { id: AdminTab; label: string; icon: React.ElementType; badge?: string }[] = [
     { id: "overview", label: "Dashboard Overview", icon: ChartBarIcon },
     { id: "products", label: "Product Catalog", icon: ShoppingBagIcon },
     { id: "categories", label: "Categories", icon: RectangleStackIcon },
     { id: "orders", label: "Orders & Shipments", icon: ClipboardDocumentListIcon },
+    {
+      id: "returns",
+      label: "Returns & Exchanges",
+      icon: ArrowPathRoundedSquareIcon,
+      badge: pendingReturnsCount > 0 ? `${pendingReturnsCount} New` : undefined,
+    },
     { id: "shipping", label: "Shipping & Couriers", icon: TruckIcon, badge: "Logistics" },
     { id: "customers", label: "Customers & Roles", icon: UsersIcon },
     { id: "coupons", label: "Coupons & Discounts", icon: TagIcon },

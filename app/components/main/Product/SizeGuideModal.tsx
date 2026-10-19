@@ -507,7 +507,15 @@ export default function SizeGuideModal({
                     <div className="flex items-center gap-2">
                       <ShieldCheckIcon className="size-5 text-emerald-600 dark:text-emerald-400 shrink-0" />
                       <span className="text-[11px]">
-                        Hassle-free <strong>7-Day Size Exchange</strong> across Bangladesh.
+                        Hassle-free{" "}
+                        <Link
+                          to="/returns-and-exchanges"
+                          onClick={onClose}
+                          className="font-bold underline hover:text-emerald-700 dark:hover:text-emerald-300"
+                        >
+                          7-Day Size Exchange
+                        </Link>{" "}
+                        across Bangladesh.
                       </span>
                     </div>
                     <span className="hidden sm:inline text-stone-300 dark:text-neutral-700">|</span>

@@ -424,10 +424,10 @@ export default function SizeGuidePage() {
             </span>
             <span>Wrong size? Enjoy hassle-free 7-day doorstep size exchange across all 64 districts in Bangladesh.</span>
             <Link
-              to="/terms-of-service"
+              to="/returns-and-exchanges"
               className="text-orange-700 dark:text-orange-400 font-bold underline hover:text-orange-800"
             >
-              Exchange Terms
+              Returns &amp; Exchanges Policy &rarr;
             </Link>
           </div>
         </div>

@@ -1,4 +1,5 @@
 import React from "react";
+import { Link } from "react-router";
 import {
   TruckIcon,
   CheckCircleIcon,
@@ -276,6 +277,26 @@ export const OrderTrackerView: React.FC<OrderTrackerViewProps> = ({
               </div>
             </div>
           ))}
+        </div>
+
+        {/* Returns & Exchanges Banner for Delivered / Active Orders */}
+        <div className="mt-5 pt-4 border-t border-stone-200/60 dark:border-neutral-800 flex flex-col sm:flex-row items-center justify-between gap-3 bg-stone-50/70 dark:bg-neutral-900/60 p-4 rounded-xl">
+          <div className="flex items-center gap-2.5 text-xs text-gray-700 dark:text-neutral-300">
+            <ShieldCheckIcon className="size-5 text-emerald-600 dark:text-emerald-400 shrink-0" />
+            <div>
+              <p className="font-bold text-gray-900 dark:text-white">Need a Size Exchange or Return?</p>
+              <p className="text-[11px] text-gray-500 dark:text-neutral-400">
+                7-day doorstep size replacement across all 64 districts in Bangladesh.
+              </p>
+            </div>
+          </div>
+          <Link
+            to={`/returns-and-exchanges?order=${encodeURIComponent(order.orderNumber)}&tab=request`}
+            className="inline-flex items-center gap-1.5 px-4 py-2 rounded-lg bg-orange-600 hover:bg-orange-700 text-white font-bold text-xs transition shadow-xs cursor-pointer shrink-0"
+          >
+            <ArrowPathIcon className="size-3.5" />
+            <span>Exchange / Return Item</span>
+          </Link>
         </div>
       </div>
     </div>

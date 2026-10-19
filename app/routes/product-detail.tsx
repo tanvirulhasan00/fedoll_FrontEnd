@@ -554,7 +554,12 @@ export default function ProductDetailPage() {
                   </div>
                   <div className="flex items-center gap-2.5">
                     <ArrowPathRoundedSquareIcon className="size-4 text-orange-600 dark:text-orange-400 shrink-0" />
-                    <span>7-Day Easy Size &amp; Fit Exchange guarantee</span>
+                    <Link
+                      to="/returns-and-exchanges"
+                      className="hover:underline hover:text-orange-600 dark:hover:text-orange-400"
+                    >
+                      7-Day Easy Size &amp; Fit Exchange guarantee
+                    </Link>
                   </div>
                   <div className="flex items-center gap-2.5">
                     <BuildingStorefrontIcon className="size-4 text-orange-600 dark:text-orange-400 shrink-0" />
@@ -628,8 +633,15 @@ export default function ProductDetailPage() {
                 <AccordionContent className="text-sm text-gray-600 dark:text-neutral-300 leading-relaxed pt-2">
                   <p>
                     We deliver to all 64 districts in Bangladesh with reliable courier partners. If
-                    you need a different size, simply reach out to our WhatsApp care team within 7
-                    days of receiving your package. We will dispatch the replacement promptly.
+                    you need a different size, simply reach out to our WhatsApp care team or initiate an
+                    instant doorstep reverse pickup on our{" "}
+                    <Link
+                      to="/returns-and-exchanges"
+                      className="text-orange-600 dark:text-orange-400 font-semibold underline underline-offset-2"
+                    >
+                      Returns &amp; Exchanges Desk
+                    </Link>{" "}
+                    within 7 days of receiving your package. We will dispatch the replacement promptly.
                   </p>
                 </AccordionContent>
               </AccordionItem>

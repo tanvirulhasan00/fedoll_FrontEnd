@@ -2,6 +2,14 @@ import {
   doc,
   getDoc,
   setDoc,
+  collection,
+  getDocs,
+  addDoc,
+  updateDoc,
+  deleteDoc,
+  query,
+  orderBy,
+  limit,
   serverTimestamp,
 } from "firebase/firestore";
 import { db } from "./firebase.config";
@@ -60,6 +68,52 @@ export interface SecurityComplianceData {
     badgeColor: string;
   }[];
   clauses: LegalClause[];
+}
+
+export interface ReturnsExchangesData {
+  lastUpdated: string;
+  effectiveDate: string;
+  noticeBanner?: string;
+  returnWindowDays: number;
+  exchangeFeeInsideDhaka: number;
+  exchangeFeeOutsideDhaka: number;
+  freeExchangeOnDefect: boolean;
+  refundProcessingDays: string;
+  instantExchangeDispatched: boolean;
+  supportHotline: string;
+  supportWhatsApp: string;
+  supportEmail: string;
+  hubAddress: string;
+  courierPartners: string[];
+  nonReturnableItems: string[];
+  clauses: LegalClause[];
+}
+
+export interface ReturnExchangeRequest {
+  id: string;
+  ticketNumber: string;
+  orderNumber: string;
+  customerName: string;
+  customerPhone: string;
+  customerEmail?: string;
+  pickupAddress: string;
+  zone: "inside_dhaka" | "outside_dhaka";
+  type: "size_exchange" | "color_style_exchange" | "defective_replacement" | "refund";
+  itemDetails: string;
+  requestedReplacement?: string;
+  refundMethod?: "bKash" | "Nagad" | "Bank Transfer" | "Store Credit";
+  refundAccountDetails?: string;
+  refundAmount?: number;
+  refundTransactionId?: string;
+  reason: string;
+  status: "pending" | "approved" | "pickup_scheduled" | "received_at_hub" | "resolved" | "rejected";
+  createdAt: string;
+  resolvedAt?: string;
+  adminNotes?: string;
+  reverseCourier?: string;
+  reverseTrackingNumber?: string;
+  replacementTrackingNumber?: string;
+  inspectionResult?: "passed" | "failed_damaged" | "failed_tags_missing" | "pending";
 }
 
 /* ============================================================================
@@ -307,6 +361,95 @@ export const defaultSecurityCompliance: SecurityComplianceData = {
   ],
 };
 
+export const defaultReturnsExchanges: ReturnsExchangesData = {
+  lastUpdated: "October 20, 2026",
+  effectiveDate: "January 1, 2026",
+  noticeBanner:
+    "Complimentary Hassle-Free Doorstep Size Exchange across Dhaka and all 64 districts in Bangladesh.",
+  returnWindowDays: 7,
+  exchangeFeeInsideDhaka: 60,
+  exchangeFeeOutsideDhaka: 120,
+  freeExchangeOnDefect: true,
+  refundProcessingDays: "3 - 5 business days",
+  instantExchangeDispatched: true,
+  supportHotline: "+880 1712-345678",
+  supportWhatsApp: "+880 1712-345678",
+  supportEmail: "returns@fedoll.com",
+  hubAddress: "House 14, Road 7, Sector 3, Uttara Model Town, Dhaka 1230, Bangladesh",
+  courierPartners: [
+    "Steadfast Courier Reverse Logistics",
+    "Pathao Express Doorstep Collection",
+    "Paperfly Reverse Hub Network",
+    "Fedoll Atelier Uttara Walk-in Desk",
+  ],
+  nonReturnableItems: [
+    "Custom bespoke garments with personalized atelier monogramming or custom alterations.",
+    "Intimate innerwear, undergarments, and socks due to strict health and sanitary regulations.",
+    "Garments with removed, torn, or misplaced original Fedoll atelier tags and barcode seals.",
+    "Items displaying noticeable perfume fragrance, body odor, washing powder scents, or wear marks.",
+  ],
+  clauses: [
+    {
+      id: "eligibility",
+      title: "1. 7-Day Hassle-Free Exchange Eligibility",
+      content:
+        "Every garment purchased from Fedoll is backed by our signature 7-day atelier satisfaction promise. If your shirt, jacket, raw selvedge denim, or panjabi does not fit with immaculate precision, you may request an immediate size or style replacement.",
+      bulletPoints: [
+        "The exchange request must be initiated within 7 calendar days of the courier parcel delivery timestamp.",
+        "Garments must remain in unworn, unwashed, brand-new condition with all fabric care and barcode tags attached.",
+        "Original bespoke Fedoll garment bag and thermal packaging should be provided during courier handover.",
+        "First size exchange is 100% free of service fees; only standard courier transportation applies.",
+      ],
+    },
+    {
+      id: "doorstep-pickup",
+      title: "2. Nationwide Doorstep Reverse Courier Pickup",
+      content:
+        "You never have to visit a courier terminal or stand in queues. Once your return or exchange ticket is approved, we schedule a reverse pickup rider to collect the package directly from your home or office.",
+      bulletPoints: [
+        "Inside Dhaka: Doorstep reverse collection within 24–48 hours via Pathao Express or Steadfast.",
+        "Outside Dhaka: Doorstep collection across all 64 districts within 48–72 hours via Steadfast Courier.",
+        "Hand over the securely packaged parcel to the courier rider and collect the consignment receipt note.",
+        "Exchange fee (৳60 inside Dhaka / ৳120 outside Dhaka) can be adjusted with COD or paid via bKash/Nagad.",
+      ],
+    },
+    {
+      id: "defective-wrong",
+      title: "3. 100% Free Replacements for Defective or Wrong Items",
+      content:
+        "If you receive an item with a manufacturing fabric flaw, seam irregularity, or incorrect size/color dispatched through logistical error, Fedoll covers 100% of all reverse pickup and re-delivery charges.",
+      bulletPoints: [
+        "Please photograph the defect or mismatch and upload it when initiating the request or share on WhatsApp.",
+        "Upon instantaneous verification, our dispatch team ships out the replacement immediately.",
+        "No delivery charge, exchange surcharge, or handling fees will be charged to the customer.",
+      ],
+    },
+    {
+      id: "refund-policy",
+      title: "4. Monetary Refunds & Store Credit Processing",
+      content:
+        "If a suitable replacement size or style is unavailable in our inventory, or if you prefer a monetary refund, we issue complete refunds promptly according to Bangladesh e-commerce trade laws.",
+      bulletPoints: [
+        "Refund requests are verified and processed within 3 to 5 business days upon parcel arrival at our Dhaka hub.",
+        "Direct digital refunds are disbursed directly to your bKash, Nagad, or Bangladeshi Bank Account.",
+        "Credit card payments are refunded back to the issuing bank card within standard banking settlement cycles (5-10 working days).",
+        "Optional instant Store Credit with an extra 5% bonus voucher for your subsequent atelier shopping.",
+      ],
+    },
+    {
+      id: "drop-in-desk",
+      title: "5. Walk-in Atelier Exchange Hub (Uttara, Dhaka)",
+      content:
+        "Customers residing in Dhaka are also warmly invited to exchange their garments in person at our flagship atelier studio in Uttara for instantaneous size fitting and complimentary alteration consults.",
+      bulletPoints: [
+        "Address: House 14, Road 7, Sector 3, Uttara Model Town, Dhaka 1230, Bangladesh.",
+        "Visiting Hours: Saturday through Thursday, 10:00 AM to 8:30 PM.",
+        "In-house tailors can provide immediate hem adjustments or size consultations on the spot.",
+      ],
+    },
+  ],
+};
+
 /* ============================================================================
    FIRESTORE FETCH & SAVE METHODS (With Offline LocalStorage Fallback)
    ============================================================================ */
@@ -455,3 +598,240 @@ export const saveSecurityCompliance = async (
 
   return data;
 };
+
+const LOCAL_STORAGE_RETURNS_KEY = "fedoll_legal_returns_v1";
+const LOCAL_STORAGE_RETURN_REQUESTS_KEY = "fedoll_return_requests_v1";
+
+export const fetchReturnsExchanges = async (): Promise<ReturnsExchangesData> => {
+  try {
+    const docRef = doc(db, "legal_policies", "returns");
+    const snap = await getDoc(docRef);
+    if (snap.exists()) {
+      return { ...defaultReturnsExchanges, ...snap.data() } as ReturnsExchangesData;
+    }
+  } catch (err) {
+    console.warn("Could not fetch returns & exchanges from Firestore:", err);
+  }
+
+  if (typeof window !== "undefined") {
+    try {
+      const raw = localStorage.getItem(LOCAL_STORAGE_RETURNS_KEY);
+      if (raw) return { ...defaultReturnsExchanges, ...JSON.parse(raw) };
+    } catch {}
+  }
+
+  return defaultReturnsExchanges;
+};
+
+export const saveReturnsExchanges = async (
+  data: ReturnsExchangesData
+): Promise<ReturnsExchangesData> => {
+  try {
+    const docRef = doc(db, "legal_policies", "returns");
+    await setDoc(
+      docRef,
+      {
+        ...data,
+        updatedAt: serverTimestamp(),
+      },
+      { merge: true }
+    );
+  } catch (err) {
+    console.warn("Could not save returns & exchanges to Firestore:", err);
+  }
+
+  if (typeof window !== "undefined") {
+    try {
+      localStorage.setItem(LOCAL_STORAGE_RETURNS_KEY, JSON.stringify(data));
+    } catch {}
+  }
+
+  return data;
+};
+
+export const createReturnExchangeRequest = async (
+  requestData: Omit<ReturnExchangeRequest, "id" | "ticketNumber" | "status" | "createdAt">
+): Promise<ReturnExchangeRequest> => {
+  const timestamp = Date.now();
+  const randomSuffix = Math.floor(100 + Math.random() * 900);
+  const ticketNumber = `RET-${timestamp.toString().slice(-6)}-${randomSuffix}`;
+
+  const fullRecord: ReturnExchangeRequest = {
+    ...requestData,
+    id: `req_${timestamp}_${randomSuffix}`,
+    ticketNumber,
+    status: "pending",
+    createdAt: new Date().toISOString(),
+  };
+
+  try {
+    const colRef = collection(db, "return_requests");
+    const docRef = await addDoc(colRef, {
+      ...fullRecord,
+      serverCreatedAt: serverTimestamp(),
+    });
+    fullRecord.id = docRef.id;
+  } catch (err) {
+    console.warn("Could not save return request to Firestore, using local fallback:", err);
+  }
+
+  // Save to LocalStorage cache
+  if (typeof window !== "undefined") {
+    try {
+      const raw = localStorage.getItem(LOCAL_STORAGE_RETURN_REQUESTS_KEY);
+      const list: ReturnExchangeRequest[] = raw ? JSON.parse(raw) : [];
+      list.unshift(fullRecord);
+      localStorage.setItem(LOCAL_STORAGE_RETURN_REQUESTS_KEY, JSON.stringify(list));
+    } catch {}
+  }
+
+  return fullRecord;
+};
+
+export const fetchReturnExchangeRequests = async (): Promise<ReturnExchangeRequest[]> => {
+  let list: ReturnExchangeRequest[] = [];
+
+  try {
+    const colRef = collection(db, "return_requests");
+    const q = query(colRef, orderBy("createdAt", "desc"), limit(50));
+    const snap = await getDocs(q);
+    if (!snap.empty) {
+      list = snap.docs.map((d) => ({
+        id: d.id,
+        ...(d.data() as object),
+      })) as ReturnExchangeRequest[];
+      return list;
+    }
+  } catch (err) {
+    console.warn("Could not query return_requests from Firestore:", err);
+  }
+
+  if (typeof window !== "undefined") {
+    try {
+      const raw = localStorage.getItem(LOCAL_STORAGE_RETURN_REQUESTS_KEY);
+      if (raw) return JSON.parse(raw);
+    } catch {}
+  }
+
+  return list;
+};
+
+export const updateReturnRequestStatus = async (
+  id: string,
+  status: ReturnExchangeRequest["status"],
+  adminNotes?: string
+): Promise<void> => {
+  try {
+    const docRef = doc(db, "return_requests", id);
+    await updateDoc(docRef, {
+      status,
+      adminNotes: adminNotes || "",
+      updatedAt: serverTimestamp(),
+    });
+  } catch (err) {
+    console.warn("Could not update return request in Firestore:", err);
+  }
+
+  if (typeof window !== "undefined") {
+    try {
+      const raw = localStorage.getItem(LOCAL_STORAGE_RETURN_REQUESTS_KEY);
+      if (raw) {
+        const list: ReturnExchangeRequest[] = JSON.parse(raw);
+        const idx = list.findIndex((r) => r.id === id);
+        if (idx !== -1) {
+          list[idx].status = status;
+          if (adminNotes !== undefined) list[idx].adminNotes = adminNotes;
+          localStorage.setItem(LOCAL_STORAGE_RETURN_REQUESTS_KEY, JSON.stringify(list));
+        }
+      }
+    } catch {}
+  }
+};
+
+export const fetchReturnRequestByTicket = async (
+  queryStr: string
+): Promise<ReturnExchangeRequest | null> => {
+  const trimmed = queryStr.trim().toUpperCase();
+  if (!trimmed) return null;
+
+  // Search local cache first
+  if (typeof window !== "undefined") {
+    try {
+      const raw = localStorage.getItem(LOCAL_STORAGE_RETURN_REQUESTS_KEY);
+      if (raw) {
+        const list: ReturnExchangeRequest[] = JSON.parse(raw);
+        const found = list.find(
+          (r) =>
+            r.ticketNumber.toUpperCase() === trimmed ||
+            r.orderNumber.toUpperCase() === trimmed ||
+            r.customerPhone.includes(trimmed)
+        );
+        if (found) return found;
+      }
+    } catch {}
+  }
+
+  // Search Firestore
+  try {
+    const all = await fetchReturnExchangeRequests();
+    const found = all.find(
+      (r) =>
+        r.ticketNumber.toUpperCase() === trimmed ||
+        r.orderNumber.toUpperCase() === trimmed ||
+        r.customerPhone.includes(trimmed)
+    );
+    if (found) return found;
+  } catch {}
+
+  return null;
+};
+
+export const updateReturnRequest = async (
+  id: string,
+  updates: Partial<ReturnExchangeRequest>
+): Promise<void> => {
+  try {
+    const docRef = doc(db, "return_requests", id);
+    await updateDoc(docRef, {
+      ...updates,
+      updatedAt: serverTimestamp(),
+    });
+  } catch (err) {
+    console.warn("Could not update return request in Firestore:", err);
+  }
+
+  if (typeof window !== "undefined") {
+    try {
+      const raw = localStorage.getItem(LOCAL_STORAGE_RETURN_REQUESTS_KEY);
+      if (raw) {
+        const list: ReturnExchangeRequest[] = JSON.parse(raw);
+        const idx = list.findIndex((r) => r.id === id);
+        if (idx !== -1) {
+          list[idx] = { ...list[idx], ...updates };
+          localStorage.setItem(LOCAL_STORAGE_RETURN_REQUESTS_KEY, JSON.stringify(list));
+        }
+      }
+    } catch {}
+  }
+};
+
+export const deleteReturnRequest = async (id: string): Promise<void> => {
+  try {
+    const docRef = doc(db, "return_requests", id);
+    await deleteDoc(docRef);
+  } catch (err) {
+    console.warn("Could not delete return request in Firestore:", err);
+  }
+
+  if (typeof window !== "undefined") {
+    try {
+      const raw = localStorage.getItem(LOCAL_STORAGE_RETURN_REQUESTS_KEY);
+      if (raw) {
+        const list: ReturnExchangeRequest[] = JSON.parse(raw);
+        const filtered = list.filter((r) => r.id !== id);
+        localStorage.setItem(LOCAL_STORAGE_RETURN_REQUESTS_KEY, JSON.stringify(filtered));
+      }
+    } catch {}
+  }
+};
+

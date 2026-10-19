@@ -28,12 +28,18 @@ import {
   type NewsletterSubscriber,
   defaultShippingSettings,
   defaultStoreSettings,
+  fetchReturnExchangeRequests,
+  fetchReturnsExchanges,
+  type ReturnExchangeRequest,
+  type ReturnsExchangesData,
+  defaultReturnsExchanges,
 } from "~/firebase";
 import AdminSidebar, { type AdminTab } from "~/components/admin/AdminSidebar";
 import AdminOverviewTab from "~/components/admin/AdminOverviewTab";
 import AdminProductsTab from "~/components/admin/AdminProductsTab";
 import AdminCategoriesTab from "~/components/admin/AdminCategoriesTab";
 import AdminOrdersTab from "~/components/admin/AdminOrdersTab";
+import AdminReturnsTab from "~/components/admin/AdminReturnsTab";
 import AdminShippingTab from "~/components/admin/AdminShippingTab";
 import AdminCustomersTab from "~/components/admin/AdminCustomersTab";
 import AdminCouponsTab from "~/components/admin/AdminCouponsTab";
@@ -82,6 +88,7 @@ export default function AdminDashboardPage() {
     "products",
     "categories",
     "orders",
+    "returns",
     "shipping",
     "customers",
     "coupons",
@@ -115,6 +122,8 @@ export default function AdminDashboardPage() {
   const [messages, setMessages] = useState<ContactMessageRecord[]>([]);
   const [subscribers, setSubscribers] = useState<NewsletterSubscriber[]>([]);
   const [storeSettings, setStoreSettings] = useState<StoreGeneralSettings>(defaultStoreSettings);
+  const [returnRequests, setReturnRequests] = useState<ReturnExchangeRequest[]>([]);
+  const [returnsPolicy, setReturnsPolicy] = useState<ReturnsExchangesData>(defaultReturnsExchanges);
 
   // Sync tab with URL
   useEffect(() => {
@@ -148,6 +157,8 @@ export default function AdminDashboardPage() {
         fetchedStoreSettings,
         fetchedMessages,
         fetchedSubscribers,
+        fetchedReturnRequests,
+        fetchedReturnsPolicy,
       ] = await Promise.all([
         fetchAllOrdersForAdmin(),
         fetchProductsFromFirestore(),
@@ -159,6 +170,8 @@ export default function AdminDashboardPage() {
         fetchStoreSettings(),
         fetchContactMessagesFromFirestore(),
         fetchAllNewsletterSubscribers(),
+        fetchReturnExchangeRequests(),
+        fetchReturnsExchanges(),
       ]);
 
       setOrders(fetchedOrders);
@@ -171,6 +184,8 @@ export default function AdminDashboardPage() {
       setStoreSettings(fetchedStoreSettings);
       setMessages(fetchedMessages);
       setSubscribers(fetchedSubscribers);
+      setReturnRequests(fetchedReturnRequests);
+      if (fetchedReturnsPolicy) setReturnsPolicy(fetchedReturnsPolicy);
     } catch (err) {
       console.warn("Error loading admin datasets:", err);
     } finally {
@@ -331,6 +346,7 @@ export default function AdminDashboardPage() {
             onCloseMobileMenu={() => setMobileMenuOpen(false)}
             unreadMessagesCount={messages.filter((m) => m.status === "new").length}
             subscribersCount={subscribers.filter((s) => s.status === "active").length}
+            pendingReturnsCount={returnRequests.filter((r) => r.status === "pending").length}
           />
 
           {/* Backdrop for mobile sidebar */}
@@ -364,6 +380,8 @@ export default function AdminDashboardPage() {
                     ? "Collections & Categories"
                     : currentTab === "orders"
                     ? "Orders & Logistics"
+                    : currentTab === "returns"
+                    ? "Returns & Exchanges Management"
                     : currentTab === "shipping"
                     ? "Shipping & Couriers"
                     : currentTab === "customers"
@@ -374,6 +392,8 @@ export default function AdminDashboardPage() {
                     ? "Customer Inquiries & Messages"
                     : currentTab === "newsletters"
                     ? "Newsletter Subscribers & VIP Club"
+                    : currentTab === "legal"
+                    ? "Legal Policies & Compliance"
                     : "Store Settings"}
                 </h1>
               </div>
@@ -453,6 +473,15 @@ export default function AdminDashboardPage() {
                     <AdminOrdersTab
                       orders={orders}
                       storeSettings={storeSettings}
+                      onRefresh={loadAllAdminData}
+                    />
+                  )}
+
+                  {currentTab === "returns" && (
+                    <AdminReturnsTab
+                      returnRequests={returnRequests}
+                      policyData={returnsPolicy}
+                      orders={orders}
                       onRefresh={loadAllAdminData}
                     />
                   )}
