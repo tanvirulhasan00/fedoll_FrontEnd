@@ -16,6 +16,7 @@ import {
   EnvelopeOpenIcon,
   ScaleIcon,
   ArrowPathRoundedSquareIcon,
+  BookOpenIcon,
 } from "@heroicons/react/24/outline";
 import type { AuthUser } from "~/redux/features/auth/authSlice";
 
@@ -25,6 +26,7 @@ export type AdminTab =
   | "categories"
   | "orders"
   | "returns"
+  | "blogs"
   | "shipping"
   | "customers"
   | "coupons"
@@ -43,6 +45,7 @@ interface AdminSidebarProps {
   unreadMessagesCount?: number;
   subscribersCount?: number;
   pendingReturnsCount?: number;
+  blogsCount?: number;
 }
 
 export const AdminSidebar: React.FC<AdminSidebarProps> = ({
@@ -55,6 +58,7 @@ export const AdminSidebar: React.FC<AdminSidebarProps> = ({
   unreadMessagesCount = 0,
   subscribersCount = 0,
   pendingReturnsCount = 0,
+  blogsCount = 0,
 }) => {
   const navItems: { id: AdminTab; label: string; icon: React.ElementType; badge?: string }[] = [
     { id: "overview", label: "Dashboard Overview", icon: ChartBarIcon },
@@ -66,6 +70,12 @@ export const AdminSidebar: React.FC<AdminSidebarProps> = ({
       label: "Returns & Exchanges",
       icon: ArrowPathRoundedSquareIcon,
       badge: pendingReturnsCount > 0 ? `${pendingReturnsCount} New` : undefined,
+    },
+    {
+      id: "blogs",
+      label: "Journal & Blogs",
+      icon: BookOpenIcon,
+      badge: blogsCount > 0 ? `${blogsCount}` : undefined,
     },
     { id: "shipping", label: "Shipping & Couriers", icon: TruckIcon, badge: "Logistics" },
     { id: "customers", label: "Customers & Roles", icon: UsersIcon },

@@ -37,19 +37,27 @@ export function meta({}: Route.MetaArgs) {
   ];
 }
 
-const CATEGORIES = [
+const DEFAULT_PRESET_CATEGORIES = [
   "All",
-  "Outerwear & Style",
-  "Denim & Craft",
-  "Workwear Essentials",
+  "Winter Styling",
+  "Denim Care",
+  "Office & Workwear",
   "Garment Care",
-  "Capsule Wardrobe",
+  "Wardrobe Tips",
 ];
 
 export default function BlogsPage() {
   const dispatch = useAppDispatch();
   const { blogs, loading, selectedCategory, searchQuery, seeding } =
     useAppSelector((state) => state.blogs);
+
+  const displayCategories = useMemo(() => {
+    const set = new Set<string>(DEFAULT_PRESET_CATEGORIES);
+    blogs.forEach((b) => {
+      if (b.category) set.add(b.category);
+    });
+    return Array.from(set);
+  }, [blogs]);
 
   useEffect(() => {
     dispatch(fetchBlogs());
@@ -154,7 +162,7 @@ export default function BlogsPage() {
             <div className="mt-10 pt-8 border-t border-stone-200/80 dark:border-neutral-800 flex flex-col lg:flex-row lg:items-center justify-between gap-6">
               {/* Category Pills */}
               <div className="flex items-center gap-2 overflow-x-auto pb-2 scrollbar-none">
-                {CATEGORIES.map((cat) => {
+                {displayCategories.map((cat) => {
                   const active = selectedCategory === cat;
                   return (
                     <button

@@ -33,6 +33,8 @@ import {
   type ReturnExchangeRequest,
   type ReturnsExchangesData,
   defaultReturnsExchanges,
+  fetchBlogsFromFirestore,
+  type BlogItem,
 } from "~/firebase";
 import AdminSidebar, { type AdminTab } from "~/components/admin/AdminSidebar";
 import AdminOverviewTab from "~/components/admin/AdminOverviewTab";
@@ -40,6 +42,7 @@ import AdminProductsTab from "~/components/admin/AdminProductsTab";
 import AdminCategoriesTab from "~/components/admin/AdminCategoriesTab";
 import AdminOrdersTab from "~/components/admin/AdminOrdersTab";
 import AdminReturnsTab from "~/components/admin/AdminReturnsTab";
+import AdminBlogsTab from "~/components/admin/AdminBlogsTab";
 import AdminShippingTab from "~/components/admin/AdminShippingTab";
 import AdminCustomersTab from "~/components/admin/AdminCustomersTab";
 import AdminCouponsTab from "~/components/admin/AdminCouponsTab";
@@ -89,6 +92,7 @@ export default function AdminDashboardPage() {
     "categories",
     "orders",
     "returns",
+    "blogs",
     "shipping",
     "customers",
     "coupons",
@@ -124,6 +128,7 @@ export default function AdminDashboardPage() {
   const [storeSettings, setStoreSettings] = useState<StoreGeneralSettings>(defaultStoreSettings);
   const [returnRequests, setReturnRequests] = useState<ReturnExchangeRequest[]>([]);
   const [returnsPolicy, setReturnsPolicy] = useState<ReturnsExchangesData>(defaultReturnsExchanges);
+  const [blogs, setBlogs] = useState<BlogItem[]>([]);
 
   // Sync tab with URL
   useEffect(() => {
@@ -159,6 +164,7 @@ export default function AdminDashboardPage() {
         fetchedSubscribers,
         fetchedReturnRequests,
         fetchedReturnsPolicy,
+        fetchedBlogs,
       ] = await Promise.all([
         fetchAllOrdersForAdmin(),
         fetchProductsFromFirestore(),
@@ -172,6 +178,7 @@ export default function AdminDashboardPage() {
         fetchAllNewsletterSubscribers(),
         fetchReturnExchangeRequests(),
         fetchReturnsExchanges(),
+        fetchBlogsFromFirestore(),
       ]);
 
       setOrders(fetchedOrders);
@@ -186,6 +193,7 @@ export default function AdminDashboardPage() {
       setSubscribers(fetchedSubscribers);
       setReturnRequests(fetchedReturnRequests);
       if (fetchedReturnsPolicy) setReturnsPolicy(fetchedReturnsPolicy);
+      setBlogs(fetchedBlogs);
     } catch (err) {
       console.warn("Error loading admin datasets:", err);
     } finally {
@@ -347,6 +355,7 @@ export default function AdminDashboardPage() {
             unreadMessagesCount={messages.filter((m) => m.status === "new").length}
             subscribersCount={subscribers.filter((s) => s.status === "active").length}
             pendingReturnsCount={returnRequests.filter((r) => r.status === "pending").length}
+            blogsCount={blogs.length}
           />
 
           {/* Backdrop for mobile sidebar */}
@@ -382,6 +391,8 @@ export default function AdminDashboardPage() {
                     ? "Orders & Logistics"
                     : currentTab === "returns"
                     ? "Returns & Exchanges Management"
+                    : currentTab === "blogs"
+                    ? "Journal & Blog Articles"
                     : currentTab === "shipping"
                     ? "Shipping & Couriers"
                     : currentTab === "customers"
@@ -482,6 +493,13 @@ export default function AdminDashboardPage() {
                       returnRequests={returnRequests}
                       policyData={returnsPolicy}
                       orders={orders}
+                      onRefresh={loadAllAdminData}
+                    />
+                  )}
+
+                  {currentTab === "blogs" && (
+                    <AdminBlogsTab
+                      blogs={blogs}
                       onRefresh={loadAllAdminData}
                     />
                   )}

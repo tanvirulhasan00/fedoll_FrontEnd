@@ -6,6 +6,8 @@ import {
 import {
   fetchBlogsFromFirestore,
   fetchBlogByIdOrSlugFromFirestore,
+  saveBlogToFirestore,
+  deleteBlogFromFirestore,
   seedBlogsToFirestore,
   initialBlogs,
   type BlogItem,
@@ -99,6 +101,38 @@ export const seedBlogs = createAsyncThunk(
   }
 );
 
+/**
+ * Save (create or update) blog article
+ */
+export const upsertBlog = createAsyncThunk(
+  "blogs/upsertBlog",
+  async (blog: BlogItem, { rejectWithValue }) => {
+    try {
+      const saved = await saveBlogToFirestore(blog);
+      return saved;
+    } catch (err: unknown) {
+      const error = err as Error;
+      return rejectWithValue(error.message || "Failed to save blog");
+    }
+  }
+);
+
+/**
+ * Delete blog article
+ */
+export const removeBlog = createAsyncThunk(
+  "blogs/removeBlog",
+  async (id: string, { rejectWithValue }) => {
+    try {
+      await deleteBlogFromFirestore(id);
+      return id;
+    } catch (err: unknown) {
+      const error = err as Error;
+      return rejectWithValue(error.message || "Failed to delete blog");
+    }
+  }
+);
+
 export const blogSlice = createSlice({
   name: "blogs",
   initialState,
@@ -160,6 +194,29 @@ export const blogSlice = createSlice({
         state.detailError =
           (action.payload as string) || "Failed to fetch blog detail";
       });
+
+    // upsertBlog
+    builder.addCase(upsertBlog.fulfilled, (state, action) => {
+      const saved = action.payload;
+      const idx = state.blogs.findIndex((b) => b.id === saved.id);
+      if (idx >= 0) {
+        state.blogs[idx] = saved;
+      } else {
+        state.blogs.unshift(saved);
+      }
+      if (state.selectedBlog && state.selectedBlog.id === saved.id) {
+        state.selectedBlog = saved;
+      }
+    });
+
+    // removeBlog
+    builder.addCase(removeBlog.fulfilled, (state, action) => {
+      const deletedId = action.payload;
+      state.blogs = state.blogs.filter((b) => b.id !== deletedId);
+      if (state.selectedBlog && state.selectedBlog.id === deletedId) {
+        state.selectedBlog = null;
+      }
+    });
 
     // seedBlogs
     builder

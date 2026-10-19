@@ -4,6 +4,7 @@ import {
   getDoc,
   getDocs,
   setDoc,
+  deleteDoc,
   query,
   where,
   serverTimestamp,
@@ -248,55 +249,90 @@ With these 10 items, you can create over 30 clean, sophisticated outfit combinat
   },
 ];
 
+const BLOGS_CACHE_KEY = "fedoll_blogs_cache";
+
 /**
- * Fetch all blogs from Cloud Firestore
+ * Generate a clean URL-friendly slug from an article title
+ */
+export function slugifyBlogTitle(title: string): string {
+  return title
+    .toLowerCase()
+    .trim()
+    .replace(/[^\w\s-]/g, "")
+    .replace(/[\s_-]+/g, "-")
+    .replace(/^-+|-+$/g, "");
+}
+
+/**
+ * Fetch all blogs from Cloud Firestore with local cache support
  */
 export const fetchBlogsFromFirestore = async (): Promise<BlogItem[]> => {
-  const blogCol = collection(db, "blogs");
-  const snap = await getDocs(blogCol);
+  try {
+    const blogCol = collection(db, "blogs");
+    const snap = await getDocs(blogCol);
 
-  if (snap.empty) {
-    await seedBlogsToFirestore();
-    return initialBlogs;
-  }
+    if (snap.empty) {
+      await seedBlogsToFirestore();
+      if (typeof window !== "undefined") {
+        localStorage.setItem(BLOGS_CACHE_KEY, JSON.stringify(initialBlogs));
+      }
+      return initialBlogs;
+    }
 
-  const blogs: BlogItem[] = [];
-  snap.forEach((docSnap) => {
-    const data = docSnap.data() as DocumentData;
-    blogs.push({
-      id: docSnap.id,
-      slug: data.slug || docSnap.id,
-      title: data.title || "",
-      excerpt: data.excerpt || "",
-      content: data.content || "",
-      coverImage: data.coverImage || "",
-      category: data.category || "Style",
-      tags: data.tags || [],
-      author: data.author || {
-        name: "Fedoll Editorial",
-        role: "Staff Writer",
-        avatar: "https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=200&q=80",
-      },
-      readTime: data.readTime || "4 min read",
-      publishedAt: data.publishedAt || "January 2026",
-      featured: Boolean(data.featured),
-      views: data.views || 0,
-      likes: data.likes || 0,
+    const blogs: BlogItem[] = [];
+    snap.forEach((docSnap) => {
+      const data = docSnap.data() as DocumentData;
+      blogs.push({
+        id: docSnap.id,
+        slug: data.slug || docSnap.id,
+        title: data.title || "",
+        excerpt: data.excerpt || "",
+        content: data.content || "",
+        coverImage: data.coverImage || "",
+        category: data.category || "Style",
+        tags: Array.isArray(data.tags) ? data.tags : [],
+        author: data.author || {
+          name: "Fedoll Editorial",
+          role: "Staff Writer",
+          avatar:
+            "https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=200&q=80",
+        },
+        readTime: data.readTime || "4 min read",
+        publishedAt: data.publishedAt || "January 2026",
+        featured: Boolean(data.featured),
+        views: typeof data.views === "number" ? data.views : 0,
+        likes: typeof data.likes === "number" ? data.likes : 0,
+        createdAt: data.createdAt ? String(data.createdAt) : undefined,
+      });
     });
-  });
 
-  const hasOldBlogContent = blogs.some(
-    (b) =>
-      b.title.includes("The Architecture of Modern Layering") ||
-      b.excerpt.includes("Okayama") ||
-      b.excerpt.includes("Sartorial")
-  );
-  if (hasOldBlogContent) {
-    seedBlogsToFirestore(true).catch(console.warn);
+    // Cache to localStorage for instantaneous offline/resilient loads
+    if (typeof window !== "undefined") {
+      try {
+        localStorage.setItem(BLOGS_CACHE_KEY, JSON.stringify(blogs));
+      } catch {
+        // LocalStorage quota or privacy mode error ignored
+      }
+    }
+
+    return blogs;
+  } catch (err) {
+    console.warn("fetchBlogsFromFirestore encountered an error, reading local fallback:", err);
+    if (typeof window !== "undefined") {
+      try {
+        const cached = localStorage.getItem(BLOGS_CACHE_KEY);
+        if (cached) {
+          const parsed = JSON.parse(cached);
+          if (Array.isArray(parsed) && parsed.length > 0) {
+            return parsed;
+          }
+        }
+      } catch {
+        // ignore parse error
+      }
+    }
     return initialBlogs;
   }
-
-  return blogs;
 };
 
 /**
@@ -307,60 +343,82 @@ export const fetchBlogByIdOrSlugFromFirestore = async (
 ): Promise<BlogItem | null> => {
   if (!idOrSlug) return null;
 
-  const docRef = doc(db, "blogs", idOrSlug);
-  const snap = await getDoc(docRef);
+  try {
+    const docRef = doc(db, "blogs", idOrSlug);
+    const snap = await getDoc(docRef);
 
-  if (snap.exists()) {
-    const data = snap.data();
-    return {
-      id: snap.id,
-      slug: data.slug || snap.id,
-      title: data.title || "",
-      excerpt: data.excerpt || "",
-      content: data.content || "",
-      coverImage: data.coverImage || "",
-      category: data.category || "Style",
-      tags: data.tags || [],
-      author: data.author || {
-        name: "Fedoll Editorial",
-        role: "Staff Writer",
-        avatar: "https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=200&q=80",
-      },
-      readTime: data.readTime || "4 min read",
-      publishedAt: data.publishedAt || "January 2026",
-      featured: Boolean(data.featured),
-      views: data.views || 0,
-      likes: data.likes || 0,
-    };
+    if (snap.exists()) {
+      const data = snap.data();
+      return {
+        id: snap.id,
+        slug: data.slug || snap.id,
+        title: data.title || "",
+        excerpt: data.excerpt || "",
+        content: data.content || "",
+        coverImage: data.coverImage || "",
+        category: data.category || "Style",
+        tags: Array.isArray(data.tags) ? data.tags : [],
+        author: data.author || {
+          name: "Fedoll Editorial",
+          role: "Staff Writer",
+          avatar:
+            "https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=200&q=80",
+        },
+        readTime: data.readTime || "4 min read",
+        publishedAt: data.publishedAt || "January 2026",
+        featured: Boolean(data.featured),
+        views: typeof data.views === "number" ? data.views : 0,
+        likes: typeof data.likes === "number" ? data.likes : 0,
+      };
+    }
+
+    const blogCol = collection(db, "blogs");
+    const q = query(blogCol, where("slug", "==", idOrSlug));
+    const querySnap = await getDocs(q);
+
+    if (!querySnap.empty) {
+      const matchDoc = querySnap.docs[0];
+      const data = matchDoc.data();
+      return {
+        id: matchDoc.id,
+        slug: data.slug || matchDoc.id,
+        title: data.title || "",
+        excerpt: data.excerpt || "",
+        content: data.content || "",
+        coverImage: data.coverImage || "",
+        category: data.category || "Style",
+        tags: Array.isArray(data.tags) ? data.tags : [],
+        author: data.author || {
+          name: "Fedoll Editorial",
+          role: "Staff Writer",
+          avatar:
+            "https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=200&q=80",
+        },
+        readTime: data.readTime || "4 min read",
+        publishedAt: data.publishedAt || "January 2026",
+        featured: Boolean(data.featured),
+        views: typeof data.views === "number" ? data.views : 0,
+        likes: typeof data.likes === "number" ? data.likes : 0,
+      };
+    }
+  } catch (err) {
+    console.warn("fetchBlogByIdOrSlugFromFirestore error:", err);
   }
 
-  const blogCol = collection(db, "blogs");
-  const q = query(blogCol, where("slug", "==", idOrSlug));
-  const querySnap = await getDocs(q);
-
-  if (!querySnap.empty) {
-    const matchDoc = querySnap.docs[0];
-    const data = matchDoc.data();
-    return {
-      id: matchDoc.id,
-      slug: data.slug || matchDoc.id,
-      title: data.title || "",
-      excerpt: data.excerpt || "",
-      content: data.content || "",
-      coverImage: data.coverImage || "",
-      category: data.category || "Style",
-      tags: data.tags || [],
-      author: data.author || {
-        name: "Fedoll Editorial",
-        role: "Staff Writer",
-        avatar: "https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=200&q=80",
-      },
-      readTime: data.readTime || "4 min read",
-      publishedAt: data.publishedAt || "January 2026",
-      featured: Boolean(data.featured),
-      views: data.views || 0,
-      likes: data.likes || 0,
-    };
+  // Check localStorage cache before static initialBlogs
+  if (typeof window !== "undefined") {
+    try {
+      const cached = localStorage.getItem(BLOGS_CACHE_KEY);
+      if (cached) {
+        const parsed = JSON.parse(cached) as BlogItem[];
+        const found = parsed.find(
+          (b) => b.id === idOrSlug || b.slug === idOrSlug
+        );
+        if (found) return found;
+      }
+    } catch {
+      // ignore
+    }
   }
 
   const fallback = initialBlogs.find(
@@ -370,9 +428,106 @@ export const fetchBlogByIdOrSlugFromFirestore = async (
 };
 
 /**
+ * Save (create or update) a blog article in Cloud Firestore
+ */
+export const saveBlogToFirestore = async (
+  blog: BlogItem
+): Promise<BlogItem> => {
+  const blogId = blog.id || (blog.slug ? slugifyBlogTitle(blog.slug) : `blog-${Date.now()}`);
+  const cleanSlug = blog.slug ? slugifyBlogTitle(blog.slug) : slugifyBlogTitle(blog.title);
+
+  const payload: BlogItem = {
+    ...blog,
+    id: blogId,
+    slug: cleanSlug,
+    title: blog.title.trim(),
+    excerpt: blog.excerpt.trim(),
+    content: blog.content.trim(),
+    category: blog.category.trim(),
+    readTime: blog.readTime?.trim() || "4 min read",
+    publishedAt: blog.publishedAt?.trim() || new Date().toLocaleDateString("en-US", {
+      month: "long",
+      day: "numeric",
+      year: "numeric",
+    }),
+    featured: Boolean(blog.featured),
+    views: typeof blog.views === "number" ? blog.views : 0,
+    likes: typeof blog.likes === "number" ? blog.likes : 0,
+    tags: Array.isArray(blog.tags) ? blog.tags.map((t) => t.trim()).filter(Boolean) : [],
+    author: {
+      name: blog.author?.name?.trim() || "Fedoll Editorial",
+      role: blog.author?.role?.trim() || "Staff Writer",
+      avatar:
+        blog.author?.avatar?.trim() ||
+        "https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=200&q=80",
+    },
+  };
+
+  try {
+    const docRef = doc(db, "blogs", blogId);
+    await setDoc(
+      docRef,
+      {
+        ...payload,
+        updatedAt: serverTimestamp(),
+      },
+      { merge: true }
+    );
+  } catch (err) {
+    console.warn("Firestore saveBlog error (persisting locally):", err);
+  }
+
+  // Always update local cache
+  if (typeof window !== "undefined") {
+    try {
+      const cached = localStorage.getItem(BLOGS_CACHE_KEY);
+      let list: BlogItem[] = cached ? JSON.parse(cached) : [...initialBlogs];
+      const existingIdx = list.findIndex((b) => b.id === blogId);
+      if (existingIdx >= 0) {
+        list[existingIdx] = payload;
+      } else {
+        list.unshift(payload);
+      }
+      localStorage.setItem(BLOGS_CACHE_KEY, JSON.stringify(list));
+    } catch {
+      // ignore
+    }
+  }
+
+  return payload;
+};
+
+/**
+ * Delete a blog article from Cloud Firestore and local storage
+ */
+export const deleteBlogFromFirestore = async (id: string): Promise<void> => {
+  try {
+    const docRef = doc(db, "blogs", id);
+    await deleteDoc(docRef);
+  } catch (err) {
+    console.warn("Firestore deleteBlog error:", err);
+  }
+
+  if (typeof window !== "undefined") {
+    try {
+      const cached = localStorage.getItem(BLOGS_CACHE_KEY);
+      if (cached) {
+        const list: BlogItem[] = JSON.parse(cached);
+        const filtered = list.filter((b) => b.id !== id);
+        localStorage.setItem(BLOGS_CACHE_KEY, JSON.stringify(filtered));
+      }
+    } catch {
+      // ignore
+    }
+  }
+};
+
+/**
  * Seed initial 5 blogs to Firestore
  */
-export const seedBlogsToFirestore = async (force: boolean = false): Promise<{
+export const seedBlogsToFirestore = async (
+  force: boolean = false
+): Promise<{
   success: boolean;
   count: number;
   message: string;
@@ -391,6 +546,10 @@ export const seedBlogsToFirestore = async (force: boolean = false): Promise<{
         { merge: !force }
       );
       seededCount++;
+    }
+
+    if (typeof window !== "undefined") {
+      localStorage.setItem(BLOGS_CACHE_KEY, JSON.stringify(initialBlogs));
     }
 
     return {
