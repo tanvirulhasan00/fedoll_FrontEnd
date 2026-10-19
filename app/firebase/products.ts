@@ -34,6 +34,20 @@ export interface ProductCategoryItem {
 export interface ProductColor {
   name: string;
   hex: string;
+  images?: string[]; // Variant-wise imagery specific to this color
+}
+
+export interface ProductVariant {
+  id: string; // Unique variant ID, e.g. "prod-wool-coat-charcoal-m"
+  color: string; // Color name, e.g. "Charcoal Grey"
+  colorHex?: string; // Hex color code, e.g. "#374151"
+  size: string; // Size, e.g. "M"
+  sku?: string; // Variant SKU, e.g. "FD-WL-01-GRY-M"
+  price?: number; // Optional variant price override
+  originalPrice?: number;
+  stockCount: number; // Stock count for this specific variant
+  inStock: boolean;
+  images: string[]; // Variant-wise images
 }
 
 export interface ProductItem {
@@ -53,6 +67,7 @@ export interface ProductItem {
   care?: string;
   sizes: string[];
   colors: ProductColor[];
+  variants?: ProductVariant[];
   isFeatured?: boolean;
   isNewArrival?: boolean;
   isBestSeller?: boolean;
@@ -60,6 +75,54 @@ export interface ProductItem {
   stockCount?: number;
   sku?: string;
 }
+
+/**
+ * Helper: Resolve variant-wise images for a given product and color selection
+ */
+export const getVariantImages = (
+  product: ProductItem | null | undefined,
+  colorName?: string
+): string[] => {
+  if (!product) return [];
+  if (!colorName) return product.images || [];
+
+  const normalized = colorName.trim().toLowerCase();
+
+  // 1. Check if color has dedicated variant images
+  const matchedColor = product.colors?.find(
+    (c) => c.name.trim().toLowerCase() === normalized
+  );
+  if (matchedColor?.images && matchedColor.images.length > 0) {
+    return matchedColor.images;
+  }
+
+  // 2. Check if any variant with this color has images
+  const colorVariant = product.variants?.find(
+    (v) => v.color.trim().toLowerCase() === normalized && v.images && v.images.length > 0
+  );
+  if (colorVariant?.images && colorVariant.images.length > 0) {
+    return colorVariant.images;
+  }
+
+  // 3. Fallback to product general images
+  return product.images && product.images.length > 0 ? product.images : [];
+};
+
+/**
+ * Helper: Find variant matching selected color and size
+ */
+export const getProductVariant = (
+  product: ProductItem | null | undefined,
+  colorName?: string,
+  sizeName?: string
+): ProductVariant | undefined => {
+  if (!product || !product.variants || product.variants.length === 0) return undefined;
+  return product.variants.find((v) => {
+    const matchColor = !colorName || v.color.trim().toLowerCase() === colorName.trim().toLowerCase();
+    const matchSize = !sizeName || v.size.trim().toLowerCase() === sizeName.trim().toLowerCase();
+    return matchColor && matchSize;
+  });
+};
 
 export const initialProductCategories: ProductCategoryItem[] = [
   {
@@ -155,9 +218,41 @@ export const initialProductsData: ProductItem[] = [
     care: "Dry clean only. Hang on wide cedar hanger.",
     sizes: ["S", "M", "L", "XL", "XXL"],
     colors: [
-      { name: "Charcoal Grey", hex: "#374151" },
-      { name: "Warm Camel", hex: "#c29b62" },
-      { name: "Classic Black", hex: "#111827" },
+      {
+        name: "Charcoal Grey",
+        hex: "#374151",
+        images: [
+          "https://images.unsplash.com/photo-1544441893-675973e31985?auto=format&fit=crop&w=800&q=80",
+          "https://images.unsplash.com/photo-1539571696357-5a69c17a67c6?auto=format&fit=crop&w=800&q=80",
+          "https://images.unsplash.com/photo-1516762689617-e1cffcef479d?auto=format&fit=crop&w=800&q=80",
+        ],
+      },
+      {
+        name: "Warm Camel",
+        hex: "#c29b62",
+        images: [
+          "https://images.unsplash.com/photo-1578932750294-f5075e85f44a?auto=format&fit=crop&w=800&q=80",
+          "https://images.unsplash.com/photo-1509631179647-0177331693ae?auto=format&fit=crop&w=800&q=80",
+        ],
+      },
+      {
+        name: "Classic Black",
+        hex: "#111827",
+        images: [
+          "https://images.unsplash.com/photo-1507679799987-c73779587ccf?auto=format&fit=crop&w=800&q=80",
+          "https://images.unsplash.com/photo-1550614000-4895a10e1bfd?auto=format&fit=crop&w=800&q=80",
+        ],
+      },
+    ],
+    variants: [
+      { id: "var-coat-gry-s", color: "Charcoal Grey", colorHex: "#374151", size: "S", sku: "FD-WL-01-GRY-S", stockCount: 5, inStock: true, images: ["https://images.unsplash.com/photo-1544441893-675973e31985?auto=format&fit=crop&w=800&q=80", "https://images.unsplash.com/photo-1539571696357-5a69c17a67c6?auto=format&fit=crop&w=800&q=80"] },
+      { id: "var-coat-gry-m", color: "Charcoal Grey", colorHex: "#374151", size: "M", sku: "FD-WL-01-GRY-M", stockCount: 8, inStock: true, images: ["https://images.unsplash.com/photo-1544441893-675973e31985?auto=format&fit=crop&w=800&q=80", "https://images.unsplash.com/photo-1539571696357-5a69c17a67c6?auto=format&fit=crop&w=800&q=80"] },
+      { id: "var-coat-gry-l", color: "Charcoal Grey", colorHex: "#374151", size: "L", sku: "FD-WL-01-GRY-L", stockCount: 5, inStock: true, images: ["https://images.unsplash.com/photo-1544441893-675973e31985?auto=format&fit=crop&w=800&q=80", "https://images.unsplash.com/photo-1539571696357-5a69c17a67c6?auto=format&fit=crop&w=800&q=80"] },
+      { id: "var-coat-cml-s", color: "Warm Camel", colorHex: "#c29b62", size: "S", sku: "FD-WL-01-CML-S", stockCount: 4, inStock: true, images: ["https://images.unsplash.com/photo-1578932750294-f5075e85f44a?auto=format&fit=crop&w=800&q=80"] },
+      { id: "var-coat-cml-m", color: "Warm Camel", colorHex: "#c29b62", size: "M", sku: "FD-WL-01-CML-M", stockCount: 6, inStock: true, images: ["https://images.unsplash.com/photo-1578932750294-f5075e85f44a?auto=format&fit=crop&w=800&q=80"] },
+      { id: "var-coat-cml-l", color: "Warm Camel", colorHex: "#c29b62", size: "L", sku: "FD-WL-01-CML-L", stockCount: 2, inStock: true, images: ["https://images.unsplash.com/photo-1578932750294-f5075e85f44a?auto=format&fit=crop&w=800&q=80"] },
+      { id: "var-coat-blk-m", color: "Classic Black", colorHex: "#111827", size: "M", sku: "FD-WL-01-BLK-M", stockCount: 7, inStock: true, images: ["https://images.unsplash.com/photo-1507679799987-c73779587ccf?auto=format&fit=crop&w=800&q=80"] },
+      { id: "var-coat-blk-l", color: "Classic Black", colorHex: "#111827", size: "L", sku: "FD-WL-01-BLK-L", stockCount: 4, inStock: true, images: ["https://images.unsplash.com/photo-1507679799987-c73779587ccf?auto=format&fit=crop&w=800&q=80"] },
     ],
     isFeatured: true,
     isBestSeller: true,
@@ -192,8 +287,29 @@ export const initialProductsData: ProductItem[] = [
     care: "Machine wash cold inside-out, hang dry to preserve indigo fades.",
     sizes: ["S", "M", "L", "XL"],
     colors: [
-      { name: "Deep Indigo", hex: "#1e3a8a" },
-      { name: "Washed Black", hex: "#1e293b" },
+      {
+        name: "Deep Indigo",
+        hex: "#1e3a8a",
+        images: [
+          "https://images.unsplash.com/photo-1582552938357-32b906df40cb?auto=format&fit=crop&w=800&q=80",
+          "https://images.unsplash.com/photo-1576995853123-5a10305d93c0?auto=format&fit=crop&w=800&q=80",
+        ],
+      },
+      {
+        name: "Washed Black",
+        hex: "#1e293b",
+        images: [
+          "https://images.unsplash.com/photo-1542272604-780c96856592?auto=format&fit=crop&w=800&q=80",
+          "https://images.unsplash.com/photo-1523381294911-8d3cead13475?auto=format&fit=crop&w=800&q=80",
+        ],
+      },
+    ],
+    variants: [
+      { id: "var-dn-ind-s", color: "Deep Indigo", colorHex: "#1e3a8a", size: "S", sku: "FD-DN-02-IND-S", stockCount: 6, inStock: true, images: ["https://images.unsplash.com/photo-1582552938357-32b906df40cb?auto=format&fit=crop&w=800&q=80"] },
+      { id: "var-dn-ind-m", color: "Deep Indigo", colorHex: "#1e3a8a", size: "M", sku: "FD-DN-02-IND-M", stockCount: 10, inStock: true, images: ["https://images.unsplash.com/photo-1582552938357-32b906df40cb?auto=format&fit=crop&w=800&q=80"] },
+      { id: "var-dn-ind-l", color: "Deep Indigo", colorHex: "#1e3a8a", size: "L", sku: "FD-DN-02-IND-L", stockCount: 5, inStock: true, images: ["https://images.unsplash.com/photo-1582552938357-32b906df40cb?auto=format&fit=crop&w=800&q=80"] },
+      { id: "var-dn-blk-m", color: "Washed Black", colorHex: "#1e293b", size: "M", sku: "FD-DN-02-BLK-M", stockCount: 8, inStock: true, images: ["https://images.unsplash.com/photo-1542272604-780c96856592?auto=format&fit=crop&w=800&q=80"] },
+      { id: "var-dn-blk-l", color: "Washed Black", colorHex: "#1e293b", size: "L", sku: "FD-DN-02-BLK-L", stockCount: 4, inStock: true, images: ["https://images.unsplash.com/photo-1542272604-780c96856592?auto=format&fit=crop&w=800&q=80"] },
     ],
     isFeatured: true,
     inStock: true,
@@ -226,8 +342,26 @@ export const initialProductsData: ProductItem[] = [
     care: "Gentle cold cycle or dry clean. Low steam iron.",
     sizes: ["38R", "40R", "42R", "44R"],
     colors: [
-      { name: "Slate Grey", hex: "#4b5563" },
-      { name: "Midnight Navy", hex: "#0f172a" },
+      {
+        name: "Slate Grey",
+        hex: "#4b5563",
+        images: [
+          "https://images.unsplash.com/photo-1507679799987-c73779587ccf?auto=format&fit=crop&w=800&q=80",
+        ],
+      },
+      {
+        name: "Midnight Navy",
+        hex: "#0f172a",
+        images: [
+          "https://images.unsplash.com/photo-1487222477894-8943e31ef7b2?auto=format&fit=crop&w=800&q=80",
+        ],
+      },
+    ],
+    variants: [
+      { id: "var-blz-gry-38", color: "Slate Grey", colorHex: "#4b5563", size: "38R", sku: "FD-WW-03-GRY-38", stockCount: 4, inStock: true, images: ["https://images.unsplash.com/photo-1507679799987-c73779587ccf?auto=format&fit=crop&w=800&q=80"] },
+      { id: "var-blz-gry-40", color: "Slate Grey", colorHex: "#4b5563", size: "40R", sku: "FD-WW-03-GRY-40", stockCount: 5, inStock: true, images: ["https://images.unsplash.com/photo-1507679799987-c73779587ccf?auto=format&fit=crop&w=800&q=80"] },
+      { id: "var-blz-nvy-38", color: "Midnight Navy", colorHex: "#0f172a", size: "38R", sku: "FD-WW-03-NVY-38", stockCount: 6, inStock: true, images: ["https://images.unsplash.com/photo-1487222477894-8943e31ef7b2?auto=format&fit=crop&w=800&q=80"] },
+      { id: "var-blz-nvy-40", color: "Midnight Navy", colorHex: "#0f172a", size: "40R", sku: "FD-WW-03-NVY-40", stockCount: 8, inStock: true, images: ["https://images.unsplash.com/photo-1487222477894-8943e31ef7b2?auto=format&fit=crop&w=800&q=80"] },
     ],
     isFeatured: true,
     isNewArrival: true,

@@ -18,6 +18,7 @@ import { setQuickViewProduct } from "~/redux/features/homeSlice";
 import { addToCart } from "~/redux/features/cart/cartSlice";
 import { toast } from "sonner";
 import { SizeGuideBox, SizeGuideModal } from "~/components/main/Product";
+import { getVariantImages, getProductVariant } from "~/firebase";
 
 export default function QuickViewModal() {
   const dispatch = useAppDispatch();
@@ -42,22 +43,34 @@ export default function QuickViewModal() {
     }
   }, [quickViewProduct]);
 
+  // Dynamic variant imagery based on selected color
+  const activeImages = React.useMemo(() => {
+    return getVariantImages(quickViewProduct, selectedColor);
+  }, [quickViewProduct, selectedColor]);
+
+  const activeVariant = React.useMemo(() => {
+    return getProductVariant(quickViewProduct, selectedColor, selectedSize);
+  }, [quickViewProduct, selectedColor, selectedSize]);
+
+  const displayPrice = activeVariant?.price ?? quickViewProduct?.price ?? 0;
+
   if (!quickViewProduct) return null;
 
   const handleAddToCart = () => {
+    const chosenImage = activeImages[activeImageIndex] || activeImages[0] || quickViewProduct.images[0];
     dispatch(
       addToCart({
         id: quickViewProduct.id,
         name: quickViewProduct.name,
-        price: quickViewProduct.price,
-        image: quickViewProduct.images[0],
+        price: displayPrice,
+        image: chosenImage,
         quantity,
         size: selectedSize,
         color: selectedColor,
         category: quickViewProduct.category,
       })
     );
-    toast.success(`Added ${quickViewProduct.name} (${selectedSize}) to your bag!`);
+    toast.success(`Added ${quickViewProduct.name} (${selectedColor} / ${selectedSize}) to your bag!`);
     dispatch(setQuickViewProduct(null));
   };
 
@@ -107,11 +120,12 @@ export default function QuickViewModal() {
                     <div className="relative rounded-2xl overflow-hidden bg-stone-100 dark:bg-neutral-800 aspect-4/5 border border-gray-200 dark:border-neutral-700">
                       <img
                         src={
-                          quickViewProduct.images[activeImageIndex] ||
+                          activeImages[activeImageIndex] ||
+                          activeImages[0] ||
                           quickViewProduct.images[0]
                         }
-                        alt={quickViewProduct.name}
-                        className="w-full h-full object-cover"
+                        alt={`${quickViewProduct.name} - ${selectedColor}`}
+                        className="w-full h-full object-cover transition-all duration-300"
                       />
                       {quickViewProduct.badge && (
                         <span className="absolute top-3 left-3 bg-orange-600 dark:bg-orange-500 text-white text-xs font-bold px-3 py-1 rounded-full uppercase tracking-wider shadow-xs">
@@ -121,9 +135,9 @@ export default function QuickViewModal() {
                     </div>
 
                     {/* Image Thumbnails */}
-                    {quickViewProduct.images.length > 1 && (
+                    {activeImages.length > 1 && (
                       <div className="flex gap-3">
-                        {quickViewProduct.images.map((img, i) => (
+                        {activeImages.map((img, i) => (
                           <button
                             key={i}
                             type="button"
@@ -174,7 +188,7 @@ export default function QuickViewModal() {
                       {/* Pricing in BDT */}
                       <div className="flex items-baseline gap-3">
                         <span className="text-3xl font-extrabold text-gray-900 dark:text-white">
-                          ৳{quickViewProduct.price.toLocaleString()}
+                          ৳{displayPrice.toLocaleString()}
                         </span>
                         {quickViewProduct.originalPrice && (
                           <span className="text-lg text-gray-400 dark:text-neutral-500 line-through">
@@ -186,7 +200,7 @@ export default function QuickViewModal() {
                             Save ৳
                             {(
                               quickViewProduct.originalPrice -
-                              quickViewProduct.price
+                              displayPrice
                             ).toLocaleString()}
                           </span>
                         )}
@@ -198,24 +212,30 @@ export default function QuickViewModal() {
 
                       {/* Color Selector */}
                       <div>
-                        <label className="block text-xs font-bold uppercase tracking-wider text-gray-700 dark:text-neutral-300 mb-2">
-                          Color: <span className="font-normal text-gray-500 dark:text-neutral-400">{selectedColor}</span>
-                        </label>
+                        <div className="flex items-center justify-between mb-2">
+                          <label className="block text-xs font-bold uppercase tracking-wider text-gray-700 dark:text-neutral-300">
+                            Color: <span className="font-semibold text-orange-600 dark:text-orange-400">{selectedColor}</span>
+                          </label>
+                          <span className="text-[10px] text-gray-400">Switches photos</span>
+                        </div>
                         <div className="flex gap-2.5">
                           {quickViewProduct.colors.map((c) => {
-                            const isSelected = selectedColor === c.name;
+                            const isSelected = selectedColor.toLowerCase() === c.name.toLowerCase();
                             return (
                               <button
                                 key={c.name}
                                 type="button"
-                                onClick={() => setSelectedColor(c.name)}
+                                onClick={() => {
+                                  setSelectedColor(c.name);
+                                  setActiveImageIndex(0);
+                                }}
                                 className={`size-8 rounded-full border-2 flex items-center justify-center transition cursor-pointer ${
                                   isSelected
-                                    ? "border-orange-600 ring-2 ring-orange-500/30"
+                                    ? "border-orange-600 ring-2 ring-orange-500/30 shadow-xs"
                                     : "border-gray-300 dark:border-neutral-600 hover:border-gray-500 dark:hover:border-neutral-400"
                                 }`}
                                 style={{ backgroundColor: c.hex }}
-                                title={c.name}
+                                title={`${c.name} (${c.images?.length || 0} photos)`}
                               >
                                 {isSelected && (
                                   <CheckIcon
