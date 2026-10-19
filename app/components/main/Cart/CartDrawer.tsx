@@ -19,6 +19,7 @@ import {
   TagIcon,
   LockClosedIcon,
 } from "@heroicons/react/24/outline";
+import { useNavigate } from "react-router";
 import { useAppDispatch, useAppSelector } from "~/redux/hooks/hook";
 import {
   closeCart,
@@ -27,10 +28,9 @@ import {
   clearCart,
 } from "~/redux/features/cart/cartSlice";
 import { toast } from "sonner";
-import CheckoutModal from "./CheckoutModal";
-import { AuthModal } from "../Auth/AuthModal";
 
 export default function CartDrawer() {
+  const navigate = useNavigate();
   const dispatch = useAppDispatch();
   const { items, totalQuantity, totalAmount, isCartOpen } = useAppSelector(
     (state) => state.cart
@@ -39,8 +39,6 @@ export default function CartDrawer() {
 
   const [promoCode, setPromoCode] = useState("");
   const [discountPercent, setDiscountPercent] = useState(0);
-  const [checkoutModalOpen, setCheckoutModalOpen] = useState(false);
-  const [authModalOpen, setAuthModalOpen] = useState(false);
 
   // Free shipping threshold in BDT
   const freeShippingThreshold = 2500;
@@ -324,19 +322,20 @@ export default function CartDrawer() {
                               <LockClosedIcon className="size-4 text-amber-600 dark:text-amber-400 shrink-0 mt-0.5" />
                               <div className="leading-snug">
                                 <strong className="font-semibold">Role-Based Shopping:</strong>{" "}
-                                Only registered customers can place orders. Please sign in or register to complete your order.
+                                Only registered customers can complete orders and access live doorstep courier tracking.
                               </div>
                             </div>
 
                             <button
                               type="button"
                               onClick={() => {
-                                setAuthModalOpen(true);
+                                dispatch(closeCart());
+                                navigate("/checkout");
                               }}
                               className="w-full py-3.5 px-4 rounded-xl bg-orange-600 hover:bg-orange-700 active:scale-98 text-white text-sm font-bold shadow-md hover:shadow-lg transition flex items-center justify-center gap-2 cursor-pointer"
                             >
-                              <LockClosedIcon className="size-4" />
-                              <span>Sign In / Register as Customer to Order</span>
+                              <span>Proceed to Dedicated Checkout</span>
+                              <ArrowRightIcon className="size-4" />
                             </button>
                           </div>
                         ) : (
@@ -352,7 +351,8 @@ export default function CartDrawer() {
                             <button
                               type="button"
                               onClick={() => {
-                                setCheckoutModalOpen(true);
+                                dispatch(closeCart());
+                                navigate("/checkout");
                               }}
                               className="w-full py-3.5 px-4 rounded-xl bg-orange-600 hover:bg-orange-700 active:scale-98 text-white text-sm font-bold shadow-md hover:shadow-lg transition flex items-center justify-center gap-2 cursor-pointer"
                             >
@@ -365,7 +365,7 @@ export default function CartDrawer() {
                         <div className="flex items-center justify-between text-[11px] text-gray-500 dark:text-neutral-400 pt-1">
                           <span className="flex items-center gap-1">
                             <ShieldCheckIcon className="size-3.5 text-emerald-600 dark:text-emerald-400" />
-                            Cash on Delivery & bKash Supported
+                            Cash on Delivery &amp; bKash Supported
                           </span>
                           <button
                             type="button"
@@ -387,23 +387,6 @@ export default function CartDrawer() {
           </div>
         </div>
       </Dialog>
-
-      {/* Role-Based Checkout Modal */}
-      <CheckoutModal
-        isOpen={checkoutModalOpen}
-        onClose={() => setCheckoutModalOpen(false)}
-        subtotal={totalAmount}
-        discountAmount={discountAmount}
-        shippingCost={shippingCost}
-        finalTotal={finalTotal}
-      />
-
-      {/* Guest Authentication Modal */}
-      <AuthModal
-        isOpen={authModalOpen}
-        onClose={() => setAuthModalOpen(false)}
-        initialTab="signup"
-      />
     </Transition>
   );
 }

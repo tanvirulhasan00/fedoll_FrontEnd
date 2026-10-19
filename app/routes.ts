@@ -11,6 +11,8 @@ export default [
   route("products/:id", "routes/product-detail.tsx"),
   route("product/:id", "routes/product-detail.tsx", { id: "product-alias" }),
   route("profile", "routes/profile.tsx"),
+  route("checkout", "routes/checkout.tsx"),
+  route("order/checkout", "routes/checkout.tsx", { id: "order-checkout-alias" }),
   route("track-order", "routes/track-order.tsx"),
   route("privacy-policy", "routes/privacy-policy.tsx"),
   route("privacy", "routes/privacy-policy.tsx", { id: "privacy-alias" }),
