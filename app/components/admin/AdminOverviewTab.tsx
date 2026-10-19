@@ -20,6 +20,7 @@ import type {
   FirestoreUserProfile,
   ShippingProvider,
   ContactMessageRecord,
+  NewsletterSubscriber,
 } from "~/firebase";
 import type { AdminTab } from "./AdminSidebar";
 
@@ -30,6 +31,7 @@ interface AdminOverviewTabProps {
   customers: FirestoreUserProfile[];
   shippingProviders: ShippingProvider[];
   messages?: ContactMessageRecord[];
+  subscribers?: NewsletterSubscriber[];
   onNavigateTab: (tab: AdminTab) => void;
   onOpenAddProduct: () => void;
   onOpenAddCategory: () => void;
@@ -43,13 +45,15 @@ export const AdminOverviewTab: React.FC<AdminOverviewTabProps> = ({
   customers,
   shippingProviders,
   messages = [],
+  subscribers = [],
   onNavigateTab,
   onOpenAddProduct,
   onOpenAddCategory,
   onUpdateOrderStatus,
 }) => {
-  // Messages metrics
+  // Messages & Newsletter metrics
   const unreadMessagesCount = messages.filter((m) => m.status === "new").length;
+  const activeSubscribersCount = subscribers.filter((s) => s.status === "active").length;
 
   // Financial computations
   const totalRevenue = orders
@@ -165,7 +169,7 @@ export const AdminOverviewTab: React.FC<AdminOverviewTabProps> = ({
       </div>
 
       {/* Logistics & Operational Strip */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-4">
         <div className="p-5 rounded-3xl bg-white dark:bg-neutral-900 border border-stone-200/80 dark:border-neutral-800 shadow-xs space-y-2">
           <div className="flex items-center justify-between text-xs font-bold text-gray-500 dark:text-neutral-400">
             <span>COURIER PROVIDERS</span>
@@ -248,6 +252,28 @@ export const AdminOverviewTab: React.FC<AdminOverviewTabProps> = ({
           </div>
           <p className="text-xs text-gray-500 dark:text-neutral-400">
             Contact form submissions &amp; inquiries.
+          </p>
+        </div>
+
+        <div className="p-5 rounded-3xl bg-white dark:bg-neutral-900 border border-stone-200/80 dark:border-neutral-800 shadow-xs space-y-2">
+          <div className="flex items-center justify-between text-xs font-bold text-gray-500 dark:text-neutral-400">
+            <span>VIP SUBSCRIBERS</span>
+            <button
+              type="button"
+              onClick={() => onNavigateTab("newsletters")}
+              className="text-orange-600 hover:underline text-[11px]"
+            >
+              Audience &rarr;
+            </button>
+          </div>
+          <div className="flex items-baseline gap-2">
+            <span className="text-xl font-black text-emerald-600 dark:text-emerald-400">
+              {activeSubscribersCount} Active
+            </span>
+            <span className="text-xs text-gray-400">({subscribers.length} total)</span>
+          </div>
+          <p className="text-xs text-gray-500 dark:text-neutral-400">
+            Storefront newsletter audience.
           </p>
         </div>
       </div>

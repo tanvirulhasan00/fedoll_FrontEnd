@@ -10,3 +10,4 @@ export * from "./orders";
 export * from "./shipping";
 export * from "./coupons";
 export * from "./storeSettings";
+export * from "./newsletter";

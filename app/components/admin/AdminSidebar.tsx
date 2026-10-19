@@ -13,6 +13,7 @@ import {
   ArrowTopRightOnSquareIcon,
   ShieldCheckIcon,
   ChatBubbleLeftRightIcon,
+  EnvelopeOpenIcon,
 } from "@heroicons/react/24/outline";
 import type { AuthUser } from "~/redux/features/auth/authSlice";
 
@@ -25,6 +26,7 @@ export type AdminTab =
   | "customers"
   | "coupons"
   | "messages"
+  | "newsletters"
   | "settings";
 
 interface AdminSidebarProps {
@@ -35,6 +37,7 @@ interface AdminSidebarProps {
   mobileMenuOpen?: boolean;
   onCloseMobileMenu?: () => void;
   unreadMessagesCount?: number;
+  subscribersCount?: number;
 }
 
 export const AdminSidebar: React.FC<AdminSidebarProps> = ({
@@ -45,6 +48,7 @@ export const AdminSidebar: React.FC<AdminSidebarProps> = ({
   mobileMenuOpen,
   onCloseMobileMenu,
   unreadMessagesCount = 0,
+  subscribersCount = 0,
 }) => {
   const navItems: { id: AdminTab; label: string; icon: React.ElementType; badge?: string }[] = [
     { id: "overview", label: "Dashboard Overview", icon: ChartBarIcon },
@@ -59,6 +63,12 @@ export const AdminSidebar: React.FC<AdminSidebarProps> = ({
       label: "Customer Inquiries",
       icon: ChatBubbleLeftRightIcon,
       badge: unreadMessagesCount > 0 ? `${unreadMessagesCount} New` : undefined,
+    },
+    {
+      id: "newsletters",
+      label: "Newsletter Subscribers",
+      icon: EnvelopeOpenIcon,
+      badge: subscribersCount > 0 ? `${subscribersCount}` : undefined,
     },
     { id: "settings", label: "Store Settings", icon: Cog6ToothIcon },
   ];

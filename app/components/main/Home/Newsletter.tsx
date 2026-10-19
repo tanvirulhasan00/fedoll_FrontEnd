@@ -57,7 +57,7 @@ export default function NewsLetter() {
           toast.success(payload?.message || "Thank you for subscribing! Check your inbox.");
           setStatus("success");
           setMessage(
-            payload?.message || "Welcome to Fedoll! Your 10% discount code is on its way to your inbox.",
+            payload?.message || "Welcome to Fedoll VIP club! Use code WELCOME10 for 10% off your order.",
           );
           setEmail("");
         }
@@ -156,22 +156,36 @@ export default function NewsLetter() {
             {/* Notification alert banner */}
             {showNotification && message && (
               <div
-                className={`mt-4 flex items-center gap-2.5 rounded-xl border p-3.5 text-sm transition-all animate-in fade-in duration-300 ${
+                className={`mt-4 flex flex-col sm:flex-row sm:items-center justify-between gap-3 rounded-2xl border p-4 text-sm transition-all animate-in fade-in duration-300 ${
                   status === "error"
                     ? "border-red-500/30 bg-red-950/40 text-red-300"
                     : status === "info"
                     ? "border-amber-500/30 bg-amber-950/40 text-amber-200"
-                    : "border-green-500/30 bg-green-950/40 text-green-200"
+                    : "border-emerald-500/30 bg-emerald-950/40 text-emerald-200"
                 }`}
               >
-                {status === "error" ? (
-                  <ExclamationCircleIcon className="size-5 shrink-0 text-red-400" />
-                ) : status === "info" ? (
-                  <InformationCircleIcon className="size-5 shrink-0 text-amber-400" />
-                ) : (
-                  <CheckCircleIcon className="size-5 shrink-0 text-green-400" />
+                <div className="flex items-center gap-2.5">
+                  {status === "error" ? (
+                    <ExclamationCircleIcon className="size-5 shrink-0 text-red-400" />
+                  ) : status === "info" ? (
+                    <InformationCircleIcon className="size-5 shrink-0 text-amber-400" />
+                  ) : (
+                    <CheckCircleIcon className="size-5 shrink-0 text-emerald-400" />
+                  )}
+                  <span className="font-medium">{message}</span>
+                </div>
+                {status === "success" && (
+                  <button
+                    type="button"
+                    onClick={() => {
+                      navigator.clipboard.writeText("WELCOME10");
+                      toast.success("Voucher code WELCOME10 copied to clipboard!");
+                    }}
+                    className="shrink-0 inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-orange-600 hover:bg-orange-500 text-white font-mono font-bold text-xs shadow-xs transition cursor-pointer self-start sm:self-auto"
+                  >
+                    <span>Copy WELCOME10</span>
+                  </button>
                 )}
-                <span className="font-medium">{message}</span>
               </div>
             )}
 

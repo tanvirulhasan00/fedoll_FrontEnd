@@ -14,6 +14,7 @@ import {
   fetchCouponsFromFirestore,
   fetchStoreSettings,
   fetchContactMessagesFromFirestore,
+  fetchAllNewsletterSubscribers,
   logout,
   type ProductItem,
   type ProductCategoryItem,
@@ -25,6 +26,7 @@ import {
   type CouponItem,
   type StoreGeneralSettings,
   type ContactMessageRecord,
+  type NewsletterSubscriber,
   defaultShippingSettings,
   defaultStoreSettings,
 } from "~/firebase";
@@ -37,6 +39,7 @@ import AdminShippingTab from "~/components/admin/AdminShippingTab";
 import AdminCustomersTab from "~/components/admin/AdminCustomersTab";
 import AdminCouponsTab from "~/components/admin/AdminCouponsTab";
 import AdminMessagesTab from "~/components/admin/AdminMessagesTab";
+import AdminNewsletterTab from "~/components/admin/AdminNewsletterTab";
 import AdminSettingsTab from "~/components/admin/AdminSettingsTab";
 import {
   Bars3Icon,
@@ -82,6 +85,7 @@ export default function AdminDashboardPage() {
     "customers",
     "coupons",
     "messages",
+    "newsletters",
     "settings",
   ];
 
@@ -108,6 +112,7 @@ export default function AdminDashboardPage() {
   const [shippingSettings, setShippingSettings] = useState<ShippingSettings>(defaultShippingSettings);
   const [coupons, setCoupons] = useState<CouponItem[]>([]);
   const [messages, setMessages] = useState<ContactMessageRecord[]>([]);
+  const [subscribers, setSubscribers] = useState<NewsletterSubscriber[]>([]);
   const [storeSettings, setStoreSettings] = useState<StoreGeneralSettings>(defaultStoreSettings);
 
   // Sync tab with URL
@@ -141,6 +146,7 @@ export default function AdminDashboardPage() {
         fetchedCoupons,
         fetchedStoreSettings,
         fetchedMessages,
+        fetchedSubscribers,
       ] = await Promise.all([
         fetchAllOrdersForAdmin(),
         fetchProductsFromFirestore(),
@@ -151,6 +157,7 @@ export default function AdminDashboardPage() {
         fetchCouponsFromFirestore(),
         fetchStoreSettings(),
         fetchContactMessagesFromFirestore(),
+        fetchAllNewsletterSubscribers(),
       ]);
 
       setOrders(fetchedOrders);
@@ -162,6 +169,7 @@ export default function AdminDashboardPage() {
       setCoupons(fetchedCoupons);
       setStoreSettings(fetchedStoreSettings);
       setMessages(fetchedMessages);
+      setSubscribers(fetchedSubscribers);
     } catch (err) {
       console.warn("Error loading admin datasets:", err);
     } finally {
@@ -312,6 +320,7 @@ export default function AdminDashboardPage() {
             mobileMenuOpen={mobileMenuOpen}
             onCloseMobileMenu={() => setMobileMenuOpen(false)}
             unreadMessagesCount={messages.filter((m) => m.status === "new").length}
+            subscribersCount={subscribers.filter((s) => s.status === "active").length}
           />
 
           {/* Backdrop for mobile sidebar */}
@@ -353,6 +362,8 @@ export default function AdminDashboardPage() {
                     ? "Promo Codes & Discounts"
                     : currentTab === "messages"
                     ? "Customer Inquiries & Messages"
+                    : currentTab === "newsletters"
+                    ? "Newsletter Subscribers & VIP Club"
                     : "Store Settings"}
                 </h1>
               </div>
@@ -403,6 +414,7 @@ export default function AdminDashboardPage() {
                       customers={customers}
                       shippingProviders={shippingProviders}
                       messages={messages}
+                      subscribers={subscribers}
                       onNavigateTab={handleSelectTab}
                       onOpenAddProduct={() => setIsAddProductOpen(true)}
                       onOpenAddCategory={() => setIsAddCategoryOpen(true)}
@@ -462,6 +474,13 @@ export default function AdminDashboardPage() {
                   {currentTab === "messages" && (
                     <AdminMessagesTab
                       messages={messages}
+                      onRefresh={loadAllAdminData}
+                    />
+                  )}
+
+                  {currentTab === "newsletters" && (
+                    <AdminNewsletterTab
+                      subscribers={subscribers}
                       onRefresh={loadAllAdminData}
                     />
                   )}
