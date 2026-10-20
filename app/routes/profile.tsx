@@ -753,9 +753,17 @@ export default function ProfilePage() {
                               <div className="flex flex-wrap items-center gap-3">
                                 <span>
                                   Courier:{" "}
-                                  <strong className="text-gray-800 dark:text-neutral-200">
-                                    {order.courierName}
-                                  </strong>
+                                  {order.courierName &&
+                                  order.courierName !== "Pending Assignment" &&
+                                  order.courierName !== "Unassigned" ? (
+                                    <strong className="text-gray-800 dark:text-neutral-200">
+                                      {order.courierName}
+                                    </strong>
+                                  ) : (
+                                    <span className="text-amber-600 dark:text-amber-400 font-semibold text-[11px]">
+                                      Pending Assignment
+                                    </span>
+                                  )}
                                 </span>
                                 <span>•</span>
                                 <span>

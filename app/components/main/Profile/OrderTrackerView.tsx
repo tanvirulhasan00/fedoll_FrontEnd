@@ -183,10 +183,19 @@ export const OrderTrackerView: React.FC<OrderTrackerViewProps> = ({
               Assigned Logistics Partner:
             </span>
             <p className="font-bold text-gray-900 dark:text-white">
-              {order.courierName}
+              {order.courierName &&
+              order.courierName !== "Pending Assignment" &&
+              order.courierName !== "Unassigned" ? (
+                order.courierName
+              ) : (
+                <span className="text-amber-600 dark:text-amber-400 font-semibold text-xs inline-flex items-center gap-1">
+                  <span className="size-1.5 rounded-full bg-amber-500 animate-pulse" />
+                  Pending Atelier Assignment
+                </span>
+              )}
             </p>
             <span className="text-[11px] text-emerald-600 dark:text-emerald-400 font-medium">
-              Nationwide 64 Districts Courier
+              Nationwide 64 Districts Express Delivery
             </span>
           </div>
         </div>

@@ -137,7 +137,7 @@ export const OrderCancelRequestModal: React.FC<OrderCancelRequestModalProps> = (
                     <span>Admin Review Process</span>
                   </div>
                   <p className="leading-relaxed text-[11px] text-amber-800/90 dark:text-amber-300/80">
-                    Orders cannot be cancelled automatically once placed. Our atelier team will review your cancellation request. If your order is already packed or handed over to our courier partner ({order.courierName}), our team may contact you or decline cancellation.
+                    Orders cannot be cancelled automatically once placed. Our atelier team will review your cancellation request. If your order is already packed or handed over to our courier partner{order.courierName && order.courierName !== "Pending Assignment" && order.courierName !== "Unassigned" ? ` (${order.courierName})` : ""}, our team may contact you or decline cancellation.
                   </p>
                 </div>
 

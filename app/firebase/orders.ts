@@ -171,8 +171,14 @@ export const buildInitialTrackingTimeline = (
     },
     {
       status: "shipped",
-      title: `Dispatched with ${courierName}`,
-      description: `Package handed over to ${courierName} for prompt express delivery.`,
+      title:
+        courierName && courierName !== "Pending Assignment" && courierName !== "Unassigned"
+          ? `Dispatched with ${courierName}`
+          : "Dispatched with Courier",
+      description:
+        courierName && courierName !== "Pending Assignment" && courierName !== "Unassigned"
+          ? `Package handed over to ${courierName} for prompt express delivery.`
+          : "Package handed over to assigned courier partner for prompt express delivery.",
       location: "Transit Hub, Dhaka",
       timestamp: `Expected: ${formatStepDate(24)}`,
       completed: false,
@@ -209,11 +215,8 @@ export const createOrderInFirestore = async (
     year: "numeric",
   });
 
-  const courierName =
-    input.shippingAddress.city.toLowerCase().includes("dhaka") ||
-    input.shippingAddress.district.toLowerCase().includes("dhaka")
-      ? "Steadfast Express (Dhaka 24-Hour)"
-      : "Pathao Express Courier";
+  // Customer placed the order: Courier partner is left unassigned until the store admin assigns it
+  const courierName = "Pending Assignment";
 
   const newOrder: Order = {
     id: `ord_${Date.now()}_${randomSuffix}`,
@@ -234,7 +237,7 @@ export const createOrderInFirestore = async (
     paymentStatus: input.paymentStatus || (input.paymentMethod === "cod" ? "pending" : "paid"),
     orderStatus: "confirmed",
     courierName,
-    courierTrackingUrl: `https://steadfast.com.bd/tracking/${trackingNumber}`,
+    courierTrackingUrl: "",
     estimatedDeliveryDate,
     createdAt: now.toISOString(),
     trackingTimeline: buildInitialTrackingTimeline(now.toISOString(), courierName),
@@ -646,8 +649,18 @@ export const updateOrderStatusInFirestore = async (
             ...step,
             completed: true,
             isCurrent: true,
+            title: getTimelineTitle(newStatus),
             timestamp: timestampStr,
             description: options?.note || step.description,
+          };
+        }
+        if (step.status === "shipped" && options?.courierName && options.courierName !== "Pending Assignment") {
+          return {
+            ...step,
+            title: `Dispatched with ${options.courierName}`,
+            description: `Package handed over to ${options.courierName} for prompt express delivery.`,
+            isCurrent: false,
+            completed: step.completed || newStatus === "delivered",
           };
         }
         return {

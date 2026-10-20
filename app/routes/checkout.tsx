@@ -10,7 +10,6 @@ import { updateUserProfile, setUser } from "~/redux/features/auth/authSlice";
 import {
   createOrderInFirestore,
   updateUserProfileInFirestore,
-  fetchShippingProviders,
   fetchShippingSettings,
   fetchCouponsFromFirestore,
   loginWithEmail,
@@ -20,7 +19,6 @@ import {
   formatAuthError,
   type Order,
   type PaymentMethod,
-  type ShippingProvider,
   type ShippingSettings,
   type CouponItem,
   defaultShippingSettings,
@@ -96,8 +94,6 @@ export default function CheckoutPage() {
   );
 
   // Dynamic Shipping & Coupon Settings
-  const [shippingProviders, setShippingProviders] = useState<ShippingProvider[]>([]);
-  const [selectedProviderId, setSelectedProviderId] = useState<string>("steadfast");
   const [shippingSettings, setShippingSettings] = useState<ShippingSettings>(defaultShippingSettings);
   const [coupons, setCoupons] = useState<CouponItem[]>([]);
 
@@ -133,16 +129,10 @@ export default function CheckoutPage() {
   useEffect(() => {
     async function loadLogisticsData() {
       try {
-        const [providers, shipSettings, availableCoupons] = await Promise.all([
-          fetchShippingProviders(),
+        const [shipSettings, availableCoupons] = await Promise.all([
           fetchShippingSettings(),
           fetchCouponsFromFirestore(),
         ]);
-        if (providers && providers.length > 0) {
-          setShippingProviders(providers);
-          const defaultProv = providers.find((p) => p.isDefault || p.active);
-          if (defaultProv) setSelectedProviderId(defaultProv.id);
-        }
         if (shipSettings) setShippingSettings(shipSettings);
         if (availableCoupons) setCoupons(availableCoupons);
       } catch (err) {
@@ -166,15 +156,6 @@ export default function CheckoutPage() {
     }
   }, [user]);
 
-  // Selected Shipping Provider
-  const currentProvider = useMemo(() => {
-    return (
-      shippingProviders.find((p) => p.id === selectedProviderId) ||
-      shippingProviders[0] ||
-      null
-    );
-  }, [shippingProviders, selectedProviderId]);
-
   // Calculations
   const isInsideDhaka = useMemo(() => {
     return district.toLowerCase().includes("dhaka") || cityThana.toLowerCase().includes("dhaka");
@@ -185,15 +166,10 @@ export default function CheckoutPage() {
 
   const standardDeliveryFee = useMemo(() => {
     if (isFreeDelivery) return 0;
-    if (currentProvider) {
-      return isInsideDhaka
-        ? currentProvider.insideDhakaRate
-        : currentProvider.outsideDhakaRate;
-    }
     return isInsideDhaka
       ? shippingSettings.standardInsideDhaka || 70
       : shippingSettings.standardOutsideDhaka || 130;
-  }, [isFreeDelivery, currentProvider, isInsideDhaka, shippingSettings]);
+  }, [isFreeDelivery, isInsideDhaka, shippingSettings]);
 
   const discountAmount = useMemo(() => {
     if (!appliedCoupon) return 0;
@@ -600,8 +576,22 @@ export default function CheckoutPage() {
                   <p className="font-semibold text-gray-900 dark:text-white mt-0.5">
                     {completedOrder.estimatedDeliveryDate}
                   </p>
-                  <p className="text-gray-500 text-[11px]">
-                    Courier: {completedOrder.courierName}
+                  <p className="text-[11px] mt-0.5">
+                    {completedOrder.courierName &&
+                    completedOrder.courierName !== "Pending Assignment" &&
+                    completedOrder.courierName !== "Unassigned" ? (
+                      <span className="text-gray-600 dark:text-neutral-300">
+                        Courier:{" "}
+                        <strong className="text-gray-900 dark:text-white">
+                          {completedOrder.courierName}
+                        </strong>
+                      </span>
+                    ) : (
+                      <span className="inline-flex items-center gap-1 font-semibold text-amber-700 dark:text-amber-400">
+                        <span className="size-1.5 rounded-full bg-amber-500 animate-pulse" />
+                        Courier: Assigned after atelier packing
+                      </span>
+                    )}
                   </p>
                 </div>
               </div>
@@ -654,7 +644,18 @@ export default function CheckoutPage() {
                   </div>
                 )}
                 <div className="flex justify-between text-gray-600 dark:text-neutral-400">
-                  <span>Courier Delivery ({completedOrder.courierName})</span>
+                  <span>
+                    Delivery (
+                    {completedOrder.shippingAddress.district
+                      .toLowerCase()
+                      .includes("dhaka") ||
+                    completedOrder.shippingAddress.city
+                      .toLowerCase()
+                      .includes("dhaka")
+                      ? "Inside Dhaka"
+                      : "Outside Dhaka"}
+                    )
+                  </span>
                   <span className="font-semibold text-gray-900 dark:text-white font-mono">
                     {completedOrder.shippingFee === 0 ? "FREE" : `৳${completedOrder.shippingFee}`}
                   </span>
@@ -1028,71 +1029,53 @@ export default function CheckoutPage() {
                     </label>
                   </div>
 
-                  {/* 3. COURIER PARTNER SELECTION */}
+                  {/* 2. DELIVERY & DISPATCH DETAILS */}
                   <div className="p-6 sm:p-8 rounded-3xl bg-white dark:bg-neutral-900 border border-stone-200/80 dark:border-neutral-800 shadow-xs space-y-4">
                     <div className="flex items-center justify-between border-b border-stone-100 dark:border-neutral-800 pb-4">
                       <div className="flex items-center gap-2">
                         <TruckIcon className="size-5 text-orange-600" />
                         <h3 className="text-sm font-bold text-gray-900 dark:text-white uppercase tracking-wider">
-                          2. Courier Partner &amp; Dispatch Speed
+                          2. Delivery &amp; Dispatch Details
                         </h3>
                       </div>
-                      <span className="text-[11px] text-gray-400">
-                        {isInsideDhaka ? "Inside Dhaka" : "Outside Dhaka District"}
+                      <span className="text-[11px] font-semibold text-orange-600 dark:text-orange-400 bg-orange-50 dark:bg-orange-950/40 px-2.5 py-1 rounded-full border border-orange-200/60 dark:border-orange-900/40">
+                        {isInsideDhaka ? "Inside Dhaka District" : "Outside Dhaka District"}
                       </span>
                     </div>
 
-                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                      {shippingProviders.length === 0 ? (
-                        <div className="p-4 rounded-2xl border border-orange-500 bg-orange-50/40 dark:bg-orange-950/20 text-xs">
-                          <span className="font-bold text-gray-900 dark:text-white block">
-                            Steadfast Courier Express
-                          </span>
-                          <span className="text-gray-500 text-[11px]">
-                            {isInsideDhaka ? "24-48 Hours (৳70)" : "48-72 Hours (৳130)"}
-                          </span>
+                    <div className="p-4 sm:p-5 rounded-2xl border border-stone-200 dark:border-neutral-800 bg-stone-50/50 dark:bg-neutral-800/40 space-y-3.5">
+                      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                        <div>
+                          <div className="flex items-center gap-2">
+                            <span className="font-bold text-xs sm:text-sm text-gray-900 dark:text-white">
+                              Standard Express Doorstep Delivery
+                            </span>
+                            <span className="text-[10px] font-bold text-emerald-600 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-950/60 px-2 py-0.5 rounded-full border border-emerald-200/60 dark:border-emerald-800/40">
+                              {isInsideDhaka ? "24–48 Hours" : "2–4 Business Days"}
+                            </span>
+                          </div>
+                          <p className="text-[11px] text-gray-500 dark:text-neutral-400 mt-1">
+                            Destination: <span className="font-semibold text-gray-700 dark:text-neutral-200">{district}</span> ({isInsideDhaka ? "Dhaka Metropolitan Area" : "All 64 Districts in Bangladesh"})
+                          </p>
                         </div>
-                      ) : (
-                        shippingProviders.map((provider) => {
-                          const isSelected = selectedProviderId === provider.id;
-                          const fee = isFreeDelivery
-                            ? 0
-                            : isInsideDhaka
-                            ? provider.insideDhakaRate
-                            : provider.outsideDhakaRate;
-                          const deliveryTime = isInsideDhaka
-                            ? provider.deliveryTimeInside
-                            : provider.deliveryTimeOutside;
+                        <div className="sm:text-right">
+                          <span className="font-mono text-base font-extrabold text-orange-600 dark:text-orange-400">
+                            {standardDeliveryFee === 0 ? "FREE DELIVERY" : `৳${standardDeliveryFee}`}
+                          </span>
+                          {isFreeDelivery && (
+                            <span className="text-[10px] text-emerald-600 block font-semibold">
+                              Free delivery unlocked
+                            </span>
+                          )}
+                        </div>
+                      </div>
 
-                          return (
-                            <button
-                              key={provider.id}
-                              type="button"
-                              onClick={() => setSelectedProviderId(provider.id)}
-                              className={`p-4 rounded-2xl border text-left transition cursor-pointer flex flex-col justify-between ${
-                                isSelected
-                                  ? "border-orange-600 bg-orange-50/50 dark:bg-orange-950/20 ring-2 ring-orange-600/30"
-                                  : "border-stone-200 dark:border-neutral-700 bg-white dark:bg-neutral-800/60 hover:border-stone-400"
-                              }`}
-                            >
-                              <div className="flex items-center justify-between w-full mb-1">
-                                <span className="font-bold text-xs text-gray-900 dark:text-white">
-                                  {provider.name}
-                                </span>
-                                <span className="font-mono text-xs font-bold text-orange-600 dark:text-orange-400">
-                                  {fee === 0 ? "FREE" : `৳${fee}`}
-                                </span>
-                              </div>
-                              <div className="flex items-center justify-between text-[11px] text-gray-500 dark:text-neutral-400 pt-1">
-                                <span>{deliveryTime}</span>
-                                <span className="text-[10px] text-emerald-600 font-semibold">
-                                  Live SMS Tracking
-                                </span>
-                              </div>
-                            </button>
-                          );
-                        })
-                      )}
+                      <div className="pt-3 border-t border-stone-200/60 dark:border-neutral-700/60 flex items-start gap-2.5 text-[11px] text-gray-600 dark:text-neutral-300 leading-relaxed">
+                        <ShieldCheckIcon className="size-4 text-orange-600 shrink-0 mt-0.5" />
+                        <p>
+                          <strong>Admin-Assigned Courier Logistics:</strong> Our atelier fulfillment team will assign the most optimal courier partner (e.g. Steadfast Courier, Pathao Express, RedX) best suited for your delivery address upon order verification. You will receive live consignment tracking details via SMS.
+                        </p>
+                      </div>
                     </div>
                   </div>
 
@@ -1310,7 +1293,7 @@ export default function CheckoutPage() {
                     )}
 
                     <div className="flex justify-between text-gray-600 dark:text-neutral-400">
-                      <span>Courier Delivery ({currentProvider?.name || "Steadfast"})</span>
+                      <span>Delivery ({isInsideDhaka ? "Inside Dhaka" : "Outside Dhaka"})</span>
                       <span className="font-bold text-gray-900 dark:text-white font-mono">
                         {standardDeliveryFee === 0 ? "FREE" : `৳${standardDeliveryFee}`}
                       </span>

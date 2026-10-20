@@ -115,7 +115,7 @@ export const OrderPackagingStickerModal: React.FC<OrderPackagingStickerModalProp
       `PHONE: ${order.shippingAddress.phoneNumber || order.customerPhone}`,
       `ADDRESS: ${order.shippingAddress.streetAddress}, ${order.shippingAddress.city}, ${order.shippingAddress.district}${order.shippingAddress.postalCode ? ` - ${order.shippingAddress.postalCode}` : ""}`,
       `DISTRICT: ${order.shippingAddress.district || order.shippingAddress.city}`,
-      `COURIER: ${order.courierName || "Standard Courier"}`,
+      `COURIER: ${order.courierName && order.courierName !== "Pending Assignment" && order.courierName !== "Unassigned" ? order.courierName : "TO BE ASSIGNED"}`,
       `TRACKING: ${order.trackingNumber || "N/A"}`,
       `COLLECTION AMOUNT (COD): ৳${isCod ? order.totalAmount : 0} (${isCod ? "CASH ON DELIVERY" : "PREPAID - ৳0"})`,
       `PARCEL ITEMS (${order.items.length}): ${order.items.map((i) => `${i.name} (Qty: ${i.quantity}${i.size ? `, Size: ${i.size}` : ""}${i.color ? `, Color: ${i.color}` : ""})`).join("; ")}`,
@@ -372,7 +372,7 @@ export const OrderPackagingStickerModal: React.FC<OrderPackagingStickerModalProp
 
     <!-- Courier Partner Strip -->
     <div class="courier-strip">
-      <span>COURIER: ${(order.courierName || "STEADFAST COURIER").toUpperCase()}</span>
+      <span>COURIER: ${(order.courierName && order.courierName !== "Pending Assignment" && order.courierName !== "Unassigned" ? order.courierName : "COURIER PENDING ASSIGNMENT").toUpperCase()}</span>
       <span>DEST: ${(order.shippingAddress.district || order.shippingAddress.city || "DHAKA").toUpperCase()}</span>
     </div>
 
@@ -678,7 +678,7 @@ export const OrderPackagingStickerModal: React.FC<OrderPackagingStickerModalProp
                           <span>Courier Booking Helper</span>
                         </div>
                         <span className="text-[10px] uppercase font-bold text-gray-400">
-                          {order.courierName || "Steadfast"}
+                          {order.courierName && order.courierName !== "Pending Assignment" && order.courierName !== "Unassigned" ? order.courierName : "Unassigned"}
                         </span>
                       </div>
 
@@ -764,7 +764,7 @@ export const OrderPackagingStickerModal: React.FC<OrderPackagingStickerModalProp
 
                       {/* Courier & Zone Banner */}
                       <div className="bg-black text-white px-2.5 py-1.5 my-2 flex items-center justify-between font-black text-xs tracking-wider uppercase rounded-xs">
-                        <span>COURIER: {order.courierName || "STEADFAST COURIER"}</span>
+                        <span>COURIER: {order.courierName && order.courierName !== "Pending Assignment" && order.courierName !== "Unassigned" ? order.courierName : "ASSIGNMENT PENDING"}</span>
                         <span className="text-[10px] font-bold bg-white text-black px-1.5 py-0.2 rounded-xs">
                           {(order.shippingAddress.district || order.shippingAddress.city || "DHAKA").toUpperCase()}
                         </span>

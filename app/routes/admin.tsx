@@ -483,6 +483,7 @@ export default function AdminDashboardPage() {
                   {currentTab === "orders" && (
                     <AdminOrdersTab
                       orders={orders}
+                      shippingProviders={shippingProviders}
                       storeSettings={storeSettings}
                       onRefresh={loadAllAdminData}
                     />

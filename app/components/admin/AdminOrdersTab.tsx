@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useMemo } from "react";
 import {
   MagnifyingGlassIcon,
   EyeIcon,
@@ -17,7 +17,7 @@ import {
 } from "@heroicons/react/24/outline";
 import { Dialog, DialogPanel, DialogTitle, Transition, TransitionChild } from "@headlessui/react";
 import { toast } from "sonner";
-import type { Order, OrderStatus, StoreGeneralSettings } from "~/firebase";
+import type { Order, OrderStatus, StoreGeneralSettings, ShippingProvider } from "~/firebase";
 import {
   updateOrderStatusInFirestore,
   deleteOrderInFirestore,
@@ -28,12 +28,14 @@ import OrderPackagingStickerModal from "./OrderPackagingStickerModal";
 
 interface AdminOrdersTabProps {
   orders: Order[];
+  shippingProviders?: ShippingProvider[];
   onRefresh: () => void;
   storeSettings?: StoreGeneralSettings;
 }
 
 export const AdminOrdersTab: React.FC<AdminOrdersTabProps> = ({
   orders,
+  shippingProviders,
   onRefresh,
   storeSettings,
 }) => {
@@ -48,6 +50,22 @@ export const AdminOrdersTab: React.FC<AdminOrdersTabProps> = ({
   const [courierDraft, setCourierDraft] = useState("");
   const [trackingDraft, setTrackingDraft] = useState("");
   const [statusNoteDraft, setStatusNoteDraft] = useState("");
+
+  const defaultCouriers = [
+    "Steadfast Courier",
+    "Pathao Express",
+    "RedX Express",
+    "eCourier",
+    "Paperfly",
+  ];
+
+  const availableCouriers = useMemo(() => {
+    if (shippingProviders && shippingProviders.length > 0) {
+      const activeNames = shippingProviders.filter((p) => p.active).map((p) => p.name);
+      return activeNames.length > 0 ? activeNames : defaultCouriers;
+    }
+    return defaultCouriers;
+  }, [shippingProviders]);
 
   // Cancellation Review State
   const [adminCancelNote, setAdminCancelNote] = useState("");
@@ -349,12 +367,28 @@ export const AdminOrdersTab: React.FC<AdminOrdersTabProps> = ({
                     </td>
 
                     <td className="py-3.5 px-4">
-                      <span className="font-semibold text-gray-800 dark:text-neutral-200 block text-[11px]">
-                        {o.courierName}
-                      </span>
-                      <span className="font-mono text-orange-600 dark:text-orange-400 text-[10px]">
-                        {o.trackingNumber}
-                      </span>
+                      {o.courierName &&
+                      o.courierName !== "Pending Assignment" &&
+                      o.courierName !== "Unassigned" ? (
+                        <div>
+                          <span className="font-semibold text-gray-800 dark:text-neutral-200 block text-[11px]">
+                            {o.courierName}
+                          </span>
+                          <span className="font-mono text-orange-600 dark:text-orange-400 text-[10px]">
+                            {o.trackingNumber}
+                          </span>
+                        </div>
+                      ) : (
+                        <button
+                          type="button"
+                          onClick={() => handleOpenDetail(o)}
+                          className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full bg-amber-100 dark:bg-amber-950/60 text-amber-800 dark:text-amber-300 text-[10px] font-bold border border-amber-300 dark:border-amber-700/60 hover:bg-amber-200 dark:hover:bg-amber-900/60 transition cursor-pointer shadow-2xs"
+                          title="Click to assign courier partner"
+                        >
+                          <TruckIcon className="size-3" />
+                          <span>Assign Courier</span>
+                        </button>
+                      )}
                     </td>
 
                     <td className="py-3.5 px-4 font-bold text-gray-900 dark:text-white">
@@ -680,22 +714,38 @@ export const AdminOrdersTab: React.FC<AdminOrdersTabProps> = ({
                           <span className="text-[10px] uppercase font-bold text-gray-400 block mb-1">
                             Assigned Courier Logistics:
                           </span>
-                          <p className="font-bold text-gray-900 dark:text-white">
-                            {selectedOrder.courierName}
-                          </p>
-                          <div className="flex items-center gap-1.5 mt-0.5">
-                            <span className="font-mono text-orange-600 dark:text-orange-400 font-bold">
-                              {selectedOrder.trackingNumber}
-                            </span>
-                            <button
-                              type="button"
-                              onClick={() => copyToClipboard(selectedOrder.trackingNumber, "Tracking Code")}
-                              className="text-gray-400 hover:text-gray-600"
-                            >
-                              <DocumentDuplicateIcon className="size-3.5" />
-                            </button>
-                          </div>
-                          <p className="text-gray-500 text-[11px] mt-1">
+                          {selectedOrder.courierName &&
+                          selectedOrder.courierName !== "Pending Assignment" &&
+                          selectedOrder.courierName !== "Unassigned" ? (
+                            <>
+                              <p className="font-bold text-gray-900 dark:text-white">
+                                {selectedOrder.courierName}
+                              </p>
+                              <div className="flex items-center gap-1.5 mt-0.5">
+                                <span className="font-mono text-orange-600 dark:text-orange-400 font-bold">
+                                  {selectedOrder.trackingNumber}
+                                </span>
+                                <button
+                                  type="button"
+                                  onClick={() => copyToClipboard(selectedOrder.trackingNumber, "Tracking Code")}
+                                  className="text-gray-400 hover:text-gray-600"
+                                >
+                                  <DocumentDuplicateIcon className="size-3.5" />
+                                </button>
+                              </div>
+                            </>
+                          ) : (
+                            <div className="p-2.5 rounded-xl bg-amber-50 dark:bg-amber-950/40 border border-amber-200/80 dark:border-amber-800/60 text-[11px] text-amber-900 dark:text-amber-200 space-y-0.5">
+                              <span className="font-bold flex items-center gap-1 text-amber-700 dark:text-amber-400">
+                                <ExclamationTriangleIcon className="size-3.5 shrink-0" />
+                                Courier Partner Not Yet Assigned
+                              </span>
+                              <p className="text-[10px] text-amber-700/80 dark:text-amber-400/80 leading-snug">
+                                Customer placed order without picking courier. Select and assign courier partner below.
+                              </p>
+                            </div>
+                          )}
+                          <p className="text-gray-500 text-[11px] mt-1.5">
                             Estimated: {selectedOrder.estimatedDeliveryDate}
                           </p>
                           <div className="pt-2 mt-2 border-t border-stone-200/60 dark:border-neutral-800">
@@ -812,22 +862,74 @@ export const AdminOrdersTab: React.FC<AdminOrdersTabProps> = ({
 
                         <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                           <div>
-                            <label className="block font-semibold mb-1">
-                              Assigned Courier Name:
-                            </label>
+                            <div className="flex items-center justify-between mb-1">
+                              <label className="block font-semibold">
+                                Assign Courier Partner:
+                              </label>
+                              {courierDraft &&
+                              courierDraft !== "Pending Assignment" &&
+                              courierDraft !== "Unassigned" && (
+                                <span className="text-[10px] text-emerald-600 dark:text-emerald-400 font-bold">
+                                  ✓ Selected
+                                </span>
+                              )}
+                            </div>
+
+                            {/* Quick Courier Selection Pills */}
+                            <div className="flex flex-wrap gap-1.5 mb-2">
+                              {availableCouriers.map((cName) => {
+                                const isSelected =
+                                  courierDraft.toLowerCase().trim() === cName.toLowerCase().trim();
+                                return (
+                                  <button
+                                    key={cName}
+                                    type="button"
+                                    onClick={() => {
+                                      setCourierDraft(cName);
+                                      if (!trackingDraft || trackingDraft === "Pending") {
+                                        setTrackingDraft(
+                                          `TRK-BD${Math.floor(10000000 + Math.random() * 90000000)}`
+                                        );
+                                      }
+                                    }}
+                                    className={`px-2.5 py-1 rounded-lg text-[10px] font-bold transition cursor-pointer border ${
+                                      isSelected
+                                        ? "bg-orange-600 text-white border-orange-600 shadow-xs"
+                                        : "bg-white dark:bg-neutral-800 text-gray-700 dark:text-neutral-300 border-gray-200 dark:border-neutral-700 hover:border-orange-500 hover:text-orange-600"
+                                    }`}
+                                  >
+                                    {cName}
+                                  </button>
+                                );
+                              })}
+                            </div>
+
                             <input
                               type="text"
                               value={courierDraft}
                               onChange={(e) => setCourierDraft(e.target.value)}
-                              placeholder="Steadfast Courier / Pathao Express"
-                              className="w-full px-3 py-2 bg-white dark:bg-neutral-800 border border-orange-300 dark:border-neutral-700 rounded-xl focus:outline-none"
+                              placeholder="Select above or type courier name"
+                              className="w-full px-3 py-2 bg-white dark:bg-neutral-800 border border-orange-300 dark:border-neutral-700 rounded-xl focus:outline-none font-medium"
                             />
                           </div>
 
                           <div>
-                            <label className="block font-semibold mb-1">
-                              Tracking Code:
-                            </label>
+                            <div className="flex items-center justify-between mb-1">
+                              <label className="block font-semibold">
+                                Consignment Tracking Code:
+                              </label>
+                              <button
+                                type="button"
+                                onClick={() =>
+                                  setTrackingDraft(
+                                    `TRK-BD${Math.floor(10000000 + Math.random() * 90000000)}`
+                                  )
+                                }
+                                className="text-[10px] text-orange-600 dark:text-orange-400 font-bold hover:underline cursor-pointer"
+                              >
+                                Auto-generate
+                              </button>
+                            </div>
                             <input
                               type="text"
                               value={trackingDraft}
@@ -835,6 +937,9 @@ export const AdminOrdersTab: React.FC<AdminOrdersTabProps> = ({
                               placeholder="TRK-BDXXXXXXX"
                               className="w-full px-3 py-2 bg-white dark:bg-neutral-800 border border-orange-300 dark:border-neutral-700 rounded-xl font-mono focus:outline-none"
                             />
+                            <p className="text-[10px] text-gray-400 mt-1">
+                              Sent automatically to customer for real-time parcel tracking.
+                            </p>
                           </div>
                         </div>
 
