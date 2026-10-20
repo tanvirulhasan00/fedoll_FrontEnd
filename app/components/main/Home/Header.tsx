@@ -177,13 +177,19 @@ export default function Header() {
           </button>
 
           {!isMounted ? (
-            /* Neutral placeholder matching user pill dimensions to prevent layout flash on SSR/reload */
-            <div className="h-8 w-24 rounded-full bg-neutral-100/50 dark:bg-neutral-800/50" />
+            /* Visible skeleton pill while hydrating to prevent layout flash on SSR/reload */
+            <div className="inline-flex items-center gap-2 rounded-full border border-neutral-200/80 dark:border-neutral-700/80 bg-neutral-100/80 dark:bg-neutral-800/80 px-2 py-1 h-8 animate-pulse" aria-hidden="true">
+              <div className="size-6 rounded-full bg-neutral-300 dark:bg-neutral-600" />
+              <div className="h-3 w-14 rounded-full bg-neutral-200 dark:bg-neutral-700 hidden sm:block" />
+            </div>
           ) : isAuthenticated && user ? (
             <UserMenu user={user} />
           ) : authLoading ? (
             /* Subtle placeholder while Firebase auth session verifies */
-            <div className="h-8 w-24 rounded-full bg-neutral-100/50 dark:bg-neutral-800/50" />
+            <div className="inline-flex items-center gap-2 rounded-full border border-neutral-200/80 dark:border-neutral-700/80 bg-neutral-100/80 dark:bg-neutral-800/80 px-2 py-1 h-8 animate-pulse" aria-hidden="true">
+              <div className="size-6 rounded-full bg-neutral-300 dark:bg-neutral-600" />
+              <div className="h-3 w-14 rounded-full bg-neutral-200 dark:bg-neutral-700 hidden sm:block" />
+            </div>
           ) : (
             <div className="flex items-center gap-x-3">
               <button
@@ -264,8 +270,12 @@ export default function Header() {
               {/* Mobile Auth Section */}
               <div className="py-6">
                 {!isMounted || (authLoading && !user) ? (
-                  <div className="py-4 flex justify-center">
-                    <div className="h-10 w-48 rounded-xl bg-neutral-100 dark:bg-neutral-800 animate-pulse" />
+                  <div className="py-4 flex items-center justify-center gap-3">
+                    <div className="size-10 rounded-full bg-neutral-200 dark:bg-neutral-700 animate-pulse" />
+                    <div className="space-y-1.5">
+                      <div className="h-4 w-28 rounded-md bg-neutral-200 dark:bg-neutral-700 animate-pulse" />
+                      <div className="h-3 w-36 rounded-md bg-neutral-100 dark:bg-neutral-800 animate-pulse" />
+                    </div>
                   </div>
                 ) : isAuthenticated && user ? (
                   <div className="space-y-3">

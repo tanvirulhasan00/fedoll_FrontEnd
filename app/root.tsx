@@ -44,9 +44,9 @@ export function Layout({ children }: { children: React.ReactNode }) {
           storageKey="fedoll-theme"
         >
           {children}
-          <ScrollRestoration />
-          <Scripts />
         </ThemeProvider>
+        <ScrollRestoration />
+        <Scripts />
       </body>
     </html>
   );
