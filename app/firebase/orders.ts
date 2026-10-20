@@ -14,6 +14,7 @@ import {
   type DocumentData,
 } from "firebase/firestore";
 import { db } from "./firebase.config";
+import { sanitizeForFirestore } from "./firestore";
 import type { CartItem } from "~/redux/features/cart/cartSlice";
 
 export type OrderStatus =
@@ -55,6 +56,15 @@ export interface OrderCancellationRequest {
   adminNote?: string;
 }
 
+export interface OrderReturnRequest {
+  ticketNumber: string;
+  type: string;
+  status: string;
+  requestedAt: string;
+  reason: string;
+  itemDetails?: string;
+}
+
 export interface Order {
   id: string;
   orderNumber: string; // e.g. "FED-839201"
@@ -79,6 +89,7 @@ export interface Order {
   createdAt: string;
   trackingTimeline: OrderTrackingTimelineStep[];
   cancellationRequest?: OrderCancellationRequest;
+  returnRequest?: OrderReturnRequest;
 }
 
 export interface CreateOrderInput {
@@ -119,6 +130,26 @@ const saveLocalOrder = (order: Order) => {
   } catch (err) {
     console.warn("Failed to cache order locally:", err);
   }
+};
+
+/**
+ * Helper: Retrieve single order from Firestore, fallback to local storage
+ */
+export const getOrderById = async (orderId: string): Promise<Order | null> => {
+  try {
+    const docRef = doc(db, "orders", orderId);
+    const snap = await getDoc(docRef);
+    if (snap.exists()) {
+      const order = { id: snap.id, ...(snap.data() as DocumentData) } as Order;
+      saveLocalOrder(order);
+      return order;
+    }
+  } catch (err) {
+    console.warn("Could not fetch order from Firestore:", err);
+  }
+
+  const local = getLocalOrders();
+  return local.find((o) => o.id === orderId) || null;
 };
 
 /**
@@ -215,7 +246,6 @@ export const createOrderInFirestore = async (
     year: "numeric",
   });
 
-  // Customer placed the order: Courier partner is left unassigned until the store admin assigns it
   const courierName = "Pending Assignment";
 
   const newOrder: Order = {
@@ -226,11 +256,25 @@ export const createOrderInFirestore = async (
     customerName: input.customerName,
     customerEmail: input.customerEmail,
     customerPhone: input.customerPhone,
-    shippingAddress: input.shippingAddress,
-    items: input.items,
+    shippingAddress: {
+      fullName: input.shippingAddress.fullName || input.customerName,
+      phoneNumber: input.shippingAddress.phoneNumber || input.customerPhone,
+      streetAddress: input.shippingAddress.streetAddress || "",
+      city: input.shippingAddress.city || "Dhaka",
+      district: input.shippingAddress.district || "Dhaka",
+      postalCode: input.shippingAddress.postalCode || "",
+      notes: input.shippingAddress.notes || input.notes || "",
+    },
+    items: input.items.map((item) => ({
+      ...item,
+      size: item.size || "Standard",
+      color: item.color || "Default",
+      image: item.image || "",
+      category: item.category || "Apparel",
+    })),
     totalQuantity: input.totalQuantity,
     subtotal: input.subtotal,
-    discount: input.discount,
+    discount: input.discount || 0,
     shippingFee: input.shippingFee,
     totalAmount: input.totalAmount,
     paymentMethod: input.paymentMethod,
@@ -243,19 +287,21 @@ export const createOrderInFirestore = async (
     trackingTimeline: buildInitialTrackingTimeline(now.toISOString(), courierName),
   };
 
-  // Attempt Firestore sync
+  // Primary Firestore Persistence
   try {
     const ordersCol = collection(db, "orders");
     const docRef = doc(ordersCol, newOrder.id);
-    await setDoc(docRef, {
+    const cleanPayload = sanitizeForFirestore({
       ...newOrder,
       firestoreCreatedAt: serverTimestamp(),
+      updatedAt: serverTimestamp(),
     });
+    await setDoc(docRef, cleanPayload);
   } catch (error) {
-    console.warn("Could not save order directly to Firestore, saving to local state:", error);
+    console.error("Firestore order save error:", error);
   }
 
-  // Always cache locally so customer has zero-friction instant access
+  // Always mirror to local cache for instant offline UI and smooth transitions
   saveLocalOrder(newOrder);
 
   return newOrder;
@@ -280,17 +326,43 @@ export const fetchCustomerOrders = async (
         ...(d.data() as DocumentData),
       })) as Order[];
 
-      // Merge and deduplicate
-      const map = new Map<string, Order>();
-      firestoreOrders.forEach((o) => map.set(o.id, o));
-      localList.forEach((o) => {
-        if (!map.has(o.id)) map.set(o.id, o);
-      });
+      // Check if any local orders weren't synced to Firestore yet
+      for (const localOrder of localList) {
+        if (!firestoreOrders.some((fo) => fo.id === localOrder.id)) {
+          try {
+            await setDoc(
+              doc(ordersCol, localOrder.id),
+              sanitizeForFirestore({
+                ...localOrder,
+                firestoreCreatedAt: serverTimestamp(),
+              })
+            );
+            firestoreOrders.push(localOrder);
+          } catch (syncErr) {
+            console.warn("Could not sync local order to Firestore:", syncErr);
+          }
+        }
+      }
 
-      const merged = Array.from(map.values());
-      return merged.sort(
+      // Update local cache with freshest Firestore data
+      firestoreOrders.forEach((o) => saveLocalOrder(o));
+
+      return firestoreOrders.sort(
         (a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
       );
+    } else if (localList.length > 0) {
+      // Local orders exist but Firestore is empty for this user: sync them now
+      for (const localOrder of localList) {
+        try {
+          await setDoc(
+            doc(ordersCol, localOrder.id),
+            sanitizeForFirestore({
+              ...localOrder,
+              firestoreCreatedAt: serverTimestamp(),
+            })
+          );
+        } catch {}
+      }
     }
   } catch (err) {
     console.warn("Failed to fetch orders from Firestore, using local list:", err);
@@ -310,7 +382,41 @@ export const fetchOrderByTrackingOrNumber = async (
   const trimmed = searchKey.trim().toUpperCase();
   if (!trimmed) return null;
 
-  // First search local cache
+  // Search Firestore first so user always gets the freshest live status
+  try {
+    const ordersCol = collection(db, "orders");
+
+    // 1. Try by orderNumber
+    const q1 = query(ordersCol, where("orderNumber", "==", trimmed));
+    const snap1 = await getDocs(q1);
+    if (!snap1.empty) {
+      const order = { id: snap1.docs[0].id, ...(snap1.docs[0].data() as DocumentData) } as Order;
+      saveLocalOrder(order);
+      return order;
+    }
+
+    // 2. Try by trackingNumber
+    const q2 = query(ordersCol, where("trackingNumber", "==", trimmed));
+    const snap2 = await getDocs(q2);
+    if (!snap2.empty) {
+      const order = { id: snap2.docs[0].id, ...(snap2.docs[0].data() as DocumentData) } as Order;
+      saveLocalOrder(order);
+      return order;
+    }
+
+    // 3. Try direct document id
+    const docRef = doc(db, "orders", searchKey.trim());
+    const snap3 = await getDoc(docRef);
+    if (snap3.exists()) {
+      const order = { id: snap3.id, ...(snap3.data() as DocumentData) } as Order;
+      saveLocalOrder(order);
+      return order;
+    }
+  } catch (err) {
+    console.warn("Failed to query order in Firestore:", err);
+  }
+
+  // Fallback to local cache if offline
   const localMatch = getLocalOrders().find(
     (o) =>
       o.orderNumber.toUpperCase() === trimmed ||
@@ -318,34 +424,6 @@ export const fetchOrderByTrackingOrNumber = async (
       o.id.toUpperCase() === trimmed
   );
   if (localMatch) return localMatch;
-
-  // Search Firestore
-  try {
-    const ordersCol = collection(db, "orders");
-
-    // Try by orderNumber
-    const q1 = query(ordersCol, where("orderNumber", "==", trimmed));
-    const snap1 = await getDocs(q1);
-    if (!snap1.empty) {
-      return { id: snap1.docs[0].id, ...(snap1.docs[0].data() as DocumentData) } as Order;
-    }
-
-    // Try by trackingNumber
-    const q2 = query(ordersCol, where("trackingNumber", "==", trimmed));
-    const snap2 = await getDocs(q2);
-    if (!snap2.empty) {
-      return { id: snap2.docs[0].id, ...(snap2.docs[0].data() as DocumentData) } as Order;
-    }
-
-    // Try direct document id
-    const docRef = doc(db, "orders", searchKey.trim());
-    const snap3 = await getDoc(docRef);
-    if (snap3.exists()) {
-      return { id: snap3.id, ...(snap3.data() as DocumentData) } as Order;
-    }
-  } catch (err) {
-    console.warn("Failed to query order in Firestore:", err);
-  }
 
   return null;
 };
@@ -356,8 +434,7 @@ export const fetchOrderByTrackingOrNumber = async (
 export const cancelOrderInFirestore = async (
   orderId: string
 ): Promise<boolean> => {
-  const local = getLocalOrders();
-  const existingOrder = local.find((o) => o.id === orderId);
+  const existingOrder = await getOrderById(orderId);
 
   if (
     existingOrder &&
@@ -368,37 +445,55 @@ export const cancelOrderInFirestore = async (
     );
   }
 
+  const now = new Date();
+  const timestampStr = now.toLocaleString("en-US", {
+    month: "short",
+    day: "numeric",
+    hour: "numeric",
+    minute: "2-digit",
+    hour12: true,
+  });
+
+  const updatedTimeline: OrderTrackingTimelineStep[] = existingOrder
+    ? [
+        ...existingOrder.trackingTimeline.map((step) => ({
+          ...step,
+          isCurrent: false,
+        })),
+        {
+          status: "cancelled" as OrderStatus,
+          title: "Order Cancelled",
+          description: "Cancelled upon customer request.",
+          timestamp: timestampStr,
+          completed: true,
+          isCurrent: true,
+        },
+      ]
+    : [];
+
   try {
     const docRef = doc(db, "orders", orderId);
-    await updateDoc(docRef, {
-      orderStatus: "cancelled",
-      cancelledAt: serverTimestamp(),
-    });
+    await updateDoc(
+      docRef,
+      sanitizeForFirestore({
+        orderStatus: "cancelled",
+        cancelledAt: serverTimestamp(),
+        trackingTimeline: updatedTimeline,
+        updatedAt: serverTimestamp(),
+      })
+    );
   } catch (err) {
     console.warn("Could not cancel order in Firestore:", err);
   }
 
   // Update in local cache as well
-  const updated = local.map((o) =>
-    o.id === orderId
-      ? {
-          ...o,
-          orderStatus: "cancelled" as OrderStatus,
-          trackingTimeline: [
-            ...o.trackingTimeline,
-            {
-              status: "cancelled" as OrderStatus,
-              title: "Order Cancelled",
-              description: "Cancelled upon customer request.",
-              timestamp: new Date().toLocaleString(),
-              completed: true,
-              isCurrent: true,
-            },
-          ],
-        }
-      : o
-  );
-  localStorage.setItem(LOCAL_STORAGE_KEY, JSON.stringify(updated));
+  if (existingOrder) {
+    saveLocalOrder({
+      ...existingOrder,
+      orderStatus: "cancelled",
+      trackingTimeline: updatedTimeline,
+    });
+  }
 
   return true;
 };
@@ -412,13 +507,13 @@ export const requestOrderCancellationInFirestore = async (
   reason: string,
   details?: string
 ): Promise<Order | null> => {
-  const local = getLocalOrders();
-  const existingOrder = local.find((o) => o.id === orderId);
+  const existingOrder = await getOrderById(orderId);
 
-  if (
-    existingOrder &&
-    ["shipped", "delivered", "cancelled"].includes(existingOrder.orderStatus)
-  ) {
+  if (!existingOrder) {
+    throw new Error(`Order ${orderId} not found.`);
+  }
+
+  if (["shipped", "delivered", "cancelled"].includes(existingOrder.orderStatus)) {
     throw new Error(
       "Orders cannot be cancelled once shipped to the courier partner. Cancellation requests must be submitted before shipping."
     );
@@ -440,22 +535,20 @@ export const requestOrderCancellationInFirestore = async (
     status: "pending",
   };
 
-  const updatedTimeline: OrderTrackingTimelineStep[] = existingOrder
-    ? [
-        ...existingOrder.trackingTimeline.map((step) => ({
-          ...step,
-          isCurrent: false,
-        })),
-        {
-          status: existingOrder.orderStatus,
-          title: "Cancellation Requested",
-          description: `Customer submitted cancellation request: "${reason.trim()}". Awaiting admin review.`,
-          timestamp: timestampStr,
-          completed: true,
-          isCurrent: true,
-        },
-      ]
-    : [];
+  const updatedTimeline: OrderTrackingTimelineStep[] = [
+    ...(existingOrder.trackingTimeline || []).map((step) => ({
+      ...step,
+      isCurrent: false,
+    })),
+    {
+      status: existingOrder.orderStatus,
+      title: "Cancellation Requested",
+      description: `Customer submitted cancellation request: "${reason.trim()}". Awaiting atelier admin review.`,
+      timestamp: timestampStr,
+      completed: true,
+      isCurrent: true,
+    },
+  ];
 
   const updateFields: Partial<Order> = {
     cancellationRequest,
@@ -464,27 +557,23 @@ export const requestOrderCancellationInFirestore = async (
 
   try {
     const docRef = doc(db, "orders", orderId);
-    await updateDoc(docRef, {
-      cancellationRequest,
-      trackingTimeline: updatedTimeline,
-      updatedAt: serverTimestamp(),
-    });
+    await updateDoc(
+      docRef,
+      sanitizeForFirestore({
+        ...updateFields,
+        updatedAt: serverTimestamp(),
+      })
+    );
   } catch (err) {
     console.warn("Could not record cancellation request in Firestore:", err);
   }
 
-  // Update in local cache
-  let updatedOrderResult: Order | null = null;
-  const updatedList = local.map((o) => {
-    if (o.id === orderId) {
-      const merged = { ...o, ...updateFields };
-      updatedOrderResult = merged;
-      return merged;
-    }
-    return o;
-  });
+  const updatedOrderResult: Order = {
+    ...existingOrder,
+    ...updateFields,
+  };
 
-  localStorage.setItem(LOCAL_STORAGE_KEY, JSON.stringify(updatedList));
+  saveLocalOrder(updatedOrderResult);
   return updatedOrderResult;
 };
 
@@ -496,8 +585,7 @@ export const reviewOrderCancellationInFirestore = async (
   action: "approve" | "reject",
   adminNote?: string
 ): Promise<Order | null> => {
-  const local = getLocalOrders();
-  const existingOrder = local.find((o) => o.id === orderId);
+  const existingOrder = await getOrderById(orderId);
   if (!existingOrder) return null;
 
   const now = new Date();
@@ -524,7 +612,7 @@ export const reviewOrderCancellationInFirestore = async (
   const newStatus: OrderStatus = action === "approve" ? "cancelled" : existingOrder.orderStatus;
 
   const updatedTimeline: OrderTrackingTimelineStep[] = [
-    ...existingOrder.trackingTimeline.map((step) => ({
+    ...(existingOrder.trackingTimeline || []).map((step) => ({
       ...step,
       isCurrent: false,
     })),
@@ -559,31 +647,28 @@ export const reviewOrderCancellationInFirestore = async (
 
   try {
     const docRef = doc(db, "orders", orderId);
-    await updateDoc(docRef, {
-      ...updateFields,
-      updatedAt: serverTimestamp(),
-    });
+    await updateDoc(
+      docRef,
+      sanitizeForFirestore({
+        ...updateFields,
+        updatedAt: serverTimestamp(),
+      })
+    );
   } catch (err) {
     console.warn("Could not update cancellation review in Firestore:", err);
   }
 
-  // Update in local cache
-  let updatedOrderResult: Order | null = null;
-  const updatedList = local.map((o) => {
-    if (o.id === orderId) {
-      const merged = { ...o, ...updateFields };
-      updatedOrderResult = merged;
-      return merged;
-    }
-    return o;
-  });
+  const updatedOrderResult: Order = {
+    ...existingOrder,
+    ...updateFields,
+  };
 
-  localStorage.setItem(LOCAL_STORAGE_KEY, JSON.stringify(updatedList));
+  saveLocalOrder(updatedOrderResult);
   return updatedOrderResult;
 };
 
 /**
- * Admin: Fetch all orders across all customers
+ * Admin: Fetch all orders across all customers directly from Firestore
  */
 export const fetchAllOrdersForAdmin = async (): Promise<Order[]> => {
   const localList = getLocalOrders();
@@ -592,30 +677,44 @@ export const fetchAllOrdersForAdmin = async (): Promise<Order[]> => {
     const ordersCol = collection(db, "orders");
     const snap = await getDocs(ordersCol);
 
-    if (!snap.empty) {
-      const firestoreOrders: Order[] = snap.docs.map((d) => ({
-        id: d.id,
-        ...(d.data() as DocumentData),
-      })) as Order[];
+    const firestoreOrders: Order[] = snap.empty
+      ? []
+      : (snap.docs.map((d) => ({
+          id: d.id,
+          ...(d.data() as DocumentData),
+        })) as Order[]);
 
-      const map = new Map<string, Order>();
-      firestoreOrders.forEach((o) => map.set(o.id, o));
-      localList.forEach((o) => {
-        if (!map.has(o.id)) map.set(o.id, o);
-      });
+    // Deduplicate and sync any local orders not yet in Firestore
+    const map = new Map<string, Order>();
+    firestoreOrders.forEach((o) => map.set(o.id, o));
 
-      const merged = Array.from(map.values());
-      return merged.sort(
-        (a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
-      );
+    for (const localOrder of localList) {
+      if (!map.has(localOrder.id)) {
+        try {
+          await setDoc(
+            doc(ordersCol, localOrder.id),
+            sanitizeForFirestore({
+              ...localOrder,
+              firestoreCreatedAt: serverTimestamp(),
+            })
+          );
+        } catch {}
+        map.set(localOrder.id, localOrder);
+      }
     }
+
+    const merged = Array.from(map.values());
+    merged.forEach((o) => saveLocalOrder(o));
+
+    return merged.sort(
+      (a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
+    );
   } catch (err) {
     console.warn("Failed to fetch all orders from Firestore, using local list:", err);
+    return localList.sort(
+      (a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
+    );
   }
-
-  return localList.sort(
-    (a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
-  );
 };
 
 /**
@@ -631,10 +730,9 @@ export const updateOrderStatusInFirestore = async (
     note?: string;
   }
 ): Promise<Order | null> => {
-  const local = getLocalOrders();
-  const existingOrder = local.find((o) => o.id === orderId);
+  const existingOrder = await getOrderById(orderId);
+  if (!existingOrder) return null;
 
-  // Generate updated timeline
   const now = new Date();
   const timestampStr = now.toLocaleString("en-US", {
     month: "short",
@@ -653,7 +751,7 @@ export const updateOrderStatusInFirestore = async (
       case "processing":
         return "Tailoring & Quality Check at Dhaka Atelier";
       case "shipped":
-        return `Dispatched with ${options?.courierName || existingOrder?.courierName || "Express Courier"}`;
+        return `Dispatched with ${options?.courierName || existingOrder.courierName || "Express Courier"}`;
       case "delivered":
         return "Package Successfully Delivered";
       case "cancelled":
@@ -663,7 +761,7 @@ export const updateOrderStatusInFirestore = async (
     }
   };
 
-  const updatedTimeline = existingOrder?.trackingTimeline
+  const updatedTimeline = existingOrder.trackingTimeline
     ? existingOrder.trackingTimeline.map((step) => {
         if (step.status === newStatus) {
           return {
@@ -707,26 +805,23 @@ export const updateOrderStatusInFirestore = async (
 
   try {
     const docRef = doc(db, "orders", orderId);
-    await updateDoc(docRef, {
-      ...updateFields,
-      updatedAt: serverTimestamp(),
-    });
+    await updateDoc(
+      docRef,
+      sanitizeForFirestore({
+        ...updateFields,
+        updatedAt: serverTimestamp(),
+      })
+    );
   } catch (err) {
     console.warn("Could not update order in Firestore:", err);
   }
 
-  // Update in local cache
-  let updatedOrderResult: Order | null = null;
-  const updatedList = local.map((o) => {
-    if (o.id === orderId) {
-      const merged = { ...o, ...updateFields };
-      updatedOrderResult = merged;
-      return merged;
-    }
-    return o;
-  });
+  const updatedOrderResult: Order = {
+    ...existingOrder,
+    ...updateFields,
+  };
 
-  localStorage.setItem(LOCAL_STORAGE_KEY, JSON.stringify(updatedList));
+  saveLocalOrder(updatedOrderResult);
   return updatedOrderResult;
 };
 
@@ -745,4 +840,5 @@ export const deleteOrderInFirestore = async (orderId: string): Promise<boolean> 
   localStorage.setItem(LOCAL_STORAGE_KEY, JSON.stringify(filtered));
   return true;
 };
+
 

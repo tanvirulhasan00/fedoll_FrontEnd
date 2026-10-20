@@ -11,6 +11,8 @@ import {
   type DocumentData,
 } from "firebase/firestore";
 import { db } from "./firebase.config";
+import { sanitizeForFirestore } from "./firestore";
+
 
 export type ProductCategory =
   | "Outerwear"
@@ -740,6 +742,24 @@ export const fetchCategoriesFromFirestore = async (): Promise<ProductCategoryIte
         ...(d.data() as DocumentData),
       })) as ProductCategoryItem[];
     }
+
+    // Auto-seed initial categories to Firestore if empty
+    for (const cat of initialProductCategories) {
+      try {
+        await setDoc(
+          doc(db, "product_categories", cat.id),
+          sanitizeForFirestore({
+            ...cat,
+            createdAt: serverTimestamp(),
+            updatedAt: serverTimestamp(),
+          }),
+          { merge: true }
+        );
+      } catch (err) {
+        console.warn("Could not seed category:", err);
+      }
+    }
+
     return initialProductCategories;
   } catch (error) {
     console.warn("Failed to fetch categories from Firestore:", error);
@@ -755,24 +775,24 @@ export const seedProductsToFirestore = async (force: boolean = false) => {
     for (const product of initialProductsData) {
       await setDoc(
         doc(db, "products", product.id),
-        {
+        sanitizeForFirestore({
           ...product,
           updatedAt: serverTimestamp(),
-        },
+        }),
         { merge: !force }
       );
     }
 
-  for (const cat of initialProductCategories) {
-    await setDoc(
-      doc(db, "product_categories", cat.id),
-      {
-        ...cat,
-        updatedAt: serverTimestamp(),
-      },
-      { merge: !force }
-    );
-  }
+    for (const cat of initialProductCategories) {
+      await setDoc(
+        doc(db, "product_categories", cat.id),
+        sanitizeForFirestore({
+          ...cat,
+          updatedAt: serverTimestamp(),
+        }),
+        { merge: !force }
+      );
+    }
 
     return {
       success: true,
@@ -797,14 +817,14 @@ export const saveProductToFirestore = async (
     const docRef = doc(db, "products", product.id);
     await setDoc(
       docRef,
-      {
+      sanitizeForFirestore({
         ...product,
         updatedAt: serverTimestamp(),
-      },
+      }),
       { merge: true }
     );
   } catch (err) {
-    console.warn("Could not save product directly to Firestore:", err);
+    console.error("Could not save product directly to Firestore:", err);
   }
 
   // Update in-memory / local dataset
@@ -825,7 +845,7 @@ export const deleteProductFromFirestore = async (id: string): Promise<boolean> =
   try {
     await deleteDoc(doc(db, "products", id));
   } catch (err) {
-    console.warn("Could not delete product from Firestore:", err);
+    console.error("Could not delete product from Firestore:", err);
   }
 
   const index = initialProductsData.findIndex((p) => p.id === id);
@@ -846,14 +866,14 @@ export const saveCategoryToFirestore = async (
     const docRef = doc(db, "product_categories", category.id);
     await setDoc(
       docRef,
-      {
+      sanitizeForFirestore({
         ...category,
         updatedAt: serverTimestamp(),
-      },
+      }),
       { merge: true }
     );
   } catch (err) {
-    console.warn("Could not save category directly to Firestore:", err);
+    console.error("Could not save category directly to Firestore:", err);
   }
 
   const index = initialProductCategories.findIndex((c) => c.id === category.id);
@@ -873,7 +893,7 @@ export const deleteCategoryFromFirestore = async (id: string): Promise<boolean> 
   try {
     await deleteDoc(doc(db, "product_categories", id));
   } catch (err) {
-    console.warn("Could not delete category from Firestore:", err);
+    console.error("Could not delete category from Firestore:", err);
   }
 
   const index = initialProductCategories.findIndex((c) => c.id === id);
@@ -883,4 +903,5 @@ export const deleteCategoryFromFirestore = async (id: string): Promise<boolean> 
 
   return true;
 };
+
 

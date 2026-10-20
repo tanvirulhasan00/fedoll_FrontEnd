@@ -136,8 +136,10 @@ const saveLocalProviders = (providers: ShippingProvider[]) => {
   }
 };
 
+import { sanitizeForFirestore } from "./firestore";
+
 /**
- * Fetch all shipping providers
+ * Fetch all shipping providers from Cloud Firestore
  */
 export const fetchShippingProviders = async (): Promise<ShippingProvider[]> => {
   try {
@@ -151,6 +153,21 @@ export const fetchShippingProviders = async (): Promise<ShippingProvider[]> => {
       saveLocalProviders(list);
       return list;
     }
+
+    // Auto-seed initial shipping providers to Firestore if collection is empty
+    for (const p of initialShippingProviders) {
+      try {
+        await setDoc(
+          doc(db, "shipping_providers", p.id),
+          sanitizeForFirestore({ ...p, createdAt: serverTimestamp(), updatedAt: serverTimestamp() }),
+          { merge: true }
+        );
+      } catch (seedErr) {
+        console.warn("Failed to seed shipping provider:", seedErr);
+      }
+    }
+    saveLocalProviders(initialShippingProviders);
+    return initialShippingProviders;
   } catch (err) {
     console.warn("Using local shipping providers:", err);
   }
@@ -158,7 +175,7 @@ export const fetchShippingProviders = async (): Promise<ShippingProvider[]> => {
 };
 
 /**
- * Save / Update a shipping provider
+ * Save / Update a shipping provider in Cloud Firestore
  */
 export const saveShippingProvider = async (
   provider: ShippingProvider
@@ -167,14 +184,14 @@ export const saveShippingProvider = async (
     const docRef = doc(db, "shipping_providers", provider.id);
     await setDoc(
       docRef,
-      {
+      sanitizeForFirestore({
         ...provider,
         updatedAt: serverTimestamp(),
-      },
+      }),
       { merge: true }
     );
   } catch (err) {
-    console.warn("Could not save shipping provider to Firestore:", err);
+    console.error("Could not save shipping provider to Firestore:", err);
   }
 
   const existing = getLocalProviders();
@@ -189,13 +206,13 @@ export const saveShippingProvider = async (
 };
 
 /**
- * Delete a shipping provider
+ * Delete a shipping provider from Cloud Firestore
  */
 export const deleteShippingProvider = async (id: string): Promise<boolean> => {
   try {
     await deleteDoc(doc(db, "shipping_providers", id));
   } catch (err) {
-    console.warn("Could not delete shipping provider in Firestore:", err);
+    console.error("Could not delete shipping provider in Firestore:", err);
   }
   const existing = getLocalProviders();
   const updated = existing.filter((p) => p.id !== id);
@@ -204,7 +221,7 @@ export const deleteShippingProvider = async (id: string): Promise<boolean> => {
 };
 
 /**
- * Fetch overall shipping settings
+ * Fetch overall shipping settings from Cloud Firestore
  */
 export const fetchShippingSettings = async (): Promise<ShippingSettings> => {
   try {
@@ -213,6 +230,14 @@ export const fetchShippingSettings = async (): Promise<ShippingSettings> => {
     if (snap.exists()) {
       return snap.data() as ShippingSettings;
     }
+
+    // Auto-seed default shipping settings to Firestore
+    await setDoc(
+      docRef,
+      sanitizeForFirestore({ ...defaultShippingSettings, updatedAt: serverTimestamp() }),
+      { merge: true }
+    );
+    return defaultShippingSettings;
   } catch (err) {
     console.warn("Could not load shipping settings from Firestore:", err);
   }
@@ -227,16 +252,20 @@ export const fetchShippingSettings = async (): Promise<ShippingSettings> => {
 };
 
 /**
- * Save shipping settings
+ * Save shipping settings in Cloud Firestore
  */
 export const saveShippingSettings = async (
   settings: ShippingSettings
 ): Promise<ShippingSettings> => {
   try {
     const docRef = doc(db, "store_settings", "shipping");
-    await setDoc(docRef, { ...settings, updatedAt: serverTimestamp() }, { merge: true });
+    await setDoc(
+      docRef,
+      sanitizeForFirestore({ ...settings, updatedAt: serverTimestamp() }),
+      { merge: true }
+    );
   } catch (err) {
-    console.warn("Could not save shipping settings to Firestore:", err);
+    console.error("Could not save shipping settings to Firestore:", err);
   }
 
   if (typeof window !== "undefined") {
@@ -246,3 +275,4 @@ export const saveShippingSettings = async (
   }
   return settings;
 };
+

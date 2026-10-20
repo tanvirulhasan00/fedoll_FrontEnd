@@ -746,6 +746,45 @@ export default function ProfilePage() {
                               </div>
                             )}
 
+                            {/* Return & Exchange Request Banner / Action */}
+                            {order.returnRequest ? (
+                              <div className="p-3.5 rounded-2xl bg-indigo-50/70 dark:bg-indigo-950/40 border border-indigo-200/80 dark:border-indigo-800/60 text-xs text-indigo-950 dark:text-indigo-200 flex items-start justify-between gap-3">
+                                <div className="flex items-start gap-2.5">
+                                  <ArrowPathIcon className="size-4 text-indigo-600 dark:text-indigo-400 shrink-0 mt-0.5" />
+                                  <div>
+                                    <p className="font-bold flex items-center gap-2">
+                                      <span>Return / Exchange Ticket #{order.returnRequest.ticketNumber}</span>
+                                      <span className="capitalize px-2 py-0.5 rounded-full text-[10px] font-extrabold bg-indigo-100 dark:bg-indigo-900/60 text-indigo-800 dark:text-indigo-300">
+                                        {order.returnRequest.status.replace(/_/g, " ")}
+                                      </span>
+                                    </p>
+                                    <p className="text-[11px] text-indigo-900/80 dark:text-indigo-300/80 mt-0.5">
+                                      Type: <span className="font-semibold capitalize">{order.returnRequest.type.replace(/_/g, " ")}</span> • Reason: "{order.returnRequest.reason}"
+                                    </p>
+                                  </div>
+                                </div>
+                                <Link
+                                  to={`/returns-and-exchanges?tab=track&ticket=${order.returnRequest.ticketNumber}`}
+                                  className="text-indigo-600 dark:text-indigo-400 hover:underline font-bold text-xs shrink-0"
+                                >
+                                  Track Ticket &rarr;
+                                </Link>
+                              </div>
+                            ) : ["delivered", "shipped"].includes(order.orderStatus) ? (
+                              <div className="flex flex-wrap items-center justify-between gap-2 p-3 rounded-2xl bg-stone-50 dark:bg-neutral-800/40 border border-stone-200/60 dark:border-neutral-700/60 text-xs">
+                                <span className="text-gray-600 dark:text-neutral-400">
+                                  Need a different size or defect replacement?
+                                </span>
+                                <Link
+                                  to={`/returns-and-exchanges?tab=request&order=${order.orderNumber}`}
+                                  className="inline-flex items-center gap-1.5 px-3 py-1 rounded-xl bg-orange-600 hover:bg-orange-700 text-white font-semibold text-xs transition"
+                                >
+                                  <ArrowPathIcon className="size-3.5" />
+                                  <span>Request Return / Exchange</span>
+                                </Link>
+                              </div>
+                            ) : null}
+
                             {/* Items List */}
                             <div className="space-y-3">
                               {order.items.map((item, idx) => (

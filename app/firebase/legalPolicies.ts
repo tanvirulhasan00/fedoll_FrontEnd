@@ -8,11 +8,14 @@ import {
   updateDoc,
   deleteDoc,
   query,
+  where,
   orderBy,
   limit,
   serverTimestamp,
 } from "firebase/firestore";
 import { db } from "./firebase.config";
+import { sanitizeForFirestore } from "./firestore";
+
 
 export interface LegalClause {
   id: string;
@@ -465,6 +468,9 @@ export const fetchPrivacyPolicy = async (): Promise<PrivacyPolicyData> => {
     if (snap.exists()) {
       return { ...defaultPrivacyPolicy, ...snap.data() } as PrivacyPolicyData;
     }
+    // Seed default to Firestore so database holds current dynamic data
+    await setDoc(docRef, sanitizeForFirestore({ ...defaultPrivacyPolicy, updatedAt: serverTimestamp() }), { merge: true });
+    return defaultPrivacyPolicy;
   } catch (err) {
     console.warn("Could not fetch privacy policy from Firestore:", err);
   }
@@ -486,10 +492,10 @@ export const savePrivacyPolicy = async (
     const docRef = doc(db, "legal_policies", "privacy");
     await setDoc(
       docRef,
-      {
+      sanitizeForFirestore({
         ...data,
         updatedAt: serverTimestamp(),
-      },
+      }),
       { merge: true }
     );
   } catch (err) {
@@ -512,6 +518,9 @@ export const fetchTermsOfService = async (): Promise<TermsOfServiceData> => {
     if (snap.exists()) {
       return { ...defaultTermsOfService, ...snap.data() } as TermsOfServiceData;
     }
+    // Seed default to Firestore
+    await setDoc(docRef, sanitizeForFirestore({ ...defaultTermsOfService, updatedAt: serverTimestamp() }), { merge: true });
+    return defaultTermsOfService;
   } catch (err) {
     console.warn("Could not fetch terms of service from Firestore:", err);
   }
@@ -533,10 +542,10 @@ export const saveTermsOfService = async (
     const docRef = doc(db, "legal_policies", "terms");
     await setDoc(
       docRef,
-      {
+      sanitizeForFirestore({
         ...data,
         updatedAt: serverTimestamp(),
-      },
+      }),
       { merge: true }
     );
   } catch (err) {
@@ -559,6 +568,9 @@ export const fetchSecurityCompliance = async (): Promise<SecurityComplianceData>
     if (snap.exists()) {
       return { ...defaultSecurityCompliance, ...snap.data() } as SecurityComplianceData;
     }
+    // Seed default to Firestore
+    await setDoc(docRef, sanitizeForFirestore({ ...defaultSecurityCompliance, updatedAt: serverTimestamp() }), { merge: true });
+    return defaultSecurityCompliance;
   } catch (err) {
     console.warn("Could not fetch security compliance from Firestore:", err);
   }
@@ -580,10 +592,10 @@ export const saveSecurityCompliance = async (
     const docRef = doc(db, "legal_policies", "security");
     await setDoc(
       docRef,
-      {
+      sanitizeForFirestore({
         ...data,
         updatedAt: serverTimestamp(),
-      },
+      }),
       { merge: true }
     );
   } catch (err) {
@@ -609,6 +621,9 @@ export const fetchReturnsExchanges = async (): Promise<ReturnsExchangesData> => 
     if (snap.exists()) {
       return { ...defaultReturnsExchanges, ...snap.data() } as ReturnsExchangesData;
     }
+    // Seed default returns policy to Firestore
+    await setDoc(docRef, sanitizeForFirestore({ ...defaultReturnsExchanges, updatedAt: serverTimestamp() }), { merge: true });
+    return defaultReturnsExchanges;
   } catch (err) {
     console.warn("Could not fetch returns & exchanges from Firestore:", err);
   }
@@ -630,10 +645,10 @@ export const saveReturnsExchanges = async (
     const docRef = doc(db, "legal_policies", "returns");
     await setDoc(
       docRef,
-      {
+      sanitizeForFirestore({
         ...data,
         updatedAt: serverTimestamp(),
-      },
+      }),
       { merge: true }
     );
   } catch (err) {
@@ -649,6 +664,10 @@ export const saveReturnsExchanges = async (
   return data;
 };
 
+/**
+ * Customer / Admin: Submit a new return/exchange request directly to Cloud Firestore.
+ * Automatically links to the Order in Firestore if the order exists.
+ */
 export const createReturnExchangeRequest = async (
   requestData: Omit<ReturnExchangeRequest, "id" | "ticketNumber" | "status" | "createdAt">
 ): Promise<ReturnExchangeRequest> => {
@@ -664,18 +683,76 @@ export const createReturnExchangeRequest = async (
     createdAt: new Date().toISOString(),
   };
 
+  // 1. Primary Firestore persistence
   try {
-    const colRef = collection(db, "return_requests");
-    const docRef = await addDoc(colRef, {
+    const docRef = doc(db, "return_requests", fullRecord.id);
+    const cleanPayload = sanitizeForFirestore({
       ...fullRecord,
       serverCreatedAt: serverTimestamp(),
+      updatedAt: serverTimestamp(),
     });
-    fullRecord.id = docRef.id;
+    await setDoc(docRef, cleanPayload);
   } catch (err) {
-    console.warn("Could not save return request to Firestore, using local fallback:", err);
+    console.error("Could not save return request to Firestore:", err);
   }
 
-  // Save to LocalStorage cache
+  // 2. Link return request directly onto the Order document if it exists in Firestore
+  if (fullRecord.orderNumber) {
+    try {
+      const cleanOrderNo = fullRecord.orderNumber.trim().toUpperCase();
+      const ordersCol = collection(db, "orders");
+      const orderQuery = query(ordersCol, where("orderNumber", "==", cleanOrderNo));
+      const orderSnap = await getDocs(orderQuery);
+
+      if (!orderSnap.empty) {
+        const orderDoc = orderSnap.docs[0];
+        const orderData = orderDoc.data() as any;
+        const now = new Date();
+        const timestampStr = now.toLocaleString("en-US", {
+          month: "short",
+          day: "numeric",
+          hour: "numeric",
+          minute: "2-digit",
+          hour12: true,
+        });
+
+        const updatedTimeline = [
+          ...(orderData.trackingTimeline || []).map((step: any) => ({
+            ...step,
+            isCurrent: false,
+          })),
+          {
+            status: orderData.orderStatus || "delivered",
+            title: "Return / Exchange Requested",
+            description: `Ticket #${ticketNumber} submitted (${fullRecord.type.replace(/_/g, " ")}). Reason: "${fullRecord.reason}".`,
+            timestamp: timestampStr,
+            completed: true,
+            isCurrent: true,
+          },
+        ];
+
+        await updateDoc(
+          orderDoc.ref,
+          sanitizeForFirestore({
+            returnRequest: {
+              ticketNumber,
+              type: fullRecord.type,
+              status: fullRecord.status,
+              requestedAt: fullRecord.createdAt,
+              reason: fullRecord.reason,
+              itemDetails: fullRecord.itemDetails,
+            },
+            trackingTimeline: updatedTimeline,
+            updatedAt: serverTimestamp(),
+          })
+        );
+      }
+    } catch (orderLinkErr) {
+      console.warn("Could not link return ticket to order:", orderLinkErr);
+    }
+  }
+
+  // 3. Mirror to local cache for instant UI availability
   if (typeof window !== "undefined") {
     try {
       const raw = localStorage.getItem(LOCAL_STORAGE_RETURN_REQUESTS_KEY);
@@ -688,73 +765,119 @@ export const createReturnExchangeRequest = async (
   return fullRecord;
 };
 
+/**
+ * Fetch all return/exchange tickets directly from Firestore (free plan compliant)
+ */
 export const fetchReturnExchangeRequests = async (): Promise<ReturnExchangeRequest[]> => {
-  let list: ReturnExchangeRequest[] = [];
-
-  try {
-    const colRef = collection(db, "return_requests");
-    const q = query(colRef, orderBy("createdAt", "desc"), limit(50));
-    const snap = await getDocs(q);
-    if (!snap.empty) {
-      list = snap.docs.map((d) => ({
-        id: d.id,
-        ...(d.data() as object),
-      })) as ReturnExchangeRequest[];
-      return list;
-    }
-  } catch (err) {
-    console.warn("Could not query return_requests from Firestore:", err);
-  }
-
+  let localList: ReturnExchangeRequest[] = [];
   if (typeof window !== "undefined") {
     try {
       const raw = localStorage.getItem(LOCAL_STORAGE_RETURN_REQUESTS_KEY);
-      if (raw) return JSON.parse(raw);
+      if (raw) localList = JSON.parse(raw);
     } catch {}
   }
 
-  return list;
+  try {
+    const colRef = collection(db, "return_requests");
+    const snap = await getDocs(colRef);
+
+    const firestoreList: ReturnExchangeRequest[] = snap.empty
+      ? []
+      : (snap.docs.map((d) => ({
+          id: d.id,
+          ...(d.data() as object),
+        })) as ReturnExchangeRequest[]);
+
+    // Deduplicate and sync any local requests not yet in Firestore
+    const map = new Map<string, ReturnExchangeRequest>();
+    firestoreList.forEach((r) => map.set(r.id, r));
+
+    for (const localReq of localList) {
+      if (!map.has(localReq.id)) {
+        try {
+          await setDoc(
+            doc(colRef, localReq.id),
+            sanitizeForFirestore({
+              ...localReq,
+              serverCreatedAt: serverTimestamp(),
+            })
+          );
+        } catch {}
+        map.set(localReq.id, localReq);
+      }
+    }
+
+    const merged = Array.from(map.values()).sort(
+      (a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
+    );
+
+    // Update local cache
+    if (typeof window !== "undefined") {
+      try {
+        localStorage.setItem(LOCAL_STORAGE_RETURN_REQUESTS_KEY, JSON.stringify(merged));
+      } catch {}
+    }
+
+    return merged;
+  } catch (err) {
+    console.warn("Could not query return_requests from Firestore:", err);
+    return localList;
+  }
 };
 
+/**
+ * Quick status update for return request
+ */
 export const updateReturnRequestStatus = async (
   id: string,
   status: ReturnExchangeRequest["status"],
   adminNotes?: string
 ): Promise<void> => {
-  try {
-    const docRef = doc(db, "return_requests", id);
-    await updateDoc(docRef, {
-      status,
-      adminNotes: adminNotes || "",
-      updatedAt: serverTimestamp(),
-    });
-  } catch (err) {
-    console.warn("Could not update return request in Firestore:", err);
-  }
-
-  if (typeof window !== "undefined") {
-    try {
-      const raw = localStorage.getItem(LOCAL_STORAGE_RETURN_REQUESTS_KEY);
-      if (raw) {
-        const list: ReturnExchangeRequest[] = JSON.parse(raw);
-        const idx = list.findIndex((r) => r.id === id);
-        if (idx !== -1) {
-          list[idx].status = status;
-          if (adminNotes !== undefined) list[idx].adminNotes = adminNotes;
-          localStorage.setItem(LOCAL_STORAGE_RETURN_REQUESTS_KEY, JSON.stringify(list));
-        }
-      }
-    } catch {}
-  }
+  return updateReturnRequest(id, { status, adminNotes: adminNotes || "" });
 };
 
+/**
+ * Search return request by Ticket Number or Order Number or Customer Phone
+ */
 export const fetchReturnRequestByTicket = async (
   queryStr: string
 ): Promise<ReturnExchangeRequest | null> => {
   const trimmed = queryStr.trim().toUpperCase();
   if (!trimmed) return null;
 
-  // Search local cache first
+  // Search Firestore first
+  try {
+    const colRef = collection(db, "return_requests");
+
+    // 1. By Ticket Number
+    const q1 = query(colRef, where("ticketNumber", "==", trimmed));
+    const snap1 = await getDocs(q1);
+    if (!snap1.empty) {
+      return { id: snap1.docs[0].id, ...(snap1.docs[0].data() as object) } as ReturnExchangeRequest;
+    }
+
+    // 2. By Order Number
+    const q2 = query(colRef, where("orderNumber", "==", trimmed));
+    const snap2 = await getDocs(q2);
+    if (!snap2.empty) {
+      return { id: snap2.docs[0].id, ...(snap2.docs[0].data() as object) } as ReturnExchangeRequest;
+    }
+
+    // 3. Fallback to full list search for phone / id
+    const all = await fetchReturnExchangeRequests();
+    const found = all.find(
+      (r) =>
+        r.ticketNumber.toUpperCase() === trimmed ||
+        r.orderNumber.toUpperCase() === trimmed ||
+        r.id.toUpperCase() === trimmed ||
+        r.customerPhone.includes(trimmed)
+    );
+    if (found) return found;
+  } catch (err) {
+    console.warn("Failed to query return request from Firestore:", err);
+  }
+
+  // Fallback to local cache if offline
   if (typeof window !== "undefined") {
     try {
       const raw = localStorage.getItem(LOCAL_STORAGE_RETURN_REQUESTS_KEY);
@@ -771,33 +894,50 @@ export const fetchReturnRequestByTicket = async (
     } catch {}
   }
 
-  // Search Firestore
-  try {
-    const all = await fetchReturnExchangeRequests();
-    const found = all.find(
-      (r) =>
-        r.ticketNumber.toUpperCase() === trimmed ||
-        r.orderNumber.toUpperCase() === trimmed ||
-        r.customerPhone.includes(trimmed)
-    );
-    if (found) return found;
-  } catch {}
-
   return null;
 };
 
+/**
+ * Update a return request in Cloud Firestore and sync linked order
+ */
 export const updateReturnRequest = async (
   id: string,
   updates: Partial<ReturnExchangeRequest>
 ): Promise<void> => {
   try {
     const docRef = doc(db, "return_requests", id);
-    await updateDoc(docRef, {
-      ...updates,
-      updatedAt: serverTimestamp(),
-    });
+    await updateDoc(
+      docRef,
+      sanitizeForFirestore({
+        ...updates,
+        updatedAt: serverTimestamp(),
+      })
+    );
+
+    // If orderNumber is present, sync status to the order document as well
+    const snap = await getDoc(docRef);
+    if (snap.exists()) {
+      const full = snap.data() as ReturnExchangeRequest;
+      if (full.orderNumber && updates.status) {
+        try {
+          const ordersCol = collection(db, "orders");
+          const oSnap = await getDocs(
+            query(ordersCol, where("orderNumber", "==", full.orderNumber.trim().toUpperCase()))
+          );
+          if (!oSnap.empty) {
+            await updateDoc(
+              oSnap.docs[0].ref,
+              sanitizeForFirestore({
+                "returnRequest.status": updates.status,
+                updatedAt: serverTimestamp(),
+              })
+            );
+          }
+        } catch {}
+      }
+    }
   } catch (err) {
-    console.warn("Could not update return request in Firestore:", err);
+    console.error("Could not update return request in Firestore:", err);
   }
 
   if (typeof window !== "undefined") {
@@ -815,12 +955,15 @@ export const updateReturnRequest = async (
   }
 };
 
+/**
+ * Delete a return request from Cloud Firestore
+ */
 export const deleteReturnRequest = async (id: string): Promise<void> => {
   try {
     const docRef = doc(db, "return_requests", id);
     await deleteDoc(docRef);
   } catch (err) {
-    console.warn("Could not delete return request in Firestore:", err);
+    console.error("Could not delete return request in Firestore:", err);
   }
 
   if (typeof window !== "undefined") {
@@ -834,4 +977,5 @@ export const deleteReturnRequest = async (id: string): Promise<void> => {
     } catch {}
   }
 };
+
 

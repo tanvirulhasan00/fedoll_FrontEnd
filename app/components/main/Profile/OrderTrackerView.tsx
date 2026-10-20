@@ -200,6 +200,44 @@ export const OrderTrackerView: React.FC<OrderTrackerViewProps> = ({
         </div>
       )}
 
+      {/* Return & Exchange Request Banner if Active */}
+      {order.returnRequest ? (
+        <div className="p-4 rounded-2xl bg-indigo-50/80 dark:bg-indigo-950/40 border border-indigo-200 dark:border-indigo-800 text-xs text-indigo-950 dark:text-indigo-200 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+          <div className="space-y-1">
+            <div className="flex items-center gap-2 font-bold text-indigo-900 dark:text-indigo-300">
+              <ArrowPathIcon className="size-4 shrink-0 text-indigo-600 dark:text-indigo-400" />
+              <span>Return / Exchange Ticket #{order.returnRequest.ticketNumber}</span>
+              <span className="capitalize px-2 py-0.5 rounded-full text-[10px] font-extrabold bg-indigo-100 dark:bg-indigo-900/60 text-indigo-800 dark:text-indigo-300">
+                {order.returnRequest.status.replace(/_/g, " ")}
+              </span>
+            </div>
+            <p className="text-[11px] text-indigo-900/80 dark:text-indigo-300/80 leading-relaxed">
+              Type: <strong className="capitalize">{order.returnRequest.type.replace(/_/g, " ")}</strong> • Reason: "{order.returnRequest.reason}".
+            </p>
+          </div>
+          <Link
+            to={`/returns-and-exchanges?tab=track&ticket=${order.returnRequest.ticketNumber}`}
+            className="inline-flex items-center gap-1 px-3 py-1.5 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white font-semibold text-xs transition shrink-0"
+          >
+            <span>Track Return Ticket</span>
+            <ArrowTopRightOnSquareIcon className="size-3.5" />
+          </Link>
+        </div>
+      ) : ["delivered", "shipped"].includes(order.orderStatus) ? (
+        <div className="p-3.5 rounded-2xl bg-stone-50 dark:bg-neutral-800/40 border border-stone-200/60 dark:border-neutral-700/60 text-xs flex flex-wrap items-center justify-between gap-3">
+          <span className="text-gray-600 dark:text-neutral-300">
+            Received your items and need a doorstep size exchange or defect replacement?
+          </span>
+          <Link
+            to={`/returns-and-exchanges?tab=request&order=${order.orderNumber}`}
+            className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-orange-600 hover:bg-orange-700 text-white font-semibold text-xs transition"
+          >
+            <ArrowPathIcon className="size-3.5" />
+            <span>Initiate Return / Exchange</span>
+          </Link>
+        </div>
+      ) : null}
+
       {/* Courier & Dispatch Partner Box */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4 p-4 rounded-2xl bg-stone-50/70 dark:bg-neutral-950/60 border border-stone-200/60 dark:border-neutral-800 text-xs">
         <div className="flex items-start gap-3">

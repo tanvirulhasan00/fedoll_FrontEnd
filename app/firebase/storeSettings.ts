@@ -37,6 +37,8 @@ export const defaultStoreSettings: StoreGeneralSettings = {
   supportHours: "10:00 AM - 10:00 PM (Sat - Thu)",
 };
 
+import { sanitizeForFirestore } from "./firestore";
+
 const LOCAL_STORAGE_STORE_KEY = "fedoll_store_general_settings_v1";
 
 export const fetchStoreSettings = async (): Promise<StoreGeneralSettings> => {
@@ -46,6 +48,14 @@ export const fetchStoreSettings = async (): Promise<StoreGeneralSettings> => {
     if (snap.exists()) {
       return snap.data() as StoreGeneralSettings;
     }
+
+    // Auto-seed default store settings to Firestore
+    await setDoc(
+      docRef,
+      sanitizeForFirestore({ ...defaultStoreSettings, updatedAt: serverTimestamp() }),
+      { merge: true }
+    );
+    return defaultStoreSettings;
   } catch (err) {
     console.warn("Could not fetch store settings from Firestore:", err);
   }
@@ -67,14 +77,14 @@ export const saveStoreSettings = async (
     const docRef = doc(db, "store_settings", "general");
     await setDoc(
       docRef,
-      {
+      sanitizeForFirestore({
         ...settings,
         updatedAt: serverTimestamp(),
-      },
+      }),
       { merge: true }
     );
   } catch (err) {
-    console.warn("Could not save store settings to Firestore:", err);
+    console.error("Could not save store settings to Firestore:", err);
   }
 
   if (typeof window !== "undefined") {
@@ -85,3 +95,4 @@ export const saveStoreSettings = async (
 
   return settings;
 };
+

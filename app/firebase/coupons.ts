@@ -75,8 +75,10 @@ const saveLocalCoupons = (coupons: CouponItem[]) => {
   }
 };
 
+import { sanitizeForFirestore } from "./firestore";
+
 /**
- * Fetch all promo coupons
+ * Fetch all promo coupons from Cloud Firestore
  */
 export const fetchCouponsFromFirestore = async (): Promise<CouponItem[]> => {
   try {
@@ -90,6 +92,21 @@ export const fetchCouponsFromFirestore = async (): Promise<CouponItem[]> => {
       saveLocalCoupons(list);
       return list;
     }
+
+    // Auto-seed initial coupons to Firestore if database collection is empty
+    for (const c of initialCoupons) {
+      try {
+        await setDoc(
+          doc(db, "coupons", c.id),
+          sanitizeForFirestore({ ...c, createdAt: serverTimestamp(), updatedAt: serverTimestamp() }),
+          { merge: true }
+        );
+      } catch (seedErr) {
+        console.warn("Failed to seed coupon:", seedErr);
+      }
+    }
+    saveLocalCoupons(initialCoupons);
+    return initialCoupons;
   } catch (err) {
     console.warn("Could not fetch coupons from Firestore:", err);
   }
@@ -97,7 +114,7 @@ export const fetchCouponsFromFirestore = async (): Promise<CouponItem[]> => {
 };
 
 /**
- * Save or update a coupon
+ * Save or update a coupon in Cloud Firestore
  */
 export const saveCouponToFirestore = async (
   coupon: CouponItem
@@ -106,14 +123,14 @@ export const saveCouponToFirestore = async (
     const docRef = doc(db, "coupons", coupon.id);
     await setDoc(
       docRef,
-      {
+      sanitizeForFirestore({
         ...coupon,
         updatedAt: serverTimestamp(),
-      },
+      }),
       { merge: true }
     );
   } catch (err) {
-    console.warn("Could not save coupon to Firestore:", err);
+    console.error("Could not save coupon to Firestore:", err);
   }
 
   const existing = getLocalCoupons();
@@ -128,13 +145,13 @@ export const saveCouponToFirestore = async (
 };
 
 /**
- * Delete a coupon
+ * Delete a coupon from Cloud Firestore
  */
 export const deleteCouponFromFirestore = async (id: string): Promise<boolean> => {
   try {
     await deleteDoc(doc(db, "coupons", id));
   } catch (err) {
-    console.warn("Could not delete coupon from Firestore:", err);
+    console.error("Could not delete coupon from Firestore:", err);
   }
 
   const existing = getLocalCoupons();
@@ -142,3 +159,4 @@ export const deleteCouponFromFirestore = async (id: string): Promise<boolean> =>
   saveLocalCoupons(updated);
   return true;
 };
+
