@@ -4,6 +4,7 @@ import {
   Bars3Icon,
   XMarkIcon,
   ShoppingBagIcon,
+  HeartIcon,
   ArrowRightStartOnRectangleIcon,
 } from "@heroicons/react/24/outline";
 import { Link, useLocation } from "react-router";
@@ -41,6 +42,7 @@ export default function Header() {
     (state) => state.auth
   );
   const { totalQuantity } = useAppSelector((state) => state.cart);
+  const { wishlistIds } = useAppSelector((state) => state.home);
 
   useEffect(() => {
     setIsMounted(true);
@@ -161,6 +163,19 @@ export default function Header() {
         {/* Top-Right Auth Options (Desktop) */}
         <div className="hidden lg:flex lg:flex-1 lg:justify-end lg:items-center lg:gap-x-4">
           <ThemeToggle />
+
+          <Link
+            to="/profile?tab=wishlist"
+            className="relative p-2 text-gray-700 dark:text-neutral-300 hover:text-rose-600 dark:hover:text-rose-400 transition cursor-pointer group"
+            title="My Loved Wishlist"
+          >
+            <HeartIcon className="size-6 text-gray-800 dark:text-neutral-200 group-hover:text-rose-600 dark:group-hover:text-rose-400 transition" />
+            {isMounted && wishlistIds.length > 0 && (
+              <span className="absolute -top-1 -right-1 flex size-5 items-center justify-center rounded-full bg-rose-600 text-[11px] font-bold text-white shadow-xs animate-in zoom-in-75">
+                {wishlistIds.length}
+              </span>
+            )}
+          </Link>
 
           <button
             type="button"
@@ -322,6 +337,21 @@ export default function Header() {
                         className="-mx-3 block rounded-lg px-3 py-2 text-sm font-semibold text-gray-800 dark:text-neutral-200 hover:bg-gray-100 dark:hover:bg-neutral-800"
                       >
                         My Orders &amp; Receipts
+                      </Link>
+                      <Link
+                        to="/profile?tab=wishlist"
+                        onClick={() => setMobileMenuOpen(false)}
+                        className="-mx-3 flex items-center justify-between rounded-lg px-3 py-2 text-sm font-semibold text-rose-600 dark:text-rose-400 hover:bg-rose-50 dark:hover:bg-rose-950/30"
+                      >
+                        <span className="flex items-center gap-2">
+                          <HeartIcon className="size-4" />
+                          <span>My Loved Wishlist</span>
+                        </span>
+                        {wishlistIds.length > 0 && (
+                          <span className="px-2 py-0.5 rounded-full bg-rose-100 dark:bg-rose-950 text-rose-800 dark:text-rose-300 text-xs font-bold">
+                            {wishlistIds.length}
+                          </span>
+                        )}
                       </Link>
                       <Link
                         to="/track-order"

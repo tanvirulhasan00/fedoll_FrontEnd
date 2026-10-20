@@ -31,12 +31,14 @@ import {
   DocumentDuplicateIcon,
   ClockIcon,
   ExclamationTriangleIcon,
+  HeartIcon,
 } from "@heroicons/react/24/outline";
 import { toast } from "sonner";
 import { Spinner } from "~/components/ui/spinner";
 import { AuthModal } from "~/components/main/Auth/AuthModal";
 import OrderTrackerView from "~/components/main/Profile/OrderTrackerView";
 import ProfileSettings from "~/components/main/Profile/ProfileSettings";
+import WishlistView from "~/components/main/Profile/WishlistView";
 import OrderCancelRequestModal from "~/components/main/Profile/OrderCancelRequestModal";
 
 export function meta() {
@@ -50,7 +52,7 @@ export function meta() {
   ];
 }
 
-type TabType = "orders" | "track" | "settings";
+type TabType = "orders" | "wishlist" | "track" | "settings";
 
 export default function ProfilePage() {
   const navigate = useNavigate();
@@ -60,6 +62,7 @@ export default function ProfilePage() {
   const { user, isAuthenticated, loading: authLoading } = useAppSelector(
     (state) => state.auth
   );
+  const { wishlistIds } = useAppSelector((state) => state.home);
 
   // Tab State
   const initialTab = (searchParams.get("tab") as TabType) || "orders";
@@ -91,7 +94,7 @@ export default function ProfilePage() {
   // Sync tab with URL
   useEffect(() => {
     const tabParam = searchParams.get("tab") as TabType;
-    if (tabParam && ["orders", "track", "settings"].includes(tabParam)) {
+    if (tabParam && ["orders", "wishlist", "track", "settings"].includes(tabParam)) {
       setActiveTab(tabParam);
     }
     const trackingParam = searchParams.get("tracking");
@@ -449,7 +452,7 @@ export default function ProfilePage() {
                   </div>
 
                   {/* Right: Metrics Stats */}
-                  <div className="grid grid-cols-3 gap-3 sm:gap-6 border-t md:border-t-0 md:border-l border-gray-100 dark:border-neutral-800 pt-4 md:pt-0 md:pl-6 text-center">
+                  <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 sm:gap-4 border-t md:border-t-0 md:border-l border-gray-100 dark:border-neutral-800 pt-4 md:pt-0 md:pl-6 text-center">
                     <div>
                       <span className="text-[11px] font-semibold uppercase tracking-wider text-gray-400 dark:text-neutral-500">
                         Total Orders
@@ -465,6 +468,15 @@ export default function ProfilePage() {
                       </span>
                       <p className="text-xl sm:text-2xl font-black text-orange-600 dark:text-orange-400 mt-0.5">
                         {activeOrdersCount}
+                      </p>
+                    </div>
+
+                    <div>
+                      <span className="text-[11px] font-semibold uppercase tracking-wider text-gray-400 dark:text-neutral-500">
+                        Loved Items
+                      </span>
+                      <p className="text-xl sm:text-2xl font-black text-rose-600 dark:text-rose-400 mt-0.5">
+                        {wishlistIds.length}
                       </p>
                     </div>
 
@@ -494,6 +506,22 @@ export default function ProfilePage() {
                     <span>My Orders</span>
                     <span className="px-2 py-0.5 rounded-full bg-stone-100 dark:bg-neutral-800 text-[11px]">
                       {totalOrdersCount}
+                    </span>
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={() => handleTabChange("wishlist")}
+                    className={`pb-3.5 text-xs sm:text-sm font-bold flex items-center gap-2 border-b-2 transition cursor-pointer whitespace-nowrap ${
+                      activeTab === "wishlist"
+                        ? "border-orange-600 text-orange-600 dark:text-orange-400"
+                        : "border-transparent text-gray-600 dark:text-neutral-400 hover:text-gray-900 dark:hover:text-white"
+                    }`}
+                  >
+                    <HeartIcon className="size-4 text-rose-500" />
+                    <span>My Wishlist</span>
+                    <span className="px-2 py-0.5 rounded-full bg-rose-50 dark:bg-rose-950/60 text-rose-700 dark:text-rose-300 border border-rose-200 dark:border-rose-900/40 text-[11px] font-bold">
+                      {wishlistIds.length}
                     </span>
                   </button>
 
@@ -980,6 +1008,9 @@ export default function ProfilePage() {
 
               {/* TAB CONTENT: PROFILE & ADDRESSES */}
               {activeTab === "settings" && <ProfileSettings />}
+
+              {/* TAB CONTENT: MY WISHLIST */}
+              {activeTab === "wishlist" && <WishlistView />}
             </div>
           )}
         </div>

@@ -15,6 +15,7 @@ import {
   ShoppingBagIcon,
   TruckIcon,
   Cog6ToothIcon,
+  HeartIcon,
 } from "@heroicons/react/24/outline";
 import { toast } from "sonner";
 import { logout } from "~/firebase";
@@ -137,6 +138,22 @@ export const UserMenu: React.FC<UserMenuProps> = ({ user }) => {
                 >
                   <TruckIcon className="size-4 text-gray-500 dark:text-neutral-400" />
                   <span>Track Courier Order</span>
+                </Link>
+              )}
+            </MenuItem>
+
+            <MenuItem>
+              {({ focus }) => (
+                <Link
+                  to="/profile?tab=wishlist"
+                  className={`flex items-center gap-2.5 rounded-xl px-3 py-2 text-xs font-medium transition ${
+                    focus
+                      ? "bg-gray-100 dark:bg-neutral-800 text-orange-700 dark:text-orange-400"
+                      : "text-gray-700 dark:text-neutral-300"
+                  }`}
+                >
+                  <HeartIcon className="size-4 text-rose-500" />
+                  <span>My Loved Wishlist</span>
                 </Link>
               )}
             </MenuItem>

@@ -16,7 +16,7 @@ import {
   setOnlyInStock,
   resetProductFilters,
 } from "~/redux/features/productSlice";
-import { setQuickViewProduct, toggleWishlist } from "~/redux/features/homeSlice";
+import { setQuickViewProduct, toggleWishlistAsync } from "~/redux/features/homeSlice";
 import { addToCart } from "~/redux/features/cart/cartSlice";
 import {
   MagnifyingGlassIcon,
@@ -274,6 +274,7 @@ export default function ProductsPage() {
     syncing,
   } = useAppSelector((state) => state.products);
 
+  const { user } = useAppSelector((state) => state.auth);
   const { wishlistIds } = useAppSelector((state) => state.home);
 
   const [localSearch, setLocalSearch] = useState(searchQuery);
@@ -367,7 +368,7 @@ export default function ProductsPage() {
   const handleWishlist = (e: React.MouseEvent, id: string) => {
     e.preventDefault();
     e.stopPropagation();
-    dispatch(toggleWishlist(id));
+    dispatch(toggleWishlistAsync({ productId: id, userId: user?.uid }));
     const isSaved = wishlistIds.includes(id);
     if (isSaved) {
       toast.info("Removed from saved items");

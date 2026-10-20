@@ -18,6 +18,8 @@ import {
   type TestimonialItem,
   type ValueProp,
   type SpotlightBanner,
+  fetchUserWishlistFromFirestore,
+  saveUserWishlistToFirestore,
 } from "~/firebase";
 
 export interface HomeState {
@@ -127,6 +129,16 @@ export const homeSlice = createSlice({
     ) => {
       state.quickViewProduct = action.payload;
     },
+    setWishlist: (state, action: PayloadAction<string[]>) => {
+      state.wishlistIds = action.payload;
+      if (typeof window !== "undefined") {
+        try {
+          localStorage.setItem("fedoll_wishlist", JSON.stringify(state.wishlistIds));
+        } catch {
+          // ignore
+        }
+      }
+    },
     toggleWishlist: (state, action: PayloadAction<string>) => {
       const id = action.payload;
       if (state.wishlistIds.includes(id)) {
@@ -177,13 +189,64 @@ export const homeSlice = createSlice({
   },
 });
 
+/**
+ * Async thunk to toggle wishlist in Redux, local storage, AND Cloud Firestore DB
+ */
+export const toggleWishlistAsync = createAsyncThunk(
+  "home/toggleWishlistAsync",
+  async (
+    payload: { productId: string; userId?: string },
+    { getState, dispatch }
+  ) => {
+    const { productId, userId } = payload;
+    dispatch(toggleWishlist(productId));
+    if (userId) {
+      const state = getState() as { home: HomeState };
+      const updatedWishlist = state.home.wishlistIds;
+      await saveUserWishlistToFirestore(userId, updatedWishlist);
+    }
+    return productId;
+  }
+);
+
+/**
+ * Async thunk to sync wishlist between local cache and Cloud Firestore DB on sign in
+ */
+export const syncWishlistWithFirestore = createAsyncThunk(
+  "home/syncWishlistWithFirestore",
+  async (userId: string, { getState, dispatch }) => {
+    if (!userId) return [];
+    try {
+      const cloudWishlist = await fetchUserWishlistFromFirestore(userId);
+      const state = getState() as { home: HomeState };
+      const localWishlist = state.home.wishlistIds;
+
+      // Merge cloud and local so no products are lost
+      const merged = Array.from(new Set([...cloudWishlist, ...localWishlist]));
+      dispatch(setWishlist(merged));
+
+      // If local added any new items not yet in cloud, persist merged list
+      if (merged.length !== cloudWishlist.length) {
+        await saveUserWishlistToFirestore(userId, merged);
+      }
+
+      return merged;
+    } catch (err) {
+      console.warn("Failed to sync wishlist with Firestore:", err);
+      return [];
+    }
+  }
+);
+
 export const {
   setActiveProductTab,
   setActiveHeroIndex,
   nextHeroSlide,
   prevHeroSlide,
   setQuickViewProduct,
+  setWishlist,
   toggleWishlist,
 } = homeSlice.actions;
 
 export default homeSlice.reducer;
+

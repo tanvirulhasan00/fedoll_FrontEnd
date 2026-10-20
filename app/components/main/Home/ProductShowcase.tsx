@@ -4,7 +4,7 @@ import { useAppDispatch, useAppSelector } from "~/redux/hooks/hook";
 import {
   setActiveProductTab,
   setQuickViewProduct,
-  toggleWishlist,
+  toggleWishlistAsync,
 } from "~/redux/features/homeSlice";
 import { addToCart } from "~/redux/features/cart/cartSlice";
 import {
@@ -228,6 +228,7 @@ const ShowcaseProductCard: React.FC<ShowcaseProductCardProps> = ({
 
 export default function ProductShowcase() {
   const dispatch = useAppDispatch();
+  const { user } = useAppSelector((state) => state.auth);
   const { products, activeProductTab, wishlistIds } = useAppSelector(
     (state) => state.home
   );
@@ -240,7 +241,7 @@ export default function ProductShowcase() {
   const handleWishlist = (e: React.MouseEvent, id: string) => {
     e.preventDefault();
     e.stopPropagation();
-    dispatch(toggleWishlist(id));
+    dispatch(toggleWishlistAsync({ productId: id, userId: user?.uid }));
     const isSaved = wishlistIds.includes(id);
     if (isSaved) {
       toast.info("Removed from saved items");

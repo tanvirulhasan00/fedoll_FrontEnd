@@ -13,7 +13,7 @@ import {
   clearCurrentProduct,
 } from "~/redux/features/productSlice";
 import { addToCart } from "~/redux/features/cart/cartSlice";
-import { toggleWishlist } from "~/redux/features/homeSlice";
+import { toggleWishlistAsync } from "~/redux/features/homeSlice";
 import { getVariantImages, getProductVariant } from "~/firebase";
 import {
   ShoppingBagIcon,
@@ -59,6 +59,7 @@ export default function ProductDetailPage() {
   const { currentProduct, loadingProduct, productError, items: allProducts } =
     useAppSelector((state) => state.products);
 
+  const { user } = useAppSelector((state) => state.auth);
   const { wishlistIds } = useAppSelector((state) => state.home);
 
   const [selectedImageIndex, setSelectedImageIndex] = useState(0);
@@ -194,7 +195,7 @@ export default function ProductDetailPage() {
   };
 
   const handleWishlistToggle = () => {
-    dispatch(toggleWishlist(currentProduct.id));
+    dispatch(toggleWishlistAsync({ productId: currentProduct.id, userId: user?.uid }));
     if (isWishlisted) {
       toast.info("Removed from saved items");
     } else {

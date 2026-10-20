@@ -12,3 +12,4 @@ export * from "./coupons";
 export * from "./storeSettings";
 export * from "./newsletter";
 export * from "./legalPolicies";
+export * from "./wishlist";

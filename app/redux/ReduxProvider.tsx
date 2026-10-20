@@ -3,6 +3,7 @@ import { Provider } from "react-redux";
 import { store } from "./store";
 import { subscribeToAuthChanges, getUserProfileFromFirestore } from "~/firebase";
 import { setUser } from "./features/auth/authSlice";
+import { syncWishlistWithFirestore } from "./features/homeSlice";
 import { useAppDispatch } from "./hooks/hook";
 
 function AuthSync({ children }: { children: React.ReactNode }) {
@@ -37,6 +38,9 @@ function AuthSync({ children }: { children: React.ReactNode }) {
             })
           );
         }
+
+        // Sync and merge user's dynamic wishlist from Cloud Firestore
+        dispatch(syncWishlistWithFirestore(firebaseUser.uid));
       } else {
         dispatch(setUser(null));
       }
