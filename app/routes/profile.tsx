@@ -163,6 +163,20 @@ export default function ProfilePage() {
     try {
       const found = await fetchOrderByTrackingOrNumber(key);
       if (found) {
+        // Enforce ownership: customer can only track their own order unless admin
+        const isOwner =
+          !found.userId ||
+          found.userId === user?.uid ||
+          (found.customerEmail && user?.email && found.customerEmail.toLowerCase() === user.email.toLowerCase()) ||
+          user?.role === "admin";
+
+        if (!isOwner) {
+          setTrackingError(
+            `No order matching "${key}" was found in your registered account. Please check your order confirmation details.`
+          );
+          return;
+        }
+
         setTrackedOrder(found);
         setActiveTab("track");
         setSearchParams((prev) => {
@@ -381,13 +395,7 @@ export default function ProfilePage() {
                 </div>
 
                 <div className="pt-2 text-xs text-gray-500 dark:text-neutral-400">
-                  Looking to track an existing order without logging in?{" "}
-                  <Link
-                    to="/track-order"
-                    className="text-orange-600 dark:text-orange-400 font-semibold underline"
-                  >
-                    Open Public Order Tracker
-                  </Link>
+                  Live courier tracking is exclusively reserved for registered customer accounts. Sign in or register above to view your deliveries.
                 </div>
               </div>
             </div>
