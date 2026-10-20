@@ -7,6 +7,9 @@ import {
   signInWithPopup,
   onAuthStateChanged,
   updateProfile,
+  setPersistence,
+  browserLocalPersistence,
+  browserSessionPersistence,
   type User,
   type NextOrObserver,
 } from "firebase/auth";
@@ -164,7 +167,17 @@ export const updateUserProfileInFirestore = async (
 /**
  * Sign in using Google OAuth popup
  */
-export const signInWithGoogle = async () => {
+export const signInWithGoogle = async (rememberMe: boolean = true) => {
+  if (typeof window !== "undefined") {
+    try {
+      await setPersistence(
+        auth,
+        rememberMe ? browserLocalPersistence : browserSessionPersistence
+      );
+    } catch (pErr) {
+      console.warn("Could not set Google auth persistence:", pErr);
+    }
+  }
   const result = await signInWithPopup(auth, googleProvider);
   if (result.user) {
     await syncUserToFirestore(result.user);
@@ -191,9 +204,23 @@ export const registerWithEmail = async (
 };
 
 /**
- * Login user with Email and Password
+ * Login user with Email and Password with optional Remember Me persistence
  */
-export const loginWithEmail = async (email: string, password: string) => {
+export const loginWithEmail = async (
+  email: string,
+  password: string,
+  rememberMe: boolean = true
+) => {
+  if (typeof window !== "undefined") {
+    try {
+      await setPersistence(
+        auth,
+        rememberMe ? browserLocalPersistence : browserSessionPersistence
+      );
+    } catch (pErr) {
+      console.warn("Could not set email auth persistence:", pErr);
+    }
+  }
   const result = await signInWithEmailAndPassword(auth, email, password);
   if (result.user) {
     await syncUserToFirestore(result.user);

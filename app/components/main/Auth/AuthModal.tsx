@@ -48,17 +48,25 @@ export const AuthModal: React.FC<AuthModalProps> = ({
   });
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
+  const [rememberMe, setRememberMe] = useState(true);
   const [loading, setLoading] = useState(false);
   const [googleLoading, setGoogleLoading] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [successMessage, setSuccessMessage] = useState<string | null>(null);
 
-  // Sync tab with initialTab when modal opens
+  // Sync tab with initialTab when modal opens, and prefill remembered email
   useEffect(() => {
     if (isOpen) {
       setActiveTab(initialTab);
       setErrorMessage(null);
       setSuccessMessage(null);
+      if (typeof window !== "undefined") {
+        const rememberedEmail = localStorage.getItem("fedoll_remembered_email");
+        if (rememberedEmail) {
+          setFormData((prev) => ({ ...prev, email: rememberedEmail }));
+          setRememberMe(true);
+        }
+      }
     }
   }, [isOpen, initialTab]);
 
@@ -93,7 +101,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({
     setGoogleLoading(true);
 
     try {
-      const res = await signInWithGoogle();
+      const res = await signInWithGoogle(rememberMe);
       const name = res.user.displayName || res.user.email?.split("@")[0] || "User";
       toast.success(`Welcome back, ${name}!`);
       handleModalClose();
@@ -126,8 +134,15 @@ export const AuthModal: React.FC<AuthModalProps> = ({
 
     setLoading(true);
     try {
-      const res = await loginWithEmail(email, password);
+      const res = await loginWithEmail(email, password, rememberMe);
       const name = res.user.displayName || res.user.email?.split("@")[0] || "User";
+      if (typeof window !== "undefined") {
+        if (rememberMe) {
+          localStorage.setItem("fedoll_remembered_email", email);
+        } else {
+          localStorage.removeItem("fedoll_remembered_email");
+        }
+      }
       toast.success(`Welcome back, ${name}!`);
       handleModalClose();
     } catch (err: unknown) {
@@ -432,6 +447,26 @@ export const AuthModal: React.FC<AuthModalProps> = ({
                             )}
                           </button>
                         </div>
+                      </div>
+
+                      {/* Remember Me Checkbox */}
+                      <div className="flex items-center justify-between pt-0.5">
+                        <label
+                          htmlFor="login-remember-me"
+                          className="flex items-center gap-2 cursor-pointer select-none group"
+                        >
+                          <input
+                            id="login-remember-me"
+                            name="rememberMe"
+                            type="checkbox"
+                            checked={rememberMe}
+                            onChange={(e) => setRememberMe(e.target.checked)}
+                            className="size-4 rounded border-gray-300 dark:border-neutral-700 text-orange-600 focus:ring-orange-500 dark:bg-neutral-800 transition cursor-pointer"
+                          />
+                          <span className="text-xs font-medium text-gray-700 dark:text-neutral-300 group-hover:text-gray-900 dark:group-hover:text-white transition">
+                            Remember me
+                          </span>
+                        </label>
                       </div>
 
                       <button

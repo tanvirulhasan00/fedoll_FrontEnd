@@ -110,14 +110,29 @@ export const OrderTrackerView: React.FC<OrderTrackerViewProps> = ({
         <div className="flex flex-wrap items-center gap-2">
           {["placed", "confirmed", "processing"].includes(order.orderStatus) &&
             !order.cancellationRequest && (
-              <button
-                type="button"
-                onClick={() => setIsCancelModalOpen(true)}
-                className="inline-flex items-center gap-1.5 px-3 py-2 rounded-xl border border-rose-200 dark:border-rose-900/60 hover:bg-rose-50 dark:hover:bg-rose-950/40 text-xs font-semibold text-rose-600 dark:text-rose-400 transition cursor-pointer"
-              >
-                <span>Request Cancellation</span>
-              </button>
+              <div className="flex flex-col items-end">
+                <button
+                  type="button"
+                  onClick={() => setIsCancelModalOpen(true)}
+                  className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl border border-rose-200 dark:border-rose-900/60 hover:bg-rose-50 dark:hover:bg-rose-950/40 text-xs font-semibold text-rose-600 dark:text-rose-400 transition cursor-pointer"
+                >
+                  <span>Request Cancellation</span>
+                </button>
+                <span className="text-[9px] text-gray-400 dark:text-neutral-500 mt-0.5">
+                  Cancel before shipped
+                </span>
+              </div>
             )}
+
+          {order.orderStatus === "shipped" && (
+            <span
+              className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-amber-50 dark:bg-amber-950/40 border border-amber-200 dark:border-amber-800 text-amber-700 dark:text-amber-300 text-xs font-semibold cursor-help"
+              title="Orders cannot be cancelled once shipped. Cancellation was only permitted before shipping."
+            >
+              <ExclamationTriangleIcon className="size-3.5 text-amber-600 dark:text-amber-400" />
+              <span>Cannot Cancel (Shipped)</span>
+            </span>
+          )}
 
           {onRefresh && (
             <button
@@ -143,6 +158,19 @@ export const OrderTrackerView: React.FC<OrderTrackerViewProps> = ({
           </button>
         </div>
       </div>
+
+      {/* Cancellation Warning Banner when Shipped */}
+      {order.orderStatus === "shipped" && (
+        <div className="p-4 rounded-2xl bg-amber-50/90 dark:bg-amber-950/40 border border-amber-200 dark:border-amber-800/80 text-xs text-amber-900 dark:text-amber-200 space-y-1">
+          <div className="flex items-center gap-2 font-bold text-amber-800 dark:text-amber-300">
+            <ExclamationTriangleIcon className="size-4 shrink-0 text-amber-600 dark:text-amber-400" />
+            <span>Cancellation Policy Warning: Cannot Cancel Shipped Order</span>
+          </div>
+          <p className="text-[11px] text-amber-800/90 dark:text-amber-300/80 leading-relaxed">
+            This package has been dispatched and handed over to our courier partner. Customers cannot cancel orders once the status reaches <strong>Shipped</strong>. Orders must be cancelled <strong>before they are shipped</strong>. If you require assistance, an exchange or return can be initiated after delivery.
+          </p>
+        </div>
+      )}
 
       {/* Cancellation Request Alert Banner if Active */}
       {order.cancellationRequest?.status === "pending" && (

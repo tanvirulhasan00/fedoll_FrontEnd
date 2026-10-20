@@ -592,6 +592,17 @@ export default function ProfilePage() {
                     </div>
                   ) : (
                     <div className="space-y-4">
+                      {/* Cancellation Policy Guideline Banner */}
+                      <div className="p-3.5 rounded-2xl bg-amber-50/80 dark:bg-amber-950/30 border border-amber-200/80 dark:border-amber-800/60 text-xs text-amber-900 dark:text-amber-200 flex items-start gap-2.5">
+                        <ExclamationTriangleIcon className="size-4 text-amber-600 dark:text-amber-400 shrink-0 mt-0.5" />
+                        <div>
+                          <span className="font-bold">Cancellation Policy Notice: </span>
+                          <span className="text-[11px] text-amber-800/90 dark:text-amber-300/80">
+                            Orders can strictly only be cancelled <strong>before they are shipped</strong> (while in Placed, Confirmed, or Processing status). Once an order is <strong>Shipped</strong> and handed over to the courier partner, cancellation is closed.
+                          </span>
+                        </div>
+                      </div>
+
                       {filteredOrders.map((order) => {
                         const badge = getStatusBadge(order.orderStatus);
                         const cancelReq = order.cancellationRequest;
@@ -670,17 +681,43 @@ export default function ProfilePage() {
                                     <span className="text-rose-500 font-bold">✕</span>
                                     <span>Cancel Declined</span>
                                   </div>
-                                ) : canRequestCancel ? (
-                                  <button
-                                    type="button"
-                                    onClick={() => handleOpenCancelModal(order)}
-                                    className="px-3 py-1.5 rounded-xl border border-rose-200 dark:border-rose-900/60 text-rose-600 dark:text-rose-400 hover:bg-rose-50 dark:hover:bg-rose-950/40 text-xs font-semibold transition cursor-pointer"
+                                ) : order.orderStatus === "shipped" ? (
+                                  <span
+                                    className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-amber-50 dark:bg-amber-950/40 border border-amber-200 dark:border-amber-800 text-amber-700 dark:text-amber-300 text-xs font-semibold cursor-help"
+                                    title="Orders cannot be cancelled once shipped. Cancellation was only permitted before shipping."
                                   >
-                                    Request Cancellation
-                                  </button>
+                                    <ExclamationTriangleIcon className="size-3.5 text-amber-600 dark:text-amber-400" />
+                                    <span>Cannot Cancel (Shipped)</span>
+                                  </span>
+                                ) : canRequestCancel ? (
+                                  <div className="flex flex-col items-end">
+                                    <button
+                                      type="button"
+                                      onClick={() => handleOpenCancelModal(order)}
+                                      className="px-3 py-1.5 rounded-xl border border-rose-200 dark:border-rose-900/60 text-rose-600 dark:text-rose-400 hover:bg-rose-50 dark:hover:bg-rose-950/40 text-xs font-semibold transition cursor-pointer"
+                                    >
+                                      Request Cancellation
+                                    </button>
+                                    <span className="text-[9px] text-gray-400 dark:text-neutral-500 mt-0.5">
+                                      Cancel before shipped
+                                    </span>
+                                  </div>
                                 ) : null}
                               </div>
                             </div>
+
+                            {/* Shipped Cancellation Warning Note */}
+                            {order.orderStatus === "shipped" && (
+                              <div className="p-3.5 rounded-2xl bg-amber-50/70 dark:bg-amber-950/30 border border-amber-200/70 dark:border-amber-800/50 text-xs text-amber-900 dark:text-amber-200 flex items-start gap-2.5">
+                                <ExclamationTriangleIcon className="size-4 text-amber-600 dark:text-amber-400 shrink-0 mt-0.5" />
+                                <div>
+                                  <p className="font-bold text-amber-800 dark:text-amber-300">Package Dispatched with Courier</p>
+                                  <p className="text-[11px] text-amber-800/90 dark:text-amber-300/80 mt-0.5 leading-relaxed">
+                                    This order has already been shipped. Cancellation is strictly not possible after dispatch. If you need any assistance after receiving the package, you can request an exchange or return.
+                                  </p>
+                                </div>
+                              </div>
+                            )}
 
                             {/* Cancellation Request Alert Banner */}
                             {isCancelPending && (

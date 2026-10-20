@@ -41,8 +41,15 @@ export const OrderCancelRequestModal: React.FC<OrderCancelRequestModalProps> = (
 
   if (!order) return null;
 
+  const isShipped = ["shipped", "delivered", "cancelled"].includes(order.orderStatus);
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+
+    if (isShipped) {
+      toast.error("Orders cannot be cancelled once they are shipped to the courier.");
+      return;
+    }
 
     if (!selectedReason) {
       toast.error("Please select a reason for cancellation.");
@@ -112,7 +119,7 @@ export const OrderCancelRequestModal: React.FC<OrderCancelRequestModalProps> = (
                     </div>
                     <div>
                       <DialogTitle className="text-lg font-black text-gray-900 dark:text-white">
-                        Request Order Cancellation
+                        {isShipped ? "Order Cancellation Unavailable" : "Request Order Cancellation"}
                       </DialogTitle>
                       <p className="text-xs text-gray-500 dark:text-neutral-400 mt-0.5">
                         Order <span className="font-mono font-bold text-gray-800 dark:text-white">#{order.orderNumber}</span> • {order.items.length} garments • ৳{order.totalAmount.toLocaleString()}
@@ -130,16 +137,47 @@ export const OrderCancelRequestModal: React.FC<OrderCancelRequestModalProps> = (
                   </button>
                 </div>
 
-                {/* Important Policy Note */}
-                <div className="p-3.5 rounded-2xl bg-amber-50/80 dark:bg-amber-950/30 border border-amber-200/80 dark:border-amber-800/60 text-xs text-amber-900 dark:text-amber-200 space-y-1">
-                  <div className="flex items-center gap-1.5 font-bold">
-                    <ClockIcon className="size-4 shrink-0 text-amber-600 dark:text-amber-400" />
-                    <span>Admin Review Process</span>
+                {/* Shipped Warning State */}
+                {isShipped ? (
+                  <div className="space-y-4">
+                    <div className="p-4 rounded-2xl bg-rose-50/90 dark:bg-rose-950/40 border border-rose-200 dark:border-rose-900/60 text-xs space-y-2.5">
+                      <div className="flex items-center gap-2 font-bold text-rose-800 dark:text-rose-300 text-sm">
+                        <ExclamationTriangleIcon className="size-5 shrink-0 text-rose-600 dark:text-rose-400" />
+                        <span>Cancellation Warning: Package Already Shipped</span>
+                      </div>
+                      <p className="text-xs text-rose-800/90 dark:text-rose-300/90 leading-relaxed">
+                        This order has already reached status <strong>{order.orderStatus.toUpperCase()}</strong> and was handed over to our courier partner{order.courierName && order.courierName !== "Pending Assignment" && order.courierName !== "Unassigned" ? ` (${order.courierName})` : ""}.
+                      </p>
+                      <div className="p-3 rounded-xl bg-white/70 dark:bg-neutral-900/80 border border-rose-200/70 dark:border-rose-900/50 text-[11px] text-rose-900 dark:text-rose-200 space-y-1">
+                        <p className="font-bold">⚠️ Policy Rule: Cancel Before Shipped Only</p>
+                        <p className="text-gray-600 dark:text-neutral-300">
+                          Customers cannot cancel an order once it is shipped. Cancellations must be completed prior to courier dispatch. You may request a doorstep size exchange or return after your parcel is delivered.
+                        </p>
+                      </div>
+                    </div>
+
+                    <div className="pt-2 flex justify-end">
+                      <button
+                        type="button"
+                        onClick={onClose}
+                        className="px-6 py-2.5 rounded-xl bg-gray-900 hover:bg-black text-white dark:bg-white dark:text-gray-900 font-bold text-xs transition cursor-pointer"
+                      >
+                        Understood / Close
+                      </button>
+                    </div>
                   </div>
-                  <p className="leading-relaxed text-[11px] text-amber-800/90 dark:text-amber-300/80">
-                    Orders cannot be cancelled automatically once placed. Our atelier team will review your cancellation request. If your order is already packed or handed over to our courier partner{order.courierName && order.courierName !== "Pending Assignment" && order.courierName !== "Unassigned" ? ` (${order.courierName})` : ""}, our team may contact you or decline cancellation.
-                  </p>
-                </div>
+                ) : (
+                  <>
+                    {/* Important Policy Note for Active Orders */}
+                    <div className="p-3.5 rounded-2xl bg-amber-50/90 dark:bg-amber-950/40 border border-amber-200/90 dark:border-amber-800/70 text-xs text-amber-900 dark:text-amber-200 space-y-1.5">
+                      <div className="flex items-center gap-1.5 font-bold text-amber-800 dark:text-amber-300">
+                        <ExclamationTriangleIcon className="size-4 shrink-0 text-amber-600 dark:text-amber-400" />
+                        <span>Cancellation Warning: Cancel Before Shipped</span>
+                      </div>
+                      <p className="leading-relaxed text-[11px] text-amber-800/90 dark:text-amber-300/80">
+                        Orders can only be cancelled <strong>before they are shipped</strong>. Once our atelier team packages your parcel and hands it to the courier partner (status: <strong>Shipped</strong>), cancellations can strictly no longer be accepted.
+                      </p>
+                    </div>
 
                 {/* Form */}
                 <form onSubmit={handleSubmit} className="space-y-4 text-xs">
@@ -222,6 +260,8 @@ export const OrderCancelRequestModal: React.FC<OrderCancelRequestModalProps> = (
                     </button>
                   </div>
                 </form>
+                </>
+              )}
               </DialogPanel>
             </TransitionChild>
           </div>

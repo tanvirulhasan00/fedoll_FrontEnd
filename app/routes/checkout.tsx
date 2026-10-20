@@ -43,6 +43,7 @@ import {
   CheckIcon,
   XMarkIcon,
   ExclamationCircleIcon,
+  ExclamationTriangleIcon,
 } from "@heroicons/react/24/outline";
 import { toast } from "sonner";
 import { Spinner } from "~/components/ui/spinner";
@@ -119,11 +120,23 @@ export default function CheckoutPage() {
   const [authPassword, setAuthPassword] = useState("");
   const [authName, setAuthName] = useState("");
   const [authPhone, setAuthPhone] = useState("");
+  const [authRememberMe, setAuthRememberMe] = useState(true);
   const [authLoading, setAuthLoading] = useState(false);
 
   // Order Submission State
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [completedOrder, setCompletedOrder] = useState<Order | null>(null);
+
+  // Check for remembered email from localStorage
+  useEffect(() => {
+    if (typeof window !== "undefined") {
+      const remembered = localStorage.getItem("fedoll_remembered_email");
+      if (remembered) {
+        setAuthEmail(remembered);
+        setAuthRememberMe(true);
+      }
+    }
+  }, []);
 
   // Load Shipping and Coupon settings from Firestore
   useEffect(() => {
@@ -262,7 +275,18 @@ export default function CheckoutPage() {
     }
     setAuthLoading(true);
     try {
-      const userCredential = await loginWithEmail(authEmail.trim(), authPassword.trim());
+      const userCredential = await loginWithEmail(
+        authEmail.trim(),
+        authPassword.trim(),
+        authRememberMe
+      );
+      if (typeof window !== "undefined") {
+        if (authRememberMe) {
+          localStorage.setItem("fedoll_remembered_email", authEmail.trim());
+        } else {
+          localStorage.removeItem("fedoll_remembered_email");
+        }
+      }
       const profile = await syncUserToFirestore(userCredential.user);
       dispatch(
         setUser({
@@ -668,6 +692,31 @@ export default function CheckoutPage() {
                 </div>
               </div>
 
+              {/* Cancellation Policy Advisory Warning */}
+              <div className="p-4 rounded-2xl bg-amber-50/90 dark:bg-amber-950/40 border border-amber-200/90 dark:border-amber-800/80 text-xs text-amber-900 dark:text-amber-200 flex items-start gap-3">
+                <ExclamationTriangleIcon className="size-5 text-amber-600 dark:text-amber-400 shrink-0 mt-0.5" />
+                <div className="space-y-1">
+                  <div className="flex flex-wrap items-center gap-2">
+                    <span className="font-bold text-amber-900 dark:text-amber-200 text-xs">
+                      Order Cancellation Advisory
+                    </span>
+                    <span className="px-2 py-0.5 rounded-full bg-amber-200/80 dark:bg-amber-900/60 text-[10px] font-bold text-amber-900 dark:text-amber-200">
+                      Must Cancel Before Shipped
+                    </span>
+                  </div>
+                  <p className="text-[11px] text-amber-800/90 dark:text-amber-300/80 leading-relaxed">
+                    You can cancel this order only while it is in <strong>Placed</strong>, <strong>Confirmed</strong>, or <strong>Processing</strong> status. Once your package reaches <strong>Shipped</strong> status and is handed over to the courier partner, cancellation is strictly closed. If you need to make changes or cancel, please do so promptly from your{" "}
+                    <Link
+                      to="/profile?tab=orders"
+                      className="font-bold underline text-amber-950 dark:text-amber-100 hover:text-orange-600"
+                    >
+                      Customer Profile Orders
+                    </Link>
+                    .
+                  </p>
+                </div>
+              </div>
+
               {/* Action Buttons */}
               <div className="flex flex-col sm:flex-row gap-3 pt-4">
                 <Link
@@ -822,6 +871,19 @@ export default function CheckoutPage() {
                             placeholder="Password"
                             className="w-full px-3.5 py-2 rounded-xl border border-stone-300 dark:border-neutral-700 bg-stone-50 dark:bg-neutral-800 text-xs text-gray-900 dark:text-white focus:outline-none focus:ring-1 focus:ring-orange-600"
                           />
+                          <div className="flex items-center justify-between text-xs pt-0.5">
+                            <label className="flex items-center gap-2 cursor-pointer select-none group">
+                              <input
+                                type="checkbox"
+                                checked={authRememberMe}
+                                onChange={(e) => setAuthRememberMe(e.target.checked)}
+                                className="size-3.5 rounded border-stone-300 dark:border-neutral-700 text-orange-600 focus:ring-orange-500 dark:bg-neutral-800 transition cursor-pointer"
+                              />
+                              <span className="text-[11px] font-medium text-gray-600 dark:text-neutral-400 group-hover:text-gray-900 dark:group-hover:text-white transition">
+                                Remember me
+                              </span>
+                            </label>
+                          </div>
                           <button
                             type="submit"
                             disabled={authLoading}

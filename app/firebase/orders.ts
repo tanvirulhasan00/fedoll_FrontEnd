@@ -351,11 +351,23 @@ export const fetchOrderByTrackingOrNumber = async (
 };
 
 /**
- * Cancel an order if still in placed or confirmed state
+ * Cancel an order if still in placed or confirmed state (cannot cancel if shipped or delivered)
  */
 export const cancelOrderInFirestore = async (
   orderId: string
 ): Promise<boolean> => {
+  const local = getLocalOrders();
+  const existingOrder = local.find((o) => o.id === orderId);
+
+  if (
+    existingOrder &&
+    ["shipped", "delivered", "cancelled"].includes(existingOrder.orderStatus)
+  ) {
+    throw new Error(
+      "Orders cannot be cancelled once they are shipped to the courier partner. Cancellation is only permitted before shipping."
+    );
+  }
+
   try {
     const docRef = doc(db, "orders", orderId);
     await updateDoc(docRef, {
@@ -367,7 +379,6 @@ export const cancelOrderInFirestore = async (
   }
 
   // Update in local cache as well
-  const local = getLocalOrders();
   const updated = local.map((o) =>
     o.id === orderId
       ? {
@@ -394,6 +405,7 @@ export const cancelOrderInFirestore = async (
 
 /**
  * Customer: Submit a cancellation request with proper reason for admin review
+ * Note: Orders that are already shipped cannot be cancelled.
  */
 export const requestOrderCancellationInFirestore = async (
   orderId: string,
@@ -402,6 +414,15 @@ export const requestOrderCancellationInFirestore = async (
 ): Promise<Order | null> => {
   const local = getLocalOrders();
   const existingOrder = local.find((o) => o.id === orderId);
+
+  if (
+    existingOrder &&
+    ["shipped", "delivered", "cancelled"].includes(existingOrder.orderStatus)
+  ) {
+    throw new Error(
+      "Orders cannot be cancelled once shipped to the courier partner. Cancellation requests must be submitted before shipping."
+    );
+  }
 
   const now = new Date();
   const timestampStr = now.toLocaleString("en-US", {
