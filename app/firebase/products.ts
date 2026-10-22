@@ -616,118 +616,212 @@ export const initialProductsData: ProductItem[] = [
   },
 ];
 
+const PRODUCTS_CACHE_KEY = "fedoll_products_v1";
+
+export const getLocalProducts = (): ProductItem[] => {
+  if (typeof window === "undefined") return [];
+  try {
+    const raw = localStorage.getItem(PRODUCTS_CACHE_KEY);
+    return raw ? JSON.parse(raw) : [];
+  } catch {
+    return [];
+  }
+};
+
+export const saveLocalProduct = (product: ProductItem) => {
+  if (typeof window === "undefined") return;
+  try {
+    const current = getLocalProducts();
+    const idx = current.findIndex((p) => p.id === product.id);
+    let updated: ProductItem[];
+    if (idx >= 0) {
+      updated = [...current];
+      updated[idx] = product;
+    } else {
+      updated = [product, ...current];
+    }
+    localStorage.setItem(PRODUCTS_CACHE_KEY, JSON.stringify(updated));
+  } catch (err) {
+    console.warn("Could not cache product to local storage:", err);
+  }
+};
+
+export const saveAllLocalProducts = (products: ProductItem[]) => {
+  if (typeof window === "undefined") return;
+  try {
+    localStorage.setItem(PRODUCTS_CACHE_KEY, JSON.stringify(products));
+  } catch (err) {
+    console.warn("Could not cache products to local storage:", err);
+  }
+};
+
 /**
- * Fetch all products from Cloud Firestore with filtering and sorting
+ * Ensure every catalog garment has a concrete variant matrix for variant-level stock management
+ */
+export const ensureProductHasVariants = (p: ProductItem): ProductItem => {
+  if (p.variants && p.variants.length > 0) {
+    const totalFromVars = p.variants.reduce((sum, v) => sum + (Number(v.stockCount) || 0), 0);
+    return {
+      ...p,
+      stockCount: totalFromVars,
+      inStock: totalFromVars > 0,
+    };
+  }
+
+  const colors = p.colors && p.colors.length > 0 ? p.colors : [{ name: "Default", hex: "#111827" }];
+  const sizes = p.sizes && p.sizes.length > 0 ? p.sizes : ["Standard"];
+  const totalVariants = Math.max(1, colors.length * sizes.length);
+  const totalStock = Number(p.stockCount) || 24;
+  const baseStock = Math.max(1, Math.floor(totalStock / totalVariants));
+  const remainder = totalStock % totalVariants;
+
+  const variants: ProductVariant[] = [];
+  let variantIdx = 0;
+  colors.forEach((c) => {
+    sizes.forEach((s) => {
+      const slugColor = (c.name || "col").toLowerCase().replace(/[^a-z0-9]/g, "-");
+      const slugSize = (s || "sz").toLowerCase().replace(/[^a-z0-9]/g, "-");
+      const stock = baseStock + (variantIdx === 0 ? remainder : 0);
+      variants.push({
+        id: `var-${p.id}-${slugColor}-${slugSize}`,
+        color: c.name,
+        colorHex: c.hex || "#111827",
+        size: s,
+        sku: `${p.sku || `FD-${p.id.slice(-4).toUpperCase()}`}-${slugColor.slice(0, 3).toUpperCase()}-${slugSize.toUpperCase()}`,
+        price: p.price,
+        stockCount: stock,
+        inStock: stock > 0,
+        images: c.images || p.images,
+      });
+      variantIdx++;
+    });
+  });
+
+  const resolvedStock = variants.reduce((sum, v) => sum + v.stockCount, 0);
+
+  return {
+    ...p,
+    variants,
+    stockCount: resolvedStock,
+    inStock: resolvedStock > 0,
+  };
+};
+
+/**
+ * Fetch all products from Cloud Firestore or Local Cache with filtering and sorting
  */
 export const fetchProductsFromFirestore = async (params?: {
   category?: string;
   searchQuery?: string;
   sortBy?: string;
 }): Promise<ProductItem[]> => {
+  let items: ProductItem[] = [];
+
   try {
     const productsRef = collection(db, "products");
     const snap = await getDocs(productsRef);
-
-    let items: ProductItem[] = [];
 
     if (!snap.empty) {
       items = snap.docs.map((docSnap) => ({
         id: docSnap.id,
         ...(docSnap.data() as DocumentData),
       })) as ProductItem[];
-    } else {
-      // Auto-seed if empty
-      await seedProductsToFirestore();
-      items = initialProductsData;
     }
-
-    // Apply category filter if specified
-    if (params?.category && params.category !== "All") {
-      items = items.filter(
-        (p) => p.category?.toLowerCase() === params.category?.toLowerCase()
-      );
-    }
-
-    // Apply search query filter if specified
-    if (params?.searchQuery && params.searchQuery.trim()) {
-      const q = params.searchQuery.trim().toLowerCase();
-      items = items.filter(
-        (p) =>
-          p.name.toLowerCase().includes(q) ||
-          p.description.toLowerCase().includes(q) ||
-          p.category.toLowerCase().includes(q)
-      );
-    }
-
-    // Apply sorting
-    if (params?.sortBy) {
-      switch (params.sortBy) {
-        case "price-asc":
-          items.sort((a, b) => a.price - b.price);
-          break;
-        case "price-desc":
-          items.sort((a, b) => b.price - a.price);
-          break;
-        case "rating":
-          items.sort((a, b) => b.rating - a.rating);
-          break;
-        case "newest":
-          items.sort((a, b) => (b.isNewArrival ? 1 : 0) - (a.isNewArrival ? 1 : 0));
-          break;
-        case "featured":
-        default:
-          items.sort((a, b) => (b.isFeatured ? 1 : 0) - (a.isFeatured ? 1 : 0));
-          break;
-      }
-    }
-
-    return items;
   } catch (error) {
-    console.warn("Failed to fetch products from Firestore, using initial fallback:", error);
-    let items = [...initialProductsData];
-
-    if (params?.category && params.category !== "All") {
-      items = items.filter(
-        (p) => p.category?.toLowerCase() === params.category?.toLowerCase()
-      );
-    }
-
-    if (params?.searchQuery && params.searchQuery.trim()) {
-      const q = params.searchQuery.trim().toLowerCase();
-      items = items.filter(
-        (p) =>
-          p.name.toLowerCase().includes(q) ||
-          p.description.toLowerCase().includes(q) ||
-          p.category.toLowerCase().includes(q)
-      );
-    }
-
-    return items;
+    console.warn("Firestore products fetch failed:", error);
   }
+
+  // Check local cache
+  const localItems = getLocalProducts();
+
+  if (items.length > 0) {
+    // Merge: local updates take priority so live restocks/sales are never reverted by stale Firestore reads
+    const map = new Map<string, ProductItem>();
+    items.forEach((p) => map.set(p.id, ensureProductHasVariants(p)));
+    localItems.forEach((lp) => map.set(lp.id, ensureProductHasVariants(lp)));
+    items = Array.from(map.values());
+    saveAllLocalProducts(items);
+  } else if (localItems.length > 0) {
+    items = localItems.map(ensureProductHasVariants);
+  } else {
+    // Initial bootstrap
+    items = initialProductsData.map(ensureProductHasVariants);
+    saveAllLocalProducts(items);
+    seedProductsToFirestore().catch(() => {});
+  }
+
+  // Apply category filter if specified
+  if (params?.category && params.category !== "All") {
+    items = items.filter(
+      (p) => p.category?.toLowerCase() === params.category?.toLowerCase()
+    );
+  }
+
+  // Apply search query filter if specified
+  if (params?.searchQuery && params.searchQuery.trim()) {
+    const q = params.searchQuery.trim().toLowerCase();
+    items = items.filter(
+      (p) =>
+        p.name.toLowerCase().includes(q) ||
+        p.description?.toLowerCase().includes(q) ||
+        p.category?.toLowerCase().includes(q) ||
+        p.sku?.toLowerCase().includes(q)
+    );
+  }
+
+  // Apply sorting
+  if (params?.sortBy) {
+    switch (params.sortBy) {
+      case "price-asc":
+        items.sort((a, b) => a.price - b.price);
+        break;
+      case "price-desc":
+        items.sort((a, b) => b.price - a.price);
+        break;
+      case "rating":
+        items.sort((a, b) => (b.rating || 5) - (a.rating || 5));
+        break;
+      case "newest":
+        items.sort((a, b) => (b.isNewArrival ? 1 : 0) - (a.isNewArrival ? 1 : 0));
+        break;
+      case "featured":
+      default:
+        items.sort((a, b) => (b.isFeatured ? 1 : 0) - (a.isFeatured ? 1 : 0));
+        break;
+    }
+  }
+
+  return items;
 };
 
 /**
- * Fetch a single product by ID from Cloud Firestore
+ * Fetch a single product by ID from Cloud Firestore or Local Storage
  */
 export const fetchProductByIdFromFirestore = async (
   id: string
 ): Promise<ProductItem | null> => {
+  // First check local cache for fastest and most up-to-date state
+  const local = getLocalProducts().find((p) => p.id === id);
+  if (local) {
+    return ensureProductHasVariants(local);
+  }
+
   try {
     const docRef = doc(db, "products", id);
     const snap = await getDoc(docRef);
 
     if (snap.exists()) {
-      return { id: snap.id, ...(snap.data() as DocumentData) } as ProductItem;
+      const p = ensureProductHasVariants({ id: snap.id, ...(snap.data() as DocumentData) } as ProductItem);
+      saveLocalProduct(p);
+      return p;
     }
-
-    // Fallback to local dataset
-    const found = initialProductsData.find((p) => p.id === id);
-    return found || null;
-  } catch (error) {
-    console.warn(`Failed to fetch product ${id} from Firestore:`, error);
-    const found = initialProductsData.find((p) => p.id === id);
-    return found || null;
+  } catch (err) {
+    console.warn(`Could not fetch product ${id} from Firestore:`, err);
   }
+
+  // Fallback to in-memory/initial mock data
+  const fallback = initialProductsData.find((p) => p.id === id);
+  return fallback ? ensureProductHasVariants(fallback) : null;
 };
 
 /**
@@ -813,12 +907,14 @@ export const seedProductsToFirestore = async (force: boolean = false) => {
 export const saveProductToFirestore = async (
   product: ProductItem
 ): Promise<ProductItem> => {
+  const prepared = ensureProductHasVariants(product);
+
   try {
-    const docRef = doc(db, "products", product.id);
+    const docRef = doc(db, "products", prepared.id);
     await setDoc(
       docRef,
       sanitizeForFirestore({
-        ...product,
+        ...prepared,
         updatedAt: serverTimestamp(),
       }),
       { merge: true }
@@ -827,15 +923,18 @@ export const saveProductToFirestore = async (
     console.error("Could not save product directly to Firestore:", err);
   }
 
-  // Update in-memory / local dataset
-  const index = initialProductsData.findIndex((p) => p.id === product.id);
+  // Update local storage cache
+  saveLocalProduct(prepared);
+
+  // Update in-memory dataset
+  const index = initialProductsData.findIndex((p) => p.id === prepared.id);
   if (index >= 0) {
-    initialProductsData[index] = product;
+    initialProductsData[index] = prepared;
   } else {
-    initialProductsData.unshift(product);
+    initialProductsData.unshift(prepared);
   }
 
-  return product;
+  return prepared;
 };
 
 /**
@@ -847,6 +946,9 @@ export const deleteProductFromFirestore = async (id: string): Promise<boolean> =
   } catch (err) {
     console.error("Could not delete product from Firestore:", err);
   }
+
+  const updated = getLocalProducts().filter((p) => p.id !== id);
+  saveAllLocalProducts(updated);
 
   const index = initialProductsData.findIndex((p) => p.id === id);
   if (index >= 0) {

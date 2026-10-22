@@ -66,16 +66,26 @@ export const AdminOverviewTab: React.FC<AdminOverviewTabProps> = ({
   const shippedOrders = orders.filter((o) => o.orderStatus === "shipped");
   const deliveredOrders = orders.filter((o) => o.orderStatus === "delivered");
   const outOfStockCount = products.filter((p) => !p.inStock || (p.stockCount !== undefined && p.stockCount <= 0)).length;
+  const totalStockUnits = products.reduce((acc, p) => acc + (Number(p.stockCount) || 0), 0);
 
   const activeCouriersCount = shippingProviders.filter((p) => p.active).length;
 
-  const kpis = [
+  const kpis: {
+    label: string;
+    value: string | number;
+    change?: string;
+    subValue?: string;
+    icon: any;
+    color: string;
+    tab: AdminTab;
+  }[] = [
     {
       label: "Total Gross Revenue",
       value: `৳${totalRevenue.toLocaleString()}`,
       change: "+18.4% this month",
       icon: BanknotesIcon,
       color: "text-emerald-600 bg-emerald-50 dark:bg-emerald-950/40 border-emerald-200 dark:border-emerald-800",
+      tab: "orders",
     },
     {
       label: "Customer Orders",
@@ -83,6 +93,7 @@ export const AdminOverviewTab: React.FC<AdminOverviewTabProps> = ({
       subValue: `${pendingOrders.length} pending / in-prep`,
       icon: ClipboardDocumentCheckIcon,
       color: "text-blue-600 bg-blue-50 dark:bg-blue-950/40 border-blue-200 dark:border-blue-800",
+      tab: "orders",
     },
     {
       label: "Garment Catalog",
@@ -90,6 +101,7 @@ export const AdminOverviewTab: React.FC<AdminOverviewTabProps> = ({
       subValue: outOfStockCount > 0 ? `${outOfStockCount} low/out of stock` : "All items in stock",
       icon: ShoppingBagIcon,
       color: "text-orange-600 bg-orange-50 dark:bg-orange-950/40 border-orange-200 dark:border-orange-800",
+      tab: "products",
     },
     {
       label: "Registered Customers",
@@ -97,6 +109,7 @@ export const AdminOverviewTab: React.FC<AdminOverviewTabProps> = ({
       subValue: "Role-based accounts",
       icon: UsersIcon,
       color: "text-purple-600 bg-purple-50 dark:bg-purple-950/40 border-purple-200 dark:border-purple-800",
+      tab: "customers",
     },
   ];
 
@@ -142,11 +155,13 @@ export const AdminOverviewTab: React.FC<AdminOverviewTabProps> = ({
         {kpis.map((kpi, idx) => {
           const Icon = kpi.icon;
           return (
-            <div
+            <button
+              type="button"
               key={idx}
-              className="p-5 rounded-3xl bg-white dark:bg-neutral-900 border border-stone-200/80 dark:border-neutral-800 shadow-xs flex flex-col justify-between"
+              onClick={() => onNavigateTab(kpi.tab)}
+              className="text-left p-5 rounded-3xl bg-white dark:bg-neutral-900 border border-stone-200/80 dark:border-neutral-800 shadow-xs flex flex-col justify-between hover:border-orange-500/50 hover:shadow-md transition-all duration-200 cursor-pointer"
             >
-              <div className="flex items-center justify-between">
+              <div className="flex items-center justify-between w-full">
                 <span className="text-xs font-semibold text-gray-500 dark:text-neutral-400">
                   {kpi.label}
                 </span>
@@ -163,13 +178,39 @@ export const AdminOverviewTab: React.FC<AdminOverviewTabProps> = ({
                   {kpi.change || kpi.subValue}
                 </p>
               </div>
-            </div>
+            </button>
           );
         })}
       </div>
 
       {/* Logistics & Operational Strip */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-4">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6 gap-4">
+        <div className="p-5 rounded-3xl bg-white dark:bg-neutral-900 border border-stone-200/80 dark:border-neutral-800 shadow-xs space-y-2">
+          <div className="flex items-center justify-between text-xs font-bold text-gray-500 dark:text-neutral-400">
+            <span>INVENTORY &amp; STOCK</span>
+            <button
+              type="button"
+              onClick={() => onNavigateTab("inventory")}
+              className="text-orange-600 hover:underline text-[11px] cursor-pointer"
+            >
+              Audited &rarr;
+            </button>
+          </div>
+          <div className="flex items-baseline gap-2">
+            <span className="text-xl font-black text-gray-900 dark:text-white">
+              {totalStockUnits.toLocaleString()} Pcs
+            </span>
+            {outOfStockCount > 0 && (
+              <span className="text-xs text-rose-600 dark:text-rose-400 font-bold">
+                ({outOfStockCount} low)
+              </span>
+            )}
+          </div>
+          <p className="text-xs text-gray-500 dark:text-neutral-400">
+            Read-only ledger &amp; variant intake.
+          </p>
+        </div>
+
         <div className="p-5 rounded-3xl bg-white dark:bg-neutral-900 border border-stone-200/80 dark:border-neutral-800 shadow-xs space-y-2">
           <div className="flex items-center justify-between text-xs font-bold text-gray-500 dark:text-neutral-400">
             <span>COURIER PROVIDERS</span>

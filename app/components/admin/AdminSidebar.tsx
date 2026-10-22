@@ -17,6 +17,7 @@ import {
   ScaleIcon,
   ArrowPathRoundedSquareIcon,
   BookOpenIcon,
+  ArchiveBoxIcon,
 } from "@heroicons/react/24/outline";
 import type { AuthUser } from "~/redux/features/auth/authSlice";
 
@@ -24,6 +25,7 @@ export type AdminTab =
   | "overview"
   | "products"
   | "categories"
+  | "inventory"
   | "orders"
   | "returns"
   | "blogs"
@@ -46,6 +48,7 @@ interface AdminSidebarProps {
   subscribersCount?: number;
   pendingReturnsCount?: number;
   blogsCount?: number;
+  lowStockCount?: number;
 }
 
 export const AdminSidebar: React.FC<AdminSidebarProps> = ({
@@ -59,11 +62,18 @@ export const AdminSidebar: React.FC<AdminSidebarProps> = ({
   subscribersCount = 0,
   pendingReturnsCount = 0,
   blogsCount = 0,
+  lowStockCount = 0,
 }) => {
   const navItems: { id: AdminTab; label: string; icon: React.ElementType; badge?: string }[] = [
     { id: "overview", label: "Dashboard Overview", icon: ChartBarIcon },
     { id: "products", label: "Product Catalog", icon: ShoppingBagIcon },
     { id: "categories", label: "Categories", icon: RectangleStackIcon },
+    {
+      id: "inventory",
+      label: "Inventory & Stock",
+      icon: ArchiveBoxIcon,
+      badge: lowStockCount > 0 ? `${lowStockCount} Alert` : "Live",
+    },
     { id: "orders", label: "Orders & Shipments", icon: ClipboardDocumentListIcon },
     {
       id: "returns",

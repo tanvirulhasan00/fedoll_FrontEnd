@@ -23,6 +23,7 @@ interface QualityInspectionModalProps {
       inspectionNotes: string;
       inspectedBy: string;
       markStatus: "received_at_hub" | "rejected";
+      restockToInventory?: boolean;
     },
     openWhatsApp?: boolean
   ) => Promise<void>;
@@ -45,6 +46,7 @@ export const QualityInspectionModal: React.FC<QualityInspectionModalProps> = ({
   const [unworn, setUnworn] = useState(true);
   const [cleanNoOdor, setCleanNoOdor] = useState(true);
   const [originalBag, setOriginalBag] = useState(true);
+  const [restockToInventory, setRestockToInventory] = useState(true);
 
   const [submitting, setSubmitting] = useState(false);
 
@@ -63,6 +65,7 @@ export const QualityInspectionModal: React.FC<QualityInspectionModalProps> = ({
       setTagsIntact(ticket.inspectionResult !== "failed_tags_missing");
       setUnworn(ticket.inspectionResult !== "failed_damaged");
       setCleanNoOdor(ticket.inspectionResult !== "failed_damaged");
+      setRestockToInventory(true);
     }
   }, [ticket]);
 
@@ -96,6 +99,7 @@ export const QualityInspectionModal: React.FC<QualityInspectionModalProps> = ({
           inspectionNotes: notes.trim(),
           inspectedBy: inspectorName.trim(),
           markStatus: result === "passed" ? "received_at_hub" : "rejected",
+          restockToInventory: result === "passed" ? restockToInventory : false,
         },
         openWhatsApp
       );
@@ -245,6 +249,27 @@ export const QualityInspectionModal: React.FC<QualityInspectionModalProps> = ({
                       <option value="failed_tags_missing">FAILED — Original Tags Missing or Seal Broken (Reject Request)</option>
                     </select>
                   </div>
+
+                  {result === "passed" && (
+                    <div className="p-3 rounded-xl bg-emerald-50 dark:bg-emerald-950/30 border border-emerald-200 dark:border-emerald-800/60">
+                      <label className="flex items-start gap-2.5 cursor-pointer">
+                        <input
+                          type="checkbox"
+                          checked={restockToInventory}
+                          onChange={(e) => setRestockToInventory(e.target.checked)}
+                          className="rounded text-emerald-600 focus:ring-emerald-500 size-4 mt-0.5"
+                        />
+                        <div>
+                          <span className="font-bold text-emerald-900 dark:text-emerald-200 block">
+                            Automatically restock pristine item back to live inventory (+1 unit)
+                          </span>
+                          <span className="text-[11px] text-emerald-700 dark:text-emerald-400 block mt-0.5">
+                            Updates product stock quantity and records an unalterable return restock entry in the inventory ledger.
+                          </span>
+                        </div>
+                      </label>
+                    </div>
+                  )}
 
                   <div className="space-y-1.5">
                     <label className="font-bold text-gray-700 dark:text-neutral-300">

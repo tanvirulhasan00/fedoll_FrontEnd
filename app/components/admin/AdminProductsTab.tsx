@@ -10,6 +10,7 @@ import {
   XCircleIcon,
   SparklesIcon,
   EyeIcon,
+  ArchiveBoxIcon,
 } from "@heroicons/react/24/outline";
 import { toast } from "sonner";
 import type { ProductItem, ProductCategoryItem } from "~/firebase";
@@ -30,7 +31,6 @@ export const AdminProductsTab: React.FC<AdminProductsTabProps> = ({
 }) => {
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedCategory, setSelectedCategory] = useState("all");
-  const [filterStock, setFilterStock] = useState<"all" | "inStock" | "outOfStock">("all");
 
   const handleDeleteProduct = async (id: string, name: string) => {
     const confirmDelete = window.confirm(`Are you sure you want to delete "${name}" from store catalog?`);
@@ -48,12 +48,6 @@ export const AdminProductsTab: React.FC<AdminProductsTabProps> = ({
 
   const filteredProducts = products.filter((p) => {
     if (selectedCategory !== "all" && p.category !== selectedCategory) {
-      return false;
-    }
-    if (filterStock === "inStock" && !p.inStock) {
-      return false;
-    }
-    if (filterStock === "outOfStock" && p.inStock) {
       return false;
     }
     if (searchQuery.trim()) {
@@ -79,13 +73,22 @@ export const AdminProductsTab: React.FC<AdminProductsTabProps> = ({
           </p>
         </div>
 
-        <Link
-          to="/admin/products/new"
-          className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl bg-orange-600 hover:bg-orange-700 text-white font-bold text-xs shadow-md transition cursor-pointer"
-        >
-          <PlusIcon className="size-4" />
-          <span>Add New Product</span>
-        </Link>
+        <div className="flex items-center gap-2">
+          <Link
+            to="/admin?tab=inventory"
+            className="inline-flex items-center gap-1.5 px-4 py-2.5 rounded-xl border border-stone-200 dark:border-neutral-700 bg-white dark:bg-neutral-800 hover:bg-stone-50 dark:hover:bg-neutral-700 text-gray-700 dark:text-neutral-200 font-bold text-xs shadow-xs transition"
+          >
+            <ArchiveBoxIcon className="size-4 text-orange-600" />
+            <span>Stock &amp; Ledger</span>
+          </Link>
+          <Link
+            to="/admin/products/new"
+            className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl bg-orange-600 hover:bg-orange-700 text-white font-bold text-xs shadow-md transition cursor-pointer"
+          >
+            <PlusIcon className="size-4" />
+            <span>Add New Product</span>
+          </Link>
+        </div>
       </div>
 
       {/* Filter and Search Bar */}
@@ -105,23 +108,11 @@ export const AdminProductsTab: React.FC<AdminProductsTabProps> = ({
             ))}
           </select>
 
-          {/* Stock Filter */}
-          <select
-            value={filterStock}
-            onChange={(e) => setFilterStock(e.target.value as any)}
-            className="px-3 py-2 text-xs bg-stone-50 dark:bg-neutral-800 border border-gray-200 dark:border-neutral-700 rounded-xl text-gray-800 dark:text-neutral-200 focus:outline-none focus:ring-1 focus:ring-orange-600 cursor-pointer"
-          >
-            <option value="all">All Stock Status</option>
-            <option value="inStock">In Stock Only</option>
-            <option value="outOfStock">Out of Stock</option>
-          </select>
-
-          {(selectedCategory !== "all" || filterStock !== "all" || searchQuery) && (
+          {(selectedCategory !== "all" || searchQuery) && (
             <button
               type="button"
               onClick={() => {
                 setSelectedCategory("all");
-                setFilterStock("all");
                 setSearchQuery("");
               }}
               className="text-xs text-orange-600 dark:text-orange-400 hover:underline px-2 font-medium cursor-pointer"
@@ -153,7 +144,6 @@ export const AdminProductsTab: React.FC<AdminProductsTabProps> = ({
                 <th className="py-3.5 px-4">Product</th>
                 <th className="py-3.5 px-4">Category</th>
                 <th className="py-3.5 px-4">Price (BDT)</th>
-                <th className="py-3.5 px-4">Stock</th>
                 <th className="py-3.5 px-4">Status</th>
                 <th className="py-3.5 px-4">Variants &amp; Colors</th>
                 <th className="py-3.5 px-4">Sizes</th>
@@ -163,7 +153,7 @@ export const AdminProductsTab: React.FC<AdminProductsTabProps> = ({
             <tbody className="divide-y divide-gray-100 dark:divide-neutral-800 text-xs">
               {filteredProducts.length === 0 ? (
                 <tr>
-                  <td colSpan={8} className="py-12 text-center text-gray-400">
+                  <td colSpan={7} className="py-12 text-center text-gray-400">
                     <p className="font-semibold text-sm">No garments found matching filter.</p>
                     <p className="text-xs mt-1">Try clearing your filters or add a new product.</p>
                   </td>
@@ -227,12 +217,6 @@ export const AdminProductsTab: React.FC<AdminProductsTabProps> = ({
                           </span>
                         )}
                       </div>
-                    </td>
-
-                    <td className="py-3 px-4">
-                      <span className="font-bold text-gray-900 dark:text-white">
-                        {p.stockCount ?? 25} pcs
-                      </span>
                     </td>
 
                     <td className="py-3 px-4">
@@ -304,6 +288,13 @@ export const AdminProductsTab: React.FC<AdminProductsTabProps> = ({
                           title="View live in storefront"
                         >
                           <EyeIcon className="size-4" />
+                        </Link>
+                        <Link
+                          to="/admin?tab=inventory"
+                          className="p-1.5 rounded-lg border border-gray-200 dark:border-neutral-700 text-gray-600 dark:text-neutral-300 hover:text-orange-600 dark:hover:text-orange-400 hover:bg-stone-50 dark:hover:bg-neutral-800 transition cursor-pointer"
+                          title="Manage Stock & Restock Ledger"
+                        >
+                          <ArchiveBoxIcon className="size-4" />
                         </Link>
                         <Link
                           to={`/admin/products/${p.id}/edit`}

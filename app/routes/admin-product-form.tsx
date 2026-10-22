@@ -6,6 +6,7 @@ import {
   fetchProductByIdFromFirestore,
   fetchCategoriesFromFirestore,
   saveProductToFirestore,
+  recordInitialProductStock,
   type ProductItem,
   type ProductCategoryItem,
   type ProductColor,
@@ -463,6 +464,15 @@ export default function AdminProductFormPage() {
 
     try {
       await saveProductToFirestore(savedProduct);
+
+      if (!isEditMode) {
+        try {
+          await recordInitialProductStock(savedProduct, user?.displayName || "Admin Atelier Creator");
+        } catch (stockErr) {
+          console.warn("Could not log initial stock movement:", stockErr);
+        }
+      }
+
       toast.success(
         editingProduct
           ? `Garment "${savedProduct.name}" updated successfully!`

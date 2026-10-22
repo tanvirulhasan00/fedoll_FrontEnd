@@ -40,6 +40,7 @@ import AdminSidebar, { type AdminTab } from "~/components/admin/AdminSidebar";
 import AdminOverviewTab from "~/components/admin/AdminOverviewTab";
 import AdminProductsTab from "~/components/admin/AdminProductsTab";
 import AdminCategoriesTab from "~/components/admin/AdminCategoriesTab";
+import AdminStockTab from "~/components/admin/AdminStockTab";
 import AdminOrdersTab from "~/components/admin/AdminOrdersTab";
 import AdminReturnsTab from "~/components/admin/AdminReturnsTab";
 import AdminBlogsTab from "~/components/admin/AdminBlogsTab";
@@ -90,6 +91,7 @@ export default function AdminDashboardPage() {
     "overview",
     "products",
     "categories",
+    "inventory",
     "orders",
     "returns",
     "blogs",
@@ -356,6 +358,7 @@ export default function AdminDashboardPage() {
             subscribersCount={subscribers.filter((s) => s.status === "active").length}
             pendingReturnsCount={returnRequests.filter((r) => r.status === "pending").length}
             blogsCount={blogs.length}
+            lowStockCount={products.filter((p) => (Number(p.stockCount) || 0) <= 5).length}
           />
 
           {/* Backdrop for mobile sidebar */}
@@ -387,6 +390,8 @@ export default function AdminDashboardPage() {
                     ? "Product Catalog"
                     : currentTab === "categories"
                     ? "Collections & Categories"
+                    : currentTab === "inventory"
+                    ? "Inventory & Stock Management"
                     : currentTab === "orders"
                     ? "Orders & Logistics"
                     : currentTab === "returns"
@@ -477,6 +482,17 @@ export default function AdminDashboardPage() {
                       onRefresh={loadAllAdminData}
                       isAddModalOpen={isAddCategoryOpen}
                       onCloseAddModal={() => setIsAddCategoryOpen(false)}
+                    />
+                  )}
+
+                  {currentTab === "inventory" && (
+                    <AdminStockTab
+                      products={products}
+                      categories={categories}
+                      orders={orders}
+                      onRefresh={loadAllAdminData}
+                      onNavigateTab={handleSelectTab}
+                      adminName={user?.displayName || "Admin Atelier Desk"}
                     />
                   )}
 

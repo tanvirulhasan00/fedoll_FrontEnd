@@ -42,6 +42,8 @@ import {
   fetchOrderByTrackingOrNumber,
   type Order,
   type LegalClause,
+  restockReturnedItem,
+  deductExchangeReplacement,
 } from "~/firebase";
 import {
   ApproveChoiceModal,
@@ -265,6 +267,7 @@ export const AdminReturnsTab: React.FC<AdminReturnsTabProps> = ({
       inspectionNotes: string;
       inspectedBy: string;
       markStatus: "received_at_hub" | "rejected";
+      restockToInventory?: boolean;
     },
     openWhatsApp = false
   ) => {
@@ -276,9 +279,26 @@ export const AdminReturnsTab: React.FC<AdminReturnsTabProps> = ({
       status: inspectionData.markStatus,
       resolvedAt: inspectionData.markStatus === "rejected" ? new Date().toISOString() : undefined,
     });
+
+    // Automated live inventory restock if audit passed and selected
+    if (inspectionData.inspectionResult === "passed" && inspectionData.restockToInventory) {
+      try {
+        await restockReturnedItem({
+          ticketNumber: ticket.ticketNumber,
+          orderNumber: ticket.orderNumber,
+          itemDetails: ticket.itemDetails,
+          quantity: 1,
+          performedBy: inspectionData.inspectedBy || "Atelier Quality Audit",
+          notes: `Return Ticket #${ticket.ticketNumber} passed inspection. Garment returned to live inventory.`,
+        });
+      } catch (err) {
+        console.warn("Could not restock returned item to inventory:", err);
+      }
+    }
+
     toast.success(
       inspectionData.inspectionResult === "passed"
-        ? `Audit Passed! Parcel logged at Uttara Hub. Ready to dispatch replacement / settle refund.`
+        ? `Audit Passed! Parcel logged at Uttara Hub. Live inventory updated & ready for resolution.`
         : `Inspection marked as Failed: ${inspectionData.inspectionResult.replace(/_/g, " ")}`
     );
     setInspectModalTicket(null);
@@ -317,8 +337,24 @@ export const AdminReturnsTab: React.FC<AdminReturnsTabProps> = ({
       resolvedAt: new Date().toISOString(),
       adminNotes: dispatchData.adminNotes,
     });
+
+    // Automatically deduct the replacement garment from live stock
+    if (dispatchData.replacementItemDetails) {
+      try {
+        await deductExchangeReplacement({
+          ticketNumber: ticket.ticketNumber,
+          orderNumber: ticket.orderNumber,
+          replacementItemDetails: dispatchData.replacementItemDetails,
+          quantity: 1,
+          performedBy: "Exchange Dispatch Desk",
+        });
+      } catch (err) {
+        console.warn("Could not deduct exchange replacement stock:", err);
+      }
+    }
+
     toast.success(
-      `Replacement dispatched via ${dispatchData.replacementCourier} (Trk #${dispatchData.replacementTrackingNumber})! Ticket marked Resolved.`
+      `Replacement dispatched via ${dispatchData.replacementCourier} (Trk #${dispatchData.replacementTrackingNumber})! Stock deducted & ticket marked Resolved.`
     );
     setDispatchModalTicket(null);
     onRefresh();

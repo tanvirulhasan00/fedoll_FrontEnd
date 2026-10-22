@@ -16,6 +16,7 @@ import {
 import { db } from "./firebase.config";
 import { sanitizeForFirestore } from "./firestore";
 import type { CartItem } from "~/redux/features/cart/cartSlice";
+import { deductStockForOrder, restoreStockForOrder } from "./stock";
 
 export type OrderStatus =
   | "placed"
@@ -320,6 +321,13 @@ export const createOrderInFirestore = async (
   // Always mirror to local cache for instant offline UI and smooth transitions
   saveLocalOrder(newOrder);
 
+  // Automatically deduct stock for purchased items & record sale ledger movement
+  try {
+    await deductStockForOrder(newOrder);
+  } catch (stockErr) {
+    console.warn("Failed to deduct stock for order:", stockErr);
+  }
+
   return newOrder;
 };
 
@@ -509,6 +517,13 @@ export const cancelOrderInFirestore = async (
       orderStatus: "cancelled",
       trackingTimeline: updatedTimeline,
     });
+
+    // Automatically restore inventory stock & record order_cancel movement
+    try {
+      await restoreStockForOrder(existingOrder, "Customer cancelled order");
+    } catch (stockErr) {
+      console.warn("Failed to restore stock on cancellation:", stockErr);
+    }
   }
 
   return true;
@@ -680,6 +695,19 @@ export const reviewOrderCancellationInFirestore = async (
   };
 
   saveLocalOrder(updatedOrderResult);
+
+  // If cancellation was approved by admin, automatically restore inventory stock
+  if (action === "approve") {
+    try {
+      await restoreStockForOrder(
+        existingOrder,
+        adminNote || "Admin approved order cancellation"
+      );
+    } catch (stockErr) {
+      console.warn("Failed to restore stock on cancellation approval:", stockErr);
+    }
+  }
+
   return updatedOrderResult;
 };
 
