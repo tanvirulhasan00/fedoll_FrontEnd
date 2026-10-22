@@ -11,6 +11,7 @@ import {
   TruckIcon,
   ShieldCheckIcon,
   CheckCircleIcon,
+  XCircleIcon,
   BanknotesIcon,
   ClockIcon,
   BuildingStorefrontIcon,
@@ -21,6 +22,11 @@ import {
   DocumentDuplicateIcon,
   SparklesIcon,
   ExclamationTriangleIcon,
+  CalendarDaysIcon,
+  MapPinIcon,
+  TagIcon,
+  ArrowPathIcon,
+  InformationCircleIcon,
 } from "@heroicons/react/24/outline";
 import { Dialog, DialogPanel, DialogTitle, Transition, TransitionChild } from "@headlessui/react";
 import { toast } from "sonner";
@@ -37,6 +43,19 @@ import {
   type Order,
   type LegalClause,
 } from "~/firebase";
+import {
+  ApproveChoiceModal,
+  SchedulePickupModal,
+  DesignateDropoffModal,
+  QualityInspectionModal,
+  DispatchReplacementModal,
+  SettleRefundModal,
+  RejectTicketModal,
+  getReturnWhatsAppUrl,
+  FEDOLL_DROP_OFF_HUBS,
+  BANGLADESH_REVERSE_COURIERS,
+  BANGLADESH_DISPATCH_COURIERS,
+} from "./returns";
 
 // ---------------------------------------------------------------------------
 // Standard Code 128 Barcode Generator (Pure TypeScript Vector SVG)
@@ -123,6 +142,261 @@ export const AdminReturnsTab: React.FC<AdminReturnsTabProps> = ({
   // Printable Reverse Logistics Sticker Modal
   const [stickerTicket, setStickerTicket] = useState<ReturnExchangeRequest | null>(null);
   const [isStickerOpen, setIsStickerOpen] = useState(false);
+
+  // ---------------------------------------------------------------------------
+  // Dedicated Bangladesh Real-World Lifecycle Modals State
+  // ---------------------------------------------------------------------------
+  // 1. Approve Choice Modal (Pickup vs Drop-Off)
+  const [approveChoiceTicket, setApproveChoiceTicket] = useState<ReturnExchangeRequest | null>(null);
+
+  // 2. Schedule Reverse Pickup Modal (Steadfast, Pathao, RedX, Paperfly, eCourier)
+  const [pickupModalTicket, setPickupModalTicket] = useState<ReturnExchangeRequest | null>(null);
+
+  // 3. Designate Customer Drop-off Hub Modal (Uttara, Banani, Dhanmondi, Courier hub)
+  const [dropoffModalTicket, setDropoffModalTicket] = useState<ReturnExchangeRequest | null>(null);
+
+  // 4. Atelier Quality Inspection Audit Modal (Received at Hub)
+  const [inspectModalTicket, setInspectModalTicket] = useState<ReturnExchangeRequest | null>(null);
+
+  // 5. Outbound Exchange Dispatch Modal
+  const [dispatchModalTicket, setDispatchModalTicket] = useState<ReturnExchangeRequest | null>(null);
+
+  // 6. Settle Monetary Refund Modal (bKash / Nagad / Rocket / Bank)
+  const [refundModalTicket, setRefundModalTicket] = useState<ReturnExchangeRequest | null>(null);
+
+  // 7. Decline / Reject Ticket Modal
+  const [rejectModalTicket, setRejectModalTicket] = useState<ReturnExchangeRequest | null>(null);
+
+  // Handlers for Guided Lifecycle Actions
+  const handleSelectPickupFromChoice = (ticket: ReturnExchangeRequest) => {
+    setApproveChoiceTicket(null);
+    setPickupModalTicket(ticket);
+  };
+
+  const handleSelectDropoffFromChoice = (ticket: ReturnExchangeRequest) => {
+    setApproveChoiceTicket(null);
+    setDropoffModalTicket(ticket);
+  };
+
+  const handleQuickApprove = async (ticket: ReturnExchangeRequest) => {
+    try {
+      await updateReturnRequest(ticket.id, { status: "approved" });
+      toast.success(`Ticket ${ticket.ticketNumber} marked as Approved.`);
+      setApproveChoiceTicket(null);
+      onRefresh();
+    } catch {
+      toast.error("Failed to approve ticket.");
+    }
+  };
+
+  const handleConfirmPickupSchedule = async (
+    ticket: ReturnExchangeRequest,
+    pickupData: {
+      reverseCourier: string;
+      reverseTrackingNumber: string;
+      pickupDate: string;
+      pickupTimeSlot: string;
+      pickupFee: number;
+      pickupFeeStatus: "pending_cod" | "paid_bkash" | "waived_defect";
+      pickupInstructions: string;
+    },
+    openWhatsApp = false
+  ) => {
+    await updateReturnRequest(ticket.id, {
+      returnMethod: "doorstep_pickup",
+      status: "pickup_scheduled",
+      ...pickupData,
+    });
+    toast.success(
+      `Doorstep reverse pickup scheduled via ${pickupData.reverseCourier}! Consignment #${pickupData.reverseTrackingNumber}`
+    );
+    setPickupModalTicket(null);
+    onRefresh();
+
+    if (openWhatsApp) {
+      const updatedTicket: ReturnExchangeRequest = {
+        ...ticket,
+        returnMethod: "doorstep_pickup",
+        status: "pickup_scheduled",
+        ...pickupData,
+      };
+      window.open(getReturnWhatsAppUrl(updatedTicket, policyForm), "_blank");
+    }
+  };
+
+  const handleConfirmDropoff = async (
+    ticket: ReturnExchangeRequest,
+    dropoffData: {
+      dropoffHubName: string;
+      dropoffHubAddress: string;
+      dropoffHubPhone: string;
+      dropoffHubHours: string;
+      dropoffDeadline: string;
+      dropoffInstructions: string;
+    },
+    openWhatsApp = false
+  ) => {
+    await updateReturnRequest(ticket.id, {
+      returnMethod: "hub_dropoff",
+      status: "dropoff_pending",
+      ...dropoffData,
+    });
+    toast.success(
+      `Customer drop-off hub set to ${dropoffData.dropoffHubName}! Deadline: ${dropoffData.dropoffDeadline}`
+    );
+    setDropoffModalTicket(null);
+    onRefresh();
+
+    if (openWhatsApp) {
+      const updatedTicket: ReturnExchangeRequest = {
+        ...ticket,
+        returnMethod: "hub_dropoff",
+        status: "dropoff_pending",
+        ...dropoffData,
+      };
+      window.open(getReturnWhatsAppUrl(updatedTicket, policyForm), "_blank");
+    }
+  };
+
+  const handleConfirmInspection = async (
+    ticket: ReturnExchangeRequest,
+    inspectionData: {
+      inspectionResult: "passed" | "failed_damaged" | "failed_tags_missing";
+      inspectionNotes: string;
+      inspectedBy: string;
+      markStatus: "received_at_hub" | "rejected";
+    },
+    openWhatsApp = false
+  ) => {
+    await updateReturnRequest(ticket.id, {
+      inspectionResult: inspectionData.inspectionResult,
+      inspectionNotes: inspectionData.inspectionNotes,
+      inspectedBy: inspectionData.inspectedBy,
+      inspectedAt: new Date().toISOString(),
+      status: inspectionData.markStatus,
+      resolvedAt: inspectionData.markStatus === "rejected" ? new Date().toISOString() : undefined,
+    });
+    toast.success(
+      inspectionData.inspectionResult === "passed"
+        ? `Audit Passed! Parcel logged at Uttara Hub. Ready to dispatch replacement / settle refund.`
+        : `Inspection marked as Failed: ${inspectionData.inspectionResult.replace(/_/g, " ")}`
+    );
+    setInspectModalTicket(null);
+    onRefresh();
+
+    if (openWhatsApp) {
+      const updatedTicket: ReturnExchangeRequest = {
+        ...ticket,
+        inspectionResult: inspectionData.inspectionResult,
+        inspectionNotes: inspectionData.inspectionNotes,
+        inspectedBy: inspectionData.inspectedBy,
+        status: inspectionData.markStatus,
+      };
+      window.open(getReturnWhatsAppUrl(updatedTicket, policyForm), "_blank");
+    }
+  };
+
+  const handleConfirmDispatch = async (
+    ticket: ReturnExchangeRequest,
+    dispatchData: {
+      replacementCourier: string;
+      replacementTrackingNumber: string;
+      replacementItemDetails: string;
+      replacementEstimatedDelivery: string;
+      adminNotes: string;
+    },
+    openWhatsApp = false
+  ) => {
+    await updateReturnRequest(ticket.id, {
+      status: "resolved",
+      replacementCourier: dispatchData.replacementCourier,
+      replacementTrackingNumber: dispatchData.replacementTrackingNumber,
+      replacementItemDetails: dispatchData.replacementItemDetails,
+      replacementEstimatedDelivery: dispatchData.replacementEstimatedDelivery,
+      replacementDispatchedAt: new Date().toISOString(),
+      resolvedAt: new Date().toISOString(),
+      adminNotes: dispatchData.adminNotes,
+    });
+    toast.success(
+      `Replacement dispatched via ${dispatchData.replacementCourier} (Trk #${dispatchData.replacementTrackingNumber})! Ticket marked Resolved.`
+    );
+    setDispatchModalTicket(null);
+    onRefresh();
+
+    if (openWhatsApp) {
+      const updatedTicket: ReturnExchangeRequest = {
+        ...ticket,
+        status: "resolved",
+        ...dispatchData,
+      };
+      window.open(getReturnWhatsAppUrl(updatedTicket, policyForm), "_blank");
+    }
+  };
+
+  const handleConfirmRefund = async (
+    ticket: ReturnExchangeRequest,
+    refundData: {
+      refundMethod: "bKash" | "Nagad" | "Rocket" | "Bank Transfer" | "Store Credit";
+      refundAccountDetails: string;
+      refundAmount: number;
+      refundTransactionId: string;
+      refundProcessedAt: string;
+      refundProofNote: string;
+    },
+    openWhatsApp = false
+  ) => {
+    await updateReturnRequest(ticket.id, {
+      status: "resolved",
+      refundMethod: refundData.refundMethod,
+      refundAccountDetails: refundData.refundAccountDetails,
+      refundAmount: refundData.refundAmount,
+      refundTransactionId: refundData.refundTransactionId,
+      refundProcessedAt: refundData.refundProcessedAt,
+      resolvedAt: new Date().toISOString(),
+      adminNotes: refundData.refundProofNote,
+    });
+    toast.success(
+      `Refund of ৳${refundData.refundAmount} settled via ${refundData.refundMethod} (TrxID: ${refundData.refundTransactionId})! Ticket marked Resolved.`
+    );
+    setRefundModalTicket(null);
+    onRefresh();
+
+    if (openWhatsApp) {
+      const updatedTicket: ReturnExchangeRequest = {
+        ...ticket,
+        status: "resolved",
+        ...refundData,
+      };
+      window.open(getReturnWhatsAppUrl(updatedTicket, policyForm), "_blank");
+    }
+  };
+
+  const handleConfirmReject = async (
+    ticket: ReturnExchangeRequest,
+    rejectionData: {
+      reason: string;
+      adminNotes: string;
+    },
+    openWhatsApp = false
+  ) => {
+    await updateReturnRequest(ticket.id, {
+      status: "rejected",
+      adminNotes: rejectionData.adminNotes,
+      resolvedAt: new Date().toISOString(),
+    });
+    toast.info(`Ticket ${ticket.ticketNumber} marked as Rejected.`);
+    setRejectModalTicket(null);
+    onRefresh();
+
+    if (openWhatsApp) {
+      const updatedTicket: ReturnExchangeRequest = {
+        ...ticket,
+        status: "rejected",
+        adminNotes: rejectionData.adminNotes,
+      };
+      window.open(getReturnWhatsAppUrl(updatedTicket, policyForm), "_blank");
+    }
+  };
 
   // Manual Log Ticket Modal
   const [isCreateOpen, setIsCreateOpen] = useState(false);
@@ -334,14 +608,16 @@ export const AdminReturnsTab: React.FC<AdminReturnsTabProps> = ({
   const stats = useMemo(() => {
     const total = returnRequests.length;
     const pending = returnRequests.filter((r) => r.status === "pending").length;
+    const approved = returnRequests.filter((r) => r.status === "approved").length;
     const pickupScheduled = returnRequests.filter((r) => r.status === "pickup_scheduled").length;
+    const dropoffPending = returnRequests.filter((r) => r.status === "dropoff_pending").length;
     const atHub = returnRequests.filter((r) => r.status === "received_at_hub").length;
     const resolved = returnRequests.filter((r) => r.status === "resolved").length;
     const totalRefunds = returnRequests
       .filter((r) => r.type === "refund" && r.refundAmount)
       .reduce((sum, r) => sum + (r.refundAmount || 0), 0);
 
-    return { total, pending, pickupScheduled, atHub, resolved, totalRefunds };
+    return { total, pending, approved, pickupScheduled, dropoffPending, atHub, resolved, totalRefunds };
   }, [returnRequests]);
 
   const copyToClipboard = (text: string, label: string) => {
@@ -362,7 +638,7 @@ export const AdminReturnsTab: React.FC<AdminReturnsTabProps> = ({
             Returns, Exchanges &amp; Reverse Couriers
           </h2>
           <p className="text-xs text-gray-500 dark:text-neutral-400 mt-1 max-w-2xl">
-            Manage customer doorstep reverse pickups, assign reverse courier consignment IDs, conduct atelier quality audits, disburse bKash/Nagad refunds, and print thermal inspection stickers.
+            Real-world Bangladesh reverse logistics: schedule Steadfast/Pathao doorstep pickups, designate customer hub drop-offs, conduct atelier quality audits, dispatch fresh size replacements, and disburse bKash/Nagad refunds.
           </p>
         </div>
 
@@ -382,15 +658,15 @@ export const AdminReturnsTab: React.FC<AdminReturnsTabProps> = ({
             rel="noopener noreferrer"
             className="inline-flex items-center gap-1.5 px-4 py-2.5 rounded-xl border border-gray-200 dark:border-neutral-700 hover:border-orange-500 text-gray-700 dark:text-neutral-200 hover:text-orange-600 text-xs font-bold transition shadow-2xs cursor-pointer"
           >
-            <span>Preview Storefront Page</span>
+            <span>Storefront Self-Service Desk</span>
             <ArrowTopRightOnSquareIcon className="size-4" />
           </a>
         </div>
       </div>
 
-      {/* KPI Metrics Grid */}
-      <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3">
-        <div className="p-4 rounded-2xl bg-white dark:bg-neutral-900 border border-stone-200/80 dark:border-neutral-800 shadow-2xs">
+      {/* KPI Metrics Grid (7 Distinct Real-World Stages) */}
+      <div className="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-7 gap-3">
+        <div className="p-3.5 rounded-2xl bg-white dark:bg-neutral-900 border border-stone-200/80 dark:border-neutral-800 shadow-2xs">
           <span className="text-[10px] font-bold uppercase tracking-wider text-gray-400 block">
             Total Tickets
           </span>
@@ -400,7 +676,7 @@ export const AdminReturnsTab: React.FC<AdminReturnsTabProps> = ({
           <span className="text-[10px] text-gray-400">All submissions</span>
         </div>
 
-        <div className="p-4 rounded-2xl bg-white dark:bg-neutral-900 border border-stone-200/80 dark:border-neutral-800 shadow-2xs">
+        <div className="p-3.5 rounded-2xl bg-white dark:bg-neutral-900 border border-stone-200/80 dark:border-neutral-800 shadow-2xs">
           <span className="text-[10px] font-bold uppercase tracking-wider text-amber-600 dark:text-amber-400 block">
             Pending Review
           </span>
@@ -410,37 +686,47 @@ export const AdminReturnsTab: React.FC<AdminReturnsTabProps> = ({
           <span className="text-[10px] text-gray-400">Requires decision</span>
         </div>
 
-        <div className="p-4 rounded-2xl bg-white dark:bg-neutral-900 border border-stone-200/80 dark:border-neutral-800 shadow-2xs">
+        <div className="p-3.5 rounded-2xl bg-white dark:bg-neutral-900 border border-stone-200/80 dark:border-neutral-800 shadow-2xs">
           <span className="text-[10px] font-bold uppercase tracking-wider text-purple-600 dark:text-purple-400 block">
-            Pickup In-Transit
+            Pickup Scheduled
           </span>
           <p className="text-2xl font-black text-purple-600 dark:text-purple-400 mt-0.5">
             {stats.pickupScheduled}
           </p>
-          <span className="text-[10px] text-gray-400">Rider on the way</span>
+          <span className="text-[10px] text-gray-400">Steadfast / Pathao</span>
         </div>
 
-        <div className="p-4 rounded-2xl bg-white dark:bg-neutral-900 border border-stone-200/80 dark:border-neutral-800 shadow-2xs">
+        <div className="p-3.5 rounded-2xl bg-white dark:bg-neutral-900 border border-stone-200/80 dark:border-neutral-800 shadow-2xs">
+          <span className="text-[10px] font-bold uppercase tracking-wider text-sky-600 dark:text-sky-400 block">
+            Drop-Off Pending
+          </span>
+          <p className="text-2xl font-black text-sky-600 dark:text-sky-400 mt-0.5">
+            {stats.dropoffPending}
+          </p>
+          <span className="text-[10px] text-gray-400">Uttara / Banani Hub</span>
+        </div>
+
+        <div className="p-3.5 rounded-2xl bg-white dark:bg-neutral-900 border border-stone-200/80 dark:border-neutral-800 shadow-2xs">
           <span className="text-[10px] font-bold uppercase tracking-wider text-indigo-600 dark:text-indigo-400 block">
-            At Uttara Hub
+            At Hub (Audit)
           </span>
           <p className="text-2xl font-black text-indigo-600 dark:text-indigo-400 mt-0.5">
             {stats.atHub}
           </p>
-          <span className="text-[10px] text-gray-400">In inspection audit</span>
+          <span className="text-[10px] text-gray-400">Quality Inspection</span>
         </div>
 
-        <div className="p-4 rounded-2xl bg-white dark:bg-neutral-900 border border-stone-200/80 dark:border-neutral-800 shadow-2xs">
+        <div className="p-3.5 rounded-2xl bg-white dark:bg-neutral-900 border border-stone-200/80 dark:border-neutral-800 shadow-2xs">
           <span className="text-[10px] font-bold uppercase tracking-wider text-emerald-600 dark:text-emerald-400 block">
             Resolved
           </span>
           <p className="text-2xl font-black text-emerald-600 dark:text-emerald-400 mt-0.5">
             {stats.resolved}
           </p>
-          <span className="text-[10px] text-gray-400">Swapped / Refunded</span>
+          <span className="text-[10px] text-gray-400">Swapped / Settled</span>
         </div>
 
-        <div className="p-4 rounded-2xl bg-white dark:bg-neutral-900 border border-stone-200/80 dark:border-neutral-800 shadow-2xs">
+        <div className="p-3.5 rounded-2xl bg-white dark:bg-neutral-900 border border-stone-200/80 dark:border-neutral-800 shadow-2xs">
           <span className="text-[10px] font-bold uppercase tracking-wider text-blue-600 dark:text-blue-400 block">
             Refunds Settled
           </span>
@@ -507,12 +793,13 @@ export const AdminReturnsTab: React.FC<AdminReturnsTabProps> = ({
             {/* Filter Pills */}
             <div className="flex flex-wrap items-center gap-2 text-xs">
               {/* Status Filter */}
-              <div className="flex items-center gap-1 bg-stone-100 dark:bg-neutral-800 p-1 rounded-xl">
+              <div className="flex flex-wrap items-center gap-1 bg-stone-100 dark:bg-neutral-800 p-1 rounded-xl">
                 {[
                   { id: "all", label: "All" },
                   { id: "pending", label: "Pending" },
                   { id: "approved", label: "Approved" },
                   { id: "pickup_scheduled", label: "Pickup" },
+                  { id: "dropoff_pending", label: "Drop-Off" },
                   { id: "received_at_hub", label: "At Hub" },
                   { id: "resolved", label: "Resolved" },
                   { id: "rejected", label: "Rejected" },
@@ -594,18 +881,27 @@ export const AdminReturnsTab: React.FC<AdminReturnsTabProps> = ({
                       <span className="px-2 py-0.5 rounded text-[10px] font-black uppercase tracking-wider bg-stone-200/90 dark:bg-neutral-700 text-stone-800 dark:text-neutral-200">
                         {ticket.type.replace(/_/g, " ")}
                       </span>
+
+                      {/* Handover method indicator */}
+                      {ticket.returnMethod && (
+                        <span className="px-2 py-0.5 rounded text-[10px] font-bold uppercase tracking-wider bg-purple-100 dark:bg-purple-950/60 text-purple-800 dark:text-purple-300">
+                          {ticket.returnMethod === "doorstep_pickup" ? "Doorstep Pickup" : "Hub Drop-off"}
+                        </span>
+                      )}
                     </div>
 
                     {/* Status Pill */}
                     <div className="flex items-center gap-2">
                       <span
-                        className={`px-3 py-1 rounded-xl text-xs font-black uppercase tracking-wider ${
+                        className={`px-3 py-1 rounded-xl text-xs font-black uppercase tracking-wider flex items-center gap-1.5 ${
                           ticket.status === "pending"
                             ? "bg-amber-100 text-amber-800 dark:bg-amber-950/60 dark:text-amber-300 border border-amber-300"
                             : ticket.status === "approved"
                             ? "bg-blue-100 text-blue-800 dark:bg-blue-950/60 dark:text-blue-300 border border-blue-300"
                             : ticket.status === "pickup_scheduled"
                             ? "bg-purple-100 text-purple-800 dark:bg-purple-950/60 dark:text-purple-300 border border-purple-300"
+                            : ticket.status === "dropoff_pending"
+                            ? "bg-sky-100 text-sky-800 dark:bg-sky-950/60 dark:text-sky-300 border border-sky-300"
                             : ticket.status === "received_at_hub"
                             ? "bg-indigo-100 text-indigo-800 dark:bg-indigo-950/60 dark:text-indigo-300 border border-indigo-300"
                             : ticket.status === "resolved"
@@ -613,7 +909,11 @@ export const AdminReturnsTab: React.FC<AdminReturnsTabProps> = ({
                             : "bg-rose-100 text-rose-800 dark:bg-rose-950/60 dark:text-rose-300 border border-rose-300"
                         }`}
                       >
-                        {ticket.status.replace(/_/g, " ")}
+                        {ticket.status === "pickup_scheduled" && <TruckIcon className="size-3.5" />}
+                        {ticket.status === "dropoff_pending" && <BuildingStorefrontIcon className="size-3.5" />}
+                        {ticket.status === "received_at_hub" && <ClipboardDocumentCheckIcon className="size-3.5" />}
+                        {ticket.status === "resolved" && <CheckCircleIcon className="size-3.5" />}
+                        <span>{ticket.status.replace(/_/g, " ")}</span>
                       </span>
                     </div>
                   </div>
@@ -655,7 +955,7 @@ export const AdminReturnsTab: React.FC<AdminReturnsTabProps> = ({
                     </div>
 
                     <div>
-                      <span className="text-gray-400 block text-[11px] font-semibold">Reverse Pickup Location</span>
+                      <span className="text-gray-400 block text-[11px] font-semibold">Customer Address</span>
                       <p className="text-gray-800 dark:text-neutral-200 mt-0.5">
                         {ticket.pickupAddress}
                       </p>
@@ -665,31 +965,108 @@ export const AdminReturnsTab: React.FC<AdminReturnsTabProps> = ({
                     </div>
                   </div>
 
-                  {/* Operational Tracking Badges (if assigned) */}
-                  {(ticket.reverseTrackingNumber || ticket.replacementTrackingNumber || ticket.inspectionResult) && (
-                    <div className="flex flex-wrap items-center gap-2 pt-2 border-t border-stone-200/50 dark:border-neutral-700/50 text-[11px]">
-                      {ticket.reverseTrackingNumber && (
-                        <span className="px-2 py-1 rounded bg-purple-50 dark:bg-purple-950/40 text-purple-700 dark:text-purple-300 border border-purple-200 dark:border-purple-800 font-mono">
-                          Reverse Pickup Trk: <strong>{ticket.reverseTrackingNumber}</strong>
+                  {/* ==========================================================
+                      OPERATIONAL LOGISTICS CARDS (Real-World Handover Details)
+                      ========================================================== */}
+                  {/* Case A: Reverse Doorstep Courier Pickup Scheduled */}
+                  {ticket.status === "pickup_scheduled" && (
+                    <div className="p-3.5 rounded-2xl bg-purple-50/70 dark:bg-purple-950/30 border border-purple-200 dark:border-purple-800/60 text-xs text-purple-950 dark:text-purple-200 space-y-1.5">
+                      <div className="flex items-center justify-between font-bold">
+                        <span className="flex items-center gap-1.5 text-purple-800 dark:text-purple-300">
+                          <TruckIcon className="size-4" />
+                          <span>Reverse Courier Scheduled: {ticket.reverseCourier || "Steadfast Courier"}</span>
                         </span>
+                        <span className="font-mono bg-purple-200 dark:bg-purple-900/60 px-2 py-0.5 rounded text-[11px]">
+                          Consignment #{ticket.reverseTrackingNumber}
+                        </span>
+                      </div>
+                      <div className="grid grid-cols-1 sm:grid-cols-3 gap-2 text-[11px] pt-1 text-purple-900/90 dark:text-purple-300">
+                        <div>
+                          <strong>Pickup Date:</strong> {ticket.pickupDate || "Next business day"}
+                        </div>
+                        <div>
+                          <strong>Time Window:</strong> {ticket.pickupTimeSlot || "Morning"}
+                        </div>
+                        <div>
+                          <strong>Reverse Fee:</strong>{" "}
+                          {ticket.pickupFee ? `৳${ticket.pickupFee} (${ticket.pickupFeeStatus || "COD"})` : "Free (Warranty)"}
+                        </div>
+                      </div>
+                      {ticket.pickupInstructions && (
+                        <p className="text-[11px] text-purple-800 dark:text-purple-300 italic pt-0.5">
+                          Rider Note: &quot;{ticket.pickupInstructions}&quot;
+                        </p>
                       )}
-                      {ticket.replacementTrackingNumber && (
-                        <span className="px-2 py-1 rounded bg-emerald-50 dark:bg-emerald-950/40 text-emerald-700 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-800 font-mono">
-                          Replacement Outbound Trk: <strong>{ticket.replacementTrackingNumber}</strong>
+                    </div>
+                  )}
+
+                  {/* Case B: Customer Drop-off at Hub Designated */}
+                  {ticket.status === "dropoff_pending" && (
+                    <div className="p-3.5 rounded-2xl bg-sky-50/70 dark:bg-sky-950/30 border border-sky-200 dark:border-sky-800/60 text-xs text-sky-950 dark:text-sky-200 space-y-1.5">
+                      <div className="flex items-center justify-between font-bold">
+                        <span className="flex items-center gap-1.5 text-sky-800 dark:text-sky-300">
+                          <BuildingStorefrontIcon className="size-4" />
+                          <span>Designated Drop-Off Hub: {ticket.dropoffHubName || "Uttara Flagship Atelier"}</span>
                         </span>
+                        {ticket.dropoffDeadline && (
+                          <span className="font-mono bg-sky-200 dark:bg-sky-900/60 px-2 py-0.5 rounded text-[11px]">
+                            Deadline: {ticket.dropoffDeadline}
+                          </span>
+                        )}
+                      </div>
+                      <p className="text-[11px] text-sky-900/90 dark:text-sky-300">
+                        <strong>Address:</strong> {ticket.dropoffHubAddress} • <strong>Hours:</strong> {ticket.dropoffHubHours}
+                      </p>
+                      {ticket.dropoffHubPhone && (
+                        <p className="text-[11px] text-sky-800 dark:text-sky-300 font-mono">
+                          Desk Contact: {ticket.dropoffHubPhone}
+                        </p>
                       )}
-                      {ticket.inspectionResult && (
-                        <span
-                          className={`px-2 py-1 rounded border font-semibold ${
-                            ticket.inspectionResult === "passed"
-                              ? "bg-emerald-50 text-emerald-700 border-emerald-200 dark:bg-emerald-950/40 dark:text-emerald-400"
-                              : ticket.inspectionResult === "pending"
-                              ? "bg-gray-100 text-gray-600 border-gray-200 dark:bg-neutral-800 dark:text-neutral-400"
-                              : "bg-red-50 text-red-700 border-red-200 dark:bg-red-950/40 dark:text-red-400"
-                          }`}
-                        >
-                          Audit: {ticket.inspectionResult.replace(/_/g, " ")}
+                    </div>
+                  )}
+
+                  {/* Case C: Received at Hub (Quality Audit Conducted) */}
+                  {ticket.status === "received_at_hub" && (
+                    <div className="p-3.5 rounded-2xl bg-indigo-50/70 dark:bg-indigo-950/30 border border-indigo-200 dark:border-indigo-800/60 text-xs text-indigo-950 dark:text-indigo-200 space-y-1.5">
+                      <div className="flex items-center justify-between font-bold">
+                        <span className="flex items-center gap-1.5 text-indigo-800 dark:text-indigo-300">
+                          <ClipboardDocumentCheckIcon className="size-4" />
+                          <span>Parcel Received at Dhaka Hub • Quality Audit: {ticket.inspectionResult ? ticket.inspectionResult.replace(/_/g, " ").toUpperCase() : "PASSED"}</span>
                         </span>
+                        <span className="text-[11px] font-mono text-indigo-700 dark:text-indigo-400">
+                          Ready to {ticket.type === "refund" ? "Settle Refund" : "Dispatch Replacement"}
+                        </span>
+                      </div>
+                      {ticket.inspectionNotes && (
+                        <p className="text-[11px] text-indigo-900/90 dark:text-indigo-300">
+                          <strong>Inspection Notes:</strong> {ticket.inspectionNotes}
+                        </p>
+                      )}
+                    </div>
+                  )}
+
+                  {/* Case D: Resolved Ticket Overview */}
+                  {ticket.status === "resolved" && (
+                    <div className="p-3.5 rounded-2xl bg-emerald-50/70 dark:bg-emerald-950/30 border border-emerald-200 dark:border-emerald-800/60 text-xs text-emerald-950 dark:text-emerald-200 space-y-1">
+                      <div className="flex items-center justify-between font-bold">
+                        <span className="flex items-center gap-1.5 text-emerald-800 dark:text-emerald-300">
+                          <CheckCircleIcon className="size-4" />
+                          <span>
+                            {ticket.type === "refund"
+                              ? `Refund Settled: ৳${ticket.refundAmount || 0} via ${ticket.refundMethod || "bKash"}`
+                              : `Replacement Dispatched via ${ticket.replacementCourier || "Steadfast"}`}
+                          </span>
+                        </span>
+                        <span className="font-mono bg-emerald-200 dark:bg-emerald-900/60 px-2 py-0.5 rounded text-[11px]">
+                          {ticket.type === "refund"
+                            ? `TrxID: ${ticket.refundTransactionId || "N/A"}`
+                            : `Trk: ${ticket.replacementTrackingNumber || "N/A"}`}
+                        </span>
+                      </div>
+                      {ticket.replacementItemDetails && (
+                        <p className="text-[11px] text-emerald-900/80 dark:text-emerald-300/80">
+                          Fresh Garment: {ticket.replacementItemDetails}
+                        </p>
                       )}
                     </div>
                   )}
@@ -707,16 +1084,155 @@ export const AdminReturnsTab: React.FC<AdminReturnsTabProps> = ({
                     )}
                   </div>
 
-                  {/* Action Buttons Toolbar */}
+                  {/* ==========================================================
+                      STEP-BY-STEP LIFECYCLE ACTION BAR (The Real-World Solution)
+                      ========================================================== */}
+                  <div className="p-3 rounded-2xl bg-stone-100/80 dark:bg-neutral-800/80 border border-stone-200/80 dark:border-neutral-700/80 space-y-2">
+                    <div className="flex flex-wrap items-center justify-between gap-2">
+                      <span className="text-[11px] font-bold uppercase tracking-wider text-gray-500 dark:text-neutral-400">
+                        Lifecycle Operations:
+                      </span>
+
+                      {/* 1. Pending Stage Actions */}
+                      {ticket.status === "pending" && (
+                        <div className="flex flex-wrap items-center gap-2">
+                          <button
+                            type="button"
+                            onClick={() => setApproveChoiceTicket(ticket)}
+                            className="px-3.5 py-1.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs shadow-xs transition flex items-center gap-1.5 cursor-pointer"
+                          >
+                            <CheckCircleIcon className="size-4" />
+                            <span>Approve Request &rarr;</span>
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => setRejectModalTicket(ticket)}
+                            className="px-3 py-1.5 rounded-xl border border-rose-300 text-rose-700 dark:text-rose-400 hover:bg-rose-50 dark:hover:bg-rose-950/30 font-bold text-xs transition cursor-pointer"
+                          >
+                            <XCircleIcon className="size-4 inline mr-1" />
+                            <span>Decline</span>
+                          </button>
+                        </div>
+                      )}
+
+                      {/* 2. Approved Stage Actions */}
+                      {ticket.status === "approved" && (
+                        <div className="flex flex-wrap items-center gap-2">
+                          <button
+                            type="button"
+                            onClick={() => setPickupModalTicket(ticket)}
+                            className="px-3.5 py-1.5 rounded-xl bg-purple-600 hover:bg-purple-700 text-white font-bold text-xs shadow-xs transition flex items-center gap-1.5 cursor-pointer"
+                          >
+                            <TruckIcon className="size-4" />
+                            <span>Schedule Doorstep Pickup</span>
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => setDropoffModalTicket(ticket)}
+                            className="px-3.5 py-1.5 rounded-xl bg-sky-600 hover:bg-sky-700 text-white font-bold text-xs shadow-xs transition flex items-center gap-1.5 cursor-pointer"
+                          >
+                            <BuildingStorefrontIcon className="size-4" />
+                            <span>Tell Customer Drop-off Hub</span>
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => setRejectModalTicket(ticket)}
+                            className="px-3 py-1.5 rounded-xl border border-rose-300 text-rose-700 dark:text-rose-400 hover:bg-rose-50 dark:hover:bg-rose-950/30 font-bold text-xs transition cursor-pointer"
+                          >
+                            <span>Decline</span>
+                          </button>
+                        </div>
+                      )}
+
+                      {/* 3. Pickup Scheduled Stage Actions */}
+                      {ticket.status === "pickup_scheduled" && (
+                        <div className="flex flex-wrap items-center gap-2">
+                          <button
+                            type="button"
+                            onClick={() => setInspectModalTicket(ticket)}
+                            className="px-3.5 py-1.5 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white font-bold text-xs shadow-xs transition flex items-center gap-1.5 cursor-pointer"
+                          >
+                            <ClipboardDocumentCheckIcon className="size-4" />
+                            <span>Mark Received &amp; Audit Quality</span>
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => setPickupModalTicket(ticket)}
+                            className="px-3 py-1.5 rounded-xl border border-stone-300 dark:border-neutral-700 bg-white dark:bg-neutral-900 text-gray-700 dark:text-neutral-300 font-bold text-xs hover:bg-stone-50 transition cursor-pointer"
+                          >
+                            <ArrowPathIcon className="size-3.5 inline mr-1" />
+                            <span>Reschedule Pickup</span>
+                          </button>
+                        </div>
+                      )}
+
+                      {/* 4. Drop-off Pending Stage Actions */}
+                      {ticket.status === "dropoff_pending" && (
+                        <div className="flex flex-wrap items-center gap-2">
+                          <button
+                            type="button"
+                            onClick={() => setInspectModalTicket(ticket)}
+                            className="px-3.5 py-1.5 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white font-bold text-xs shadow-xs transition flex items-center gap-1.5 cursor-pointer"
+                          >
+                            <ClipboardDocumentCheckIcon className="size-4" />
+                            <span>Mark Dropped Off &amp; Audit Quality</span>
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => setDropoffModalTicket(ticket)}
+                            className="px-3 py-1.5 rounded-xl border border-stone-300 dark:border-neutral-700 bg-white dark:bg-neutral-900 text-gray-700 dark:text-neutral-300 font-bold text-xs hover:bg-stone-50 transition cursor-pointer"
+                          >
+                            <BuildingStorefrontIcon className="size-3.5 inline mr-1" />
+                            <span>Change Hub / Extend</span>
+                          </button>
+                        </div>
+                      )}
+
+                      {/* 5. Received at Hub Stage Actions */}
+                      {ticket.status === "received_at_hub" && (
+                        <div className="flex flex-wrap items-center gap-2">
+                          {ticket.type === "refund" ? (
+                            <button
+                              type="button"
+                              onClick={() => setRefundModalTicket(ticket)}
+                              className="px-3.5 py-1.5 rounded-xl bg-amber-600 hover:bg-amber-700 text-white font-bold text-xs shadow-xs transition flex items-center gap-1.5 cursor-pointer"
+                            >
+                              <BanknotesIcon className="size-4" />
+                              <span>Settle Refund via bKash/Bank &rarr;</span>
+                            </button>
+                          ) : (
+                            <button
+                              type="button"
+                              onClick={() => setDispatchModalTicket(ticket)}
+                              className="px-3.5 py-1.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs shadow-xs transition flex items-center gap-1.5 cursor-pointer"
+                            >
+                              <TruckIcon className="size-4" />
+                              <span>Dispatch Replacement Garment &rarr;</span>
+                            </button>
+                          )}
+                        </div>
+                      )}
+
+                      {/* 6. Resolved Stage Badge */}
+                      {ticket.status === "resolved" && (
+                        <div className="inline-flex items-center gap-1.5 text-xs font-bold text-emerald-700 dark:text-emerald-400">
+                          <CheckCircleIcon className="size-4" />
+                          <span>Ticket Settled &amp; Completed</span>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+
+                  {/* Secondary Utilities Toolbar */}
                   <div className="flex flex-wrap items-center justify-between gap-3 pt-2 border-t border-stone-200/60 dark:border-neutral-700/60">
                     <div className="flex items-center gap-2">
                       {/* Manage / Update Button */}
                       <button
                         type="button"
                         onClick={() => handleOpenEdit(ticket)}
-                        className="px-3.5 py-1.5 rounded-xl bg-stone-900 dark:bg-white text-white dark:text-stone-900 font-bold text-xs hover:bg-stone-800 dark:hover:bg-stone-100 transition cursor-pointer"
+                        className="px-3 py-1.5 rounded-xl bg-stone-900 dark:bg-white text-white dark:text-stone-900 font-bold text-xs hover:bg-stone-800 dark:hover:bg-stone-100 transition cursor-pointer"
                       >
-                        Manage &amp; Update
+                        Advanced Edit
                       </button>
 
                       {/* Print Thermal Reverse Consignment Sticker */}
@@ -732,17 +1248,16 @@ export const AdminReturnsTab: React.FC<AdminReturnsTabProps> = ({
                     </div>
 
                     <div className="flex items-center gap-2">
-                      {/* WhatsApp Customer */}
+                      {/* WhatsApp Customer with smart message tailored to stage */}
                       <a
-                        href={`https://wa.me/${ticket.customerPhone.replace(/[^0-9]/g, "")}?text=Hello%20${encodeURIComponent(
-                          ticket.customerName
-                        )},%20this%20is%20Fedoll%20Apparel%20regarding%20your%20Return/Exchange%20Ticket%20${ticket.ticketNumber}%20(Order%20${ticket.orderNumber}).`}
+                        href={getReturnWhatsAppUrl(ticket, policyForm)}
                         target="_blank"
                         rel="noopener noreferrer"
                         className="px-3 py-1.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs transition flex items-center gap-1.5"
+                        title="Open WhatsApp with courteous pre-filled stage update"
                       >
                         <ChatBubbleLeftRightIcon className="size-3.5" />
-                        <span>WhatsApp</span>
+                        <span>WhatsApp Customer</span>
                       </a>
 
                       {/* Delete */}
@@ -1742,7 +2257,9 @@ export const AdminReturnsTab: React.FC<AdminReturnsTabProps> = ({
                         <div className="grid grid-cols-2 gap-3 border-b-2 border-black pb-3 text-[11px]">
                           <div>
                             <span className="font-black uppercase text-[10px] block text-gray-600">
-                              PICKUP FROM (CUSTOMER):
+                              {stickerTicket.returnMethod === "hub_dropoff"
+                                ? "CUSTOMER (DROP-OFF SENDER):"
+                                : "PICKUP FROM (CUSTOMER):"}
                             </span>
                             <p className="font-bold text-xs">{stickerTicket.customerName}</p>
                             <p className="font-mono text-xs">{stickerTicket.customerPhone}</p>
@@ -1750,15 +2267,53 @@ export const AdminReturnsTab: React.FC<AdminReturnsTabProps> = ({
                           </div>
                           <div className="border-l border-gray-400 pl-3">
                             <span className="font-black uppercase text-[10px] block text-gray-600">
-                              RETURN TO (ATELIER HUB):
+                              {stickerTicket.returnMethod === "hub_dropoff"
+                                ? "DESIGNATED DROP-OFF HUB:"
+                                : "RETURN TO (ATELIER HUB):"}
                             </span>
-                            <p className="font-bold text-xs">Fedoll Inspection Desk</p>
-                            <p className="text-[10px] mt-0.5 leading-tight">
-                              House 14, Road 7, Sector 3, Uttara Model Town, Dhaka 1230
-                            </p>
-                            <p className="font-mono text-[10px]">Hotline: {policyForm.supportHotline}</p>
+                            {stickerTicket.returnMethod === "hub_dropoff" && stickerTicket.dropoffHubName ? (
+                              <>
+                                <p className="font-bold text-xs">{stickerTicket.dropoffHubName}</p>
+                                <p className="text-[10px] mt-0.5 leading-tight">
+                                  {stickerTicket.dropoffHubAddress || "Fedoll Inspection Desk"}
+                                </p>
+                                <p className="font-mono text-[10px]">
+                                  Hours: {stickerTicket.dropoffHubHours || "11:00 AM – 8:00 PM"}
+                                </p>
+                                {stickerTicket.dropoffDeadline && (
+                                  <p className="text-[10px] font-bold text-red-600">
+                                    Drop-off Deadline: {stickerTicket.dropoffDeadline}
+                                  </p>
+                                )}
+                              </>
+                            ) : (
+                              <>
+                                <p className="font-bold text-xs">Fedoll Inspection Desk</p>
+                                <p className="text-[10px] mt-0.5 leading-tight">
+                                  House 14, Road 7, Sector 3, Uttara Model Town, Dhaka 1230
+                                </p>
+                                <p className="font-mono text-[10px]">Hotline: {policyForm.supportHotline}</p>
+                              </>
+                            )}
                           </div>
                         </div>
+
+                        {/* Reverse Logistics Booking Info if Doorstep Pickup */}
+                        {stickerTicket.returnMethod === "doorstep_pickup" && stickerTicket.reverseCourier && (
+                          <div className="border-b-2 border-black pb-2 text-[10px] bg-stone-50 p-2 rounded">
+                            <div className="flex items-center justify-between font-bold">
+                              <span>Courier: {stickerTicket.reverseCourier}</span>
+                              <span className="font-mono">
+                                Consignment: {stickerTicket.reverseTrackingNumber || "PENDING"}
+                              </span>
+                            </div>
+                            {(stickerTicket.pickupDate || stickerTicket.pickupTimeSlot) && (
+                              <p className="text-gray-700 mt-0.5">
+                                Scheduled Pickup: {stickerTicket.pickupDate} ({stickerTicket.pickupTimeSlot})
+                              </p>
+                            )}
+                          </div>
+                        )}
 
                         {/* Garment & Swap Instructions */}
                         <div className="border-b-2 border-black pb-3 text-[11px] space-y-1">
@@ -1821,6 +2376,70 @@ export const AdminReturnsTab: React.FC<AdminReturnsTabProps> = ({
           </div>
         </Dialog>
       </Transition>
+
+      {/* --------------------------------------------------------------------- */}
+      {/* Bangladesh Real-World Reverse Logistics & Resolution Lifecycle Modals  */}
+      {/* --------------------------------------------------------------------- */}
+
+      {/* 1. Approval Decision Modal: Pickup vs Drop-off vs Quick Approve */}
+      <ApproveChoiceModal
+        ticket={approveChoiceTicket}
+        isOpen={!!approveChoiceTicket}
+        onClose={() => setApproveChoiceTicket(null)}
+        onSelectPickup={handleSelectPickupFromChoice}
+        onSelectDropoff={handleSelectDropoffFromChoice}
+        onQuickApprove={handleQuickApprove}
+      />
+
+      {/* 2. Reverse Courier Pickup Scheduler (Steadfast, Pathao, RedX, Paperfly, eCourier) */}
+      <SchedulePickupModal
+        ticket={pickupModalTicket}
+        policy={policyForm}
+        isOpen={!!pickupModalTicket}
+        onClose={() => setPickupModalTicket(null)}
+        onConfirm={handleConfirmPickupSchedule}
+      />
+
+      {/* 3. Drop-off Hub Designation Modal (Uttara, Banani, Dhanmondi, Courier hub) */}
+      <DesignateDropoffModal
+        ticket={dropoffModalTicket}
+        policy={policyForm}
+        isOpen={!!dropoffModalTicket}
+        onClose={() => setDropoffModalTicket(null)}
+        onConfirm={handleConfirmDropoff}
+      />
+
+      {/* 4. Atelier Quality Inspection Audit Modal (Received at Hub) */}
+      <QualityInspectionModal
+        ticket={inspectModalTicket}
+        isOpen={!!inspectModalTicket}
+        onClose={() => setInspectModalTicket(null)}
+        onConfirm={handleConfirmInspection}
+      />
+
+      {/* 5. Outbound Exchange Dispatch Modal (Steadfast, Pathao, RedX, Paperfly) */}
+      <DispatchReplacementModal
+        ticket={dispatchModalTicket}
+        isOpen={!!dispatchModalTicket}
+        onClose={() => setDispatchModalTicket(null)}
+        onConfirm={handleConfirmDispatch}
+      />
+
+      {/* 6. Monetary Refund Settlement Modal (bKash / Nagad / Rocket / Bank Transfer) */}
+      <SettleRefundModal
+        ticket={refundModalTicket}
+        isOpen={!!refundModalTicket}
+        onClose={() => setRefundModalTicket(null)}
+        onConfirm={handleConfirmRefund}
+      />
+
+      {/* 7. Reject / Decline Ticket Modal */}
+      <RejectTicketModal
+        ticket={rejectModalTicket}
+        isOpen={!!rejectModalTicket}
+        onClose={() => setRejectModalTicket(null)}
+        onConfirm={handleConfirmReject}
+      />
     </div>
   );
 };

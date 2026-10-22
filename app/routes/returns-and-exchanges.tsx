@@ -30,7 +30,12 @@ import {
   ClipboardDocumentCheckIcon,
   DocumentTextIcon,
   ChatBubbleLeftRightIcon,
+  MapPinIcon,
+  CalendarDaysIcon,
+  TagIcon,
+  PhoneIcon,
 } from "@heroicons/react/24/outline";
+import { FEDOLL_DROP_OFF_HUBS } from "~/components/admin/returns";
 import { toast } from "sonner";
 import { Spinner } from "~/components/ui/spinner";
 
@@ -68,6 +73,8 @@ export default function ReturnsAndExchangesPage() {
     customerEmail: "",
     pickupAddress: "",
     zone: "inside_dhaka" as "inside_dhaka" | "outside_dhaka",
+    returnMethod: "doorstep_pickup" as "doorstep_pickup" | "hub_dropoff",
+    selectedHubId: "uttara_flagship",
     type: "size_exchange" as ReturnExchangeRequest["type"],
     itemDetails: "",
     requestedReplacement: "",
@@ -148,7 +155,7 @@ export default function ReturnsAndExchangesPage() {
       toast.error("Please provide your Name and Contact Phone Number.");
       return;
     }
-    if (!formData.pickupAddress.trim()) {
+    if (formData.returnMethod === "doorstep_pickup" && !formData.pickupAddress.trim()) {
       toast.error("Please provide your Doorstep Reverse Pickup Address.");
       return;
     }
@@ -163,13 +170,38 @@ export default function ReturnsAndExchangesPage() {
         ? `${formData.reason} - ${formData.additionalNotes.trim()}`
         : formData.reason;
 
+      const isDropoff = formData.returnMethod === "hub_dropoff";
+      const selectedHub =
+        FEDOLL_DROP_OFF_HUBS.find((h) => h.id === formData.selectedHubId) || FEDOLL_DROP_OFF_HUBS[0];
+
+      // Drop-off deadline (7 calendar days)
+      const targetDeadline = new Date();
+      targetDeadline.setDate(targetDeadline.getDate() + 7);
+      const dropoffDeadlineStr = targetDeadline.toISOString().split("T")[0];
+
       const record = await createReturnExchangeRequest({
         orderNumber: formData.orderNumber.trim().toUpperCase(),
         customerName: formData.customerName.trim(),
         customerPhone: formData.customerPhone.trim(),
         customerEmail: formData.customerEmail.trim(),
-        pickupAddress: formData.pickupAddress.trim(),
+        pickupAddress: isDropoff
+          ? `Self drop-off at ${selectedHub.name} (${selectedHub.address})`
+          : formData.pickupAddress.trim(),
         zone: formData.zone,
+        returnMethod: formData.returnMethod,
+        ...(isDropoff
+          ? {
+              status: "dropoff_pending" as const,
+              dropoffHubName: selectedHub.name,
+              dropoffHubAddress: selectedHub.address,
+              dropoffHubPhone: selectedHub.phone,
+              dropoffHubHours: selectedHub.hours,
+              dropoffDeadline: dropoffDeadlineStr,
+              dropoffInstructions: `Please present Ticket #${formData.orderNumber} at the ${selectedHub.name} concierge. Keep garment tags and barcode labels intact.`,
+            }
+          : {
+              status: "pending" as const,
+            }),
         type: formData.type,
         itemDetails: formData.itemDetails.trim(),
         requestedReplacement:
@@ -181,7 +213,11 @@ export default function ReturnsAndExchangesPage() {
       });
 
       setSubmittedTicket(record);
-      toast.success(`Return request submitted! Ticket: ${record.ticketNumber}`);
+      toast.success(
+        isDropoff
+          ? `Drop-off ticket generated! Please visit ${selectedHub.name} before ${dropoffDeadlineStr}.`
+          : `Return request submitted! Ticket: ${record.ticketNumber}`
+      );
     } catch (err: unknown) {
       const error = err as Error;
       toast.error(error.message || "Failed to submit request. Please try again.");
@@ -588,7 +624,7 @@ export default function ReturnsAndExchangesPage() {
                     <div className="flex items-center justify-between text-xs">
                       <span className="text-gray-400">Order Number:</span>
                       <span className="font-bold text-gray-900 dark:text-white">
-                        {submittedTicket.orderNumber}
+                        #{submittedTicket.orderNumber}
                       </span>
                     </div>
                     <div className="flex items-center justify-between text-xs">
@@ -603,6 +639,22 @@ export default function ReturnsAndExchangesPage() {
                         {submittedTicket.type.replace(/_/g, " ")}
                       </span>
                     </div>
+                    <div className="flex items-center justify-between text-xs pt-1 border-t border-stone-200 dark:border-neutral-700">
+                      <span className="text-gray-400">Handover:</span>
+                      <span className="font-bold text-orange-600 dark:text-orange-400">
+                        {submittedTicket.returnMethod === "hub_dropoff"
+                          ? `Drop-off at ${submittedTicket.dropoffHubName || "Fedoll Atelier"}`
+                          : "Doorstep Courier Pickup"}
+                      </span>
+                    </div>
+                    {submittedTicket.returnMethod === "hub_dropoff" && submittedTicket.dropoffDeadline && (
+                      <div className="flex items-center justify-between text-xs">
+                        <span className="text-gray-400">Deadline:</span>
+                        <span className="font-bold text-red-600">
+                          {submittedTicket.dropoffDeadline}
+                        </span>
+                      </div>
+                    )}
                   </div>
 
                   <div className="flex flex-wrap items-center justify-center gap-3 pt-2">
@@ -824,44 +876,148 @@ export default function ReturnsAndExchangesPage() {
                     </div>
                   )}
 
-                  {/* Reverse Pickup Address */}
+                  {/* Step 3: Handover Preference */}
                   <div className="space-y-3">
-                    <div className="flex items-center justify-between">
-                      <label className="text-xs font-bold text-gray-700 dark:text-neutral-300">
-                        Doorstep Reverse Pickup Address *
-                      </label>
-                      <div className="flex items-center gap-3 text-xs">
-                        <label className="flex items-center gap-1.5 cursor-pointer">
-                          <input
-                            type="radio"
-                            name="zone"
-                            checked={formData.zone === "inside_dhaka"}
-                            onChange={() => setFormData({ ...formData, zone: "inside_dhaka" })}
-                            className="text-orange-600 focus:ring-orange-500"
-                          />
-                          <span>Inside Dhaka (৳{data.exchangeFeeInsideDhaka})</span>
+                    <label className="text-xs font-bold text-gray-700 dark:text-neutral-300 block">
+                      3. Select Return Handover Method *
+                    </label>
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                      <button
+                        type="button"
+                        onClick={() => setFormData({ ...formData, returnMethod: "doorstep_pickup" })}
+                        className={`p-4 rounded-2xl border text-left transition flex items-start gap-3 cursor-pointer ${
+                          formData.returnMethod === "doorstep_pickup"
+                            ? "bg-orange-50/80 dark:bg-orange-950/40 border-orange-500 ring-2 ring-orange-500/20"
+                            : "bg-stone-50 dark:bg-neutral-800 border-stone-200 dark:border-neutral-700"
+                        }`}
+                      >
+                        <div className="p-2 rounded-xl bg-orange-100 dark:bg-orange-900/60 text-orange-600 dark:text-orange-400 shrink-0 mt-0.5">
+                          <TruckIcon className="size-5" />
+                        </div>
+                        <div>
+                          <span className="block text-xs font-black text-gray-900 dark:text-white">
+                            Doorstep Reverse Courier Pickup
+                          </span>
+                          <span className="block text-[11px] text-gray-500 dark:text-neutral-400 mt-0.5 leading-relaxed">
+                            Steadfast or Pathao courier rider collects from your home or office across all 64 districts.
+                          </span>
+                        </div>
+                      </button>
+
+                      <button
+                        type="button"
+                        onClick={() => setFormData({ ...formData, returnMethod: "hub_dropoff" })}
+                        className={`p-4 rounded-2xl border text-left transition flex items-start gap-3 cursor-pointer ${
+                          formData.returnMethod === "hub_dropoff"
+                            ? "bg-blue-50/80 dark:bg-blue-950/40 border-blue-500 ring-2 ring-blue-500/20"
+                            : "bg-stone-50 dark:bg-neutral-800 border-stone-200 dark:border-neutral-700"
+                        }`}
+                      >
+                        <div className="p-2 rounded-xl bg-blue-100 dark:bg-blue-900/60 text-blue-600 dark:text-blue-400 shrink-0 mt-0.5">
+                          <BuildingStorefrontIcon className="size-5" />
+                        </div>
+                        <div>
+                          <span className="block text-xs font-black text-gray-900 dark:text-white">
+                            Self Drop-Off at Fedoll Atelier Hub
+                          </span>
+                          <span className="block text-[11px] text-gray-500 dark:text-neutral-400 mt-0.5 leading-relaxed">
+                            Hand over parcel in person at Uttara Flagship, Banani Concierge, or Dhanmondi Point. 100% Free.
+                          </span>
+                        </div>
+                      </button>
+                    </div>
+                  </div>
+
+                  {/* If Drop-Off Hub chosen */}
+                  {formData.returnMethod === "hub_dropoff" ? (
+                    <div className="space-y-3 p-5 rounded-3xl bg-blue-50/60 dark:bg-blue-950/20 border border-blue-200/80 dark:border-blue-800/40">
+                      <div className="flex items-center justify-between">
+                        <label className="text-xs font-black text-blue-950 dark:text-blue-300 flex items-center gap-1.5">
+                          <BuildingStorefrontIcon className="size-4 text-blue-600" />
+                          <span>Choose Convenient Fedoll Atelier Drop-Off Location</span>
                         </label>
-                        <label className="flex items-center gap-1.5 cursor-pointer">
-                          <input
-                            type="radio"
-                            name="zone"
-                            checked={formData.zone === "outside_dhaka"}
-                            onChange={() => setFormData({ ...formData, zone: "outside_dhaka" })}
-                            className="text-orange-600 focus:ring-orange-500"
-                          />
-                          <span>Outside Dhaka (৳{data.exchangeFeeOutsideDhaka})</span>
-                        </label>
+                        <span className="text-[10px] font-bold text-emerald-600 bg-emerald-100 dark:bg-emerald-950/60 px-2 py-0.5 rounded-full">
+                          0৳ Logistics Fee
+                        </span>
+                      </div>
+
+                      <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                        {FEDOLL_DROP_OFF_HUBS.map((hub) => (
+                          <button
+                            key={hub.id}
+                            type="button"
+                            onClick={() => setFormData({ ...formData, selectedHubId: hub.id })}
+                            className={`p-3.5 rounded-2xl text-left border transition cursor-pointer flex flex-col justify-between ${
+                              formData.selectedHubId === hub.id
+                                ? "bg-white dark:bg-neutral-900 border-blue-600 ring-2 ring-blue-500/20 shadow-xs"
+                                : "bg-white/70 dark:bg-neutral-900/60 border-blue-100 dark:border-neutral-800 hover:border-blue-300"
+                            }`}
+                          >
+                            <div>
+                              <div className="flex items-center justify-between">
+                                <span className="font-bold text-xs text-gray-900 dark:text-white">
+                                  {hub.name}
+                                </span>
+                                {formData.selectedHubId === hub.id && (
+                                  <CheckCircleIcon className="size-4 text-blue-600 shrink-0" />
+                                )}
+                              </div>
+                              <p className="text-[11px] text-gray-500 dark:text-neutral-400 mt-1 line-clamp-2">
+                                {hub.address}
+                              </p>
+                            </div>
+                            <div className="mt-3 pt-2 border-t border-stone-100 dark:border-neutral-800 text-[10px] space-y-0.5">
+                              <span className="block text-blue-600 dark:text-blue-400 font-semibold">
+                                🕒 {hub.hours}
+                              </span>
+                              <span className="block text-gray-400 font-mono">
+                                📞 {hub.phone}
+                              </span>
+                            </div>
+                          </button>
+                        ))}
                       </div>
                     </div>
-                    <textarea
-                      rows={2}
-                      value={formData.pickupAddress}
-                      onChange={(e) => setFormData({ ...formData, pickupAddress: e.target.value })}
-                      placeholder="Holding / Flat #, Road, Area / Thana, City / District"
-                      className="w-full text-xs p-3 rounded-xl bg-stone-50 dark:bg-neutral-800 border border-stone-200 dark:border-neutral-700"
-                      required
-                    />
-                  </div>
+                  ) : (
+                    /* If Doorstep Reverse Courier Pickup chosen */
+                    <div className="space-y-3">
+                      <div className="flex items-center justify-between">
+                        <label className="text-xs font-bold text-gray-700 dark:text-neutral-300">
+                          Doorstep Reverse Pickup Address *
+                        </label>
+                        <div className="flex items-center gap-3 text-xs">
+                          <label className="flex items-center gap-1.5 cursor-pointer">
+                            <input
+                              type="radio"
+                              name="zone"
+                              checked={formData.zone === "inside_dhaka"}
+                              onChange={() => setFormData({ ...formData, zone: "inside_dhaka" })}
+                              className="text-orange-600 focus:ring-orange-500"
+                            />
+                            <span>Inside Dhaka (৳{data.exchangeFeeInsideDhaka})</span>
+                          </label>
+                          <label className="flex items-center gap-1.5 cursor-pointer">
+                            <input
+                              type="radio"
+                              name="zone"
+                              checked={formData.zone === "outside_dhaka"}
+                              onChange={() => setFormData({ ...formData, zone: "outside_dhaka" })}
+                              className="text-orange-600 focus:ring-orange-500"
+                            />
+                            <span>Outside Dhaka (৳{data.exchangeFeeOutsideDhaka})</span>
+                          </label>
+                        </div>
+                      </div>
+                      <textarea
+                        rows={2}
+                        value={formData.pickupAddress}
+                        onChange={(e) => setFormData({ ...formData, pickupAddress: e.target.value })}
+                        placeholder="Holding / Flat #, Road, Area / Thana, City / District"
+                        className="w-full text-xs p-3 rounded-xl bg-stone-50 dark:bg-neutral-800 border border-stone-200 dark:border-neutral-700"
+                        required={formData.returnMethod === "doorstep_pickup"}
+                      />
+                    </div>
+                  )}
 
                   {/* Reason & Notes */}
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
@@ -1017,6 +1173,8 @@ export default function ReturnsAndExchangesPage() {
                                   ? "bg-blue-100 text-blue-800 dark:bg-blue-950/60 dark:text-blue-300"
                                   : trackedRequest.status === "pickup_scheduled"
                                   ? "bg-purple-100 text-purple-800 dark:bg-purple-950/60 dark:text-purple-300"
+                                  : trackedRequest.status === "dropoff_pending"
+                                  ? "bg-sky-100 text-sky-800 dark:bg-sky-950/60 dark:text-sky-300"
                                   : trackedRequest.status === "received_at_hub"
                                   ? "bg-indigo-100 text-indigo-800 dark:bg-indigo-950/60 dark:text-indigo-300"
                                   : trackedRequest.status === "resolved"
@@ -1029,15 +1187,16 @@ export default function ReturnsAndExchangesPage() {
                           </div>
                         </div>
 
-                        {/* Visual Progress Stepper for Ticket */}
-                        <div className="p-6 rounded-2xl bg-white dark:bg-neutral-900 border border-stone-200 dark:border-neutral-800 space-y-4">
+                        {/* 5-Step Visual Progress Stepper for Ticket */}
+                        <div className="p-6 rounded-3xl bg-white dark:bg-neutral-900 border border-stone-200 dark:border-neutral-800 space-y-4">
                           <h4 className="text-xs font-bold text-gray-400 uppercase tracking-wider">
-                            Reverse Logistics Progression
+                            Lifecycle Progression
                           </h4>
-                          <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 text-center text-xs">
+                          <div className="grid grid-cols-2 sm:grid-cols-5 gap-2 text-center text-xs">
+                            {/* Step 1: Created */}
                             <div
                               className={`p-3 rounded-xl border ${
-                                ["pending", "approved", "pickup_scheduled", "received_at_hub", "resolved"].includes(
+                                ["pending", "approved", "pickup_scheduled", "dropoff_pending", "received_at_hub", "resolved"].includes(
                                   trackedRequest.status
                                 )
                                   ? "bg-emerald-50 dark:bg-emerald-950/40 border-emerald-400 text-emerald-800 dark:text-emerald-300 font-bold"
@@ -1048,9 +1207,10 @@ export default function ReturnsAndExchangesPage() {
                               <span>Ticket Created</span>
                             </div>
 
+                            {/* Step 2: Approved */}
                             <div
                               className={`p-3 rounded-xl border ${
-                                ["approved", "pickup_scheduled", "received_at_hub", "resolved"].includes(
+                                ["approved", "pickup_scheduled", "dropoff_pending", "received_at_hub", "resolved"].includes(
                                   trackedRequest.status
                                 )
                                   ? "bg-emerald-50 dark:bg-emerald-950/40 border-emerald-400 text-emerald-800 dark:text-emerald-300 font-bold"
@@ -1061,9 +1221,10 @@ export default function ReturnsAndExchangesPage() {
                               <span>Approved</span>
                             </div>
 
+                            {/* Step 3: Handover Scheduled / Drop-off Designated */}
                             <div
                               className={`p-3 rounded-xl border ${
-                                ["pickup_scheduled", "received_at_hub", "resolved"].includes(
+                                ["pickup_scheduled", "dropoff_pending", "received_at_hub", "resolved"].includes(
                                   trackedRequest.status
                                 )
                                   ? "bg-emerald-50 dark:bg-emerald-950/40 border-emerald-400 text-emerald-800 dark:text-emerald-300 font-bold"
@@ -1071,21 +1232,234 @@ export default function ReturnsAndExchangesPage() {
                               }`}
                             >
                               <span className="block text-sm mb-1">3</span>
-                              <span>Pickup Scheduled</span>
+                              <span>
+                                {trackedRequest.returnMethod === "hub_dropoff"
+                                  ? "Drop-off Hub Set"
+                                  : "Pickup Scheduled"}
+                              </span>
                             </div>
 
+                            {/* Step 4: Atelier Quality Audit */}
                             <div
                               className={`p-3 rounded-xl border ${
-                                trackedRequest.status === "resolved"
+                                ["received_at_hub", "resolved"].includes(trackedRequest.status)
                                   ? "bg-emerald-50 dark:bg-emerald-950/40 border-emerald-400 text-emerald-800 dark:text-emerald-300 font-bold"
                                   : "bg-gray-50 dark:bg-neutral-800 border-gray-200 dark:border-neutral-700 text-gray-400"
                               }`}
                             >
                               <span className="block text-sm mb-1">4</span>
-                              <span>Resolved / Dispatched</span>
+                              <span>Atelier Audit</span>
+                            </div>
+
+                            {/* Step 5: Resolved */}
+                            <div
+                              className={`p-3 rounded-xl border col-span-2 sm:col-span-1 ${
+                                trackedRequest.status === "resolved"
+                                  ? "bg-emerald-50 dark:bg-emerald-950/40 border-emerald-400 text-emerald-800 dark:text-emerald-300 font-bold"
+                                  : "bg-gray-50 dark:bg-neutral-800 border-gray-200 dark:border-neutral-700 text-gray-400"
+                              }`}
+                            >
+                              <span className="block text-sm mb-1">5</span>
+                              <span>Resolved</span>
                             </div>
                           </div>
                         </div>
+
+                        {/* ----------------------------------------------------------- */}
+                        {/* Stage-Aware Real World Action & Guidance Banner             */}
+                        {/* ----------------------------------------------------------- */}
+
+                        {/* Case 1: Drop-off Hub Designated */}
+                        {(trackedRequest.returnMethod === "hub_dropoff" || trackedRequest.status === "dropoff_pending") && (
+                          <div className="p-6 rounded-3xl bg-sky-50/80 dark:bg-sky-950/30 border border-sky-200 dark:border-sky-800 space-y-4">
+                            <div className="flex items-start justify-between gap-3">
+                              <div className="flex items-center gap-2 text-sky-900 dark:text-sky-200 font-black text-sm">
+                                <BuildingStorefrontIcon className="size-5 text-sky-600 dark:text-sky-400" />
+                                <span>Designated Return Drop-Off Hub</span>
+                              </div>
+                              {trackedRequest.dropoffDeadline && (
+                                <span className="px-3 py-1 rounded-full text-xs font-black bg-rose-100 text-rose-800 dark:bg-rose-950/60 dark:text-rose-300">
+                                  Drop-off Deadline: {trackedRequest.dropoffDeadline}
+                                </span>
+                              )}
+                            </div>
+
+                            <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 text-xs bg-white dark:bg-neutral-900 p-4 rounded-2xl border border-sky-100 dark:border-neutral-800">
+                              <div>
+                                <span className="text-gray-400 block text-[10px] uppercase font-bold">Hub Location</span>
+                                <p className="font-bold text-gray-900 dark:text-white mt-0.5">
+                                  {trackedRequest.dropoffHubName || "Fedoll Flagship Atelier"}
+                                </p>
+                                <p className="text-gray-500 text-[11px] mt-0.5">
+                                  {trackedRequest.dropoffHubAddress || data.hubAddress}
+                                </p>
+                              </div>
+                              <div>
+                                <span className="text-gray-400 block text-[10px] uppercase font-bold">Operating Hours</span>
+                                <p className="font-bold text-sky-700 dark:text-sky-300 mt-0.5">
+                                  🕒 {trackedRequest.dropoffHubHours || "11:00 AM – 8:00 PM (Everyday)"}
+                                </p>
+                                <span className="text-gray-400 block text-[10px] uppercase font-bold mt-2">Hub Contact Desk</span>
+                                <p className="font-mono text-gray-700 dark:text-neutral-300">
+                                  📞 {trackedRequest.dropoffHubPhone || data.supportHotline}
+                                </p>
+                              </div>
+                              <div className="sm:border-l border-stone-200 dark:border-neutral-800 sm:pl-3">
+                                <span className="text-gray-400 block text-[10px] uppercase font-bold">Check-in Instructions</span>
+                                <p className="text-gray-600 dark:text-neutral-300 text-[11px] mt-0.5 leading-relaxed">
+                                  {trackedRequest.dropoffInstructions ||
+                                    `Please visit the concierge desk and present Ticket #${trackedRequest.ticketNumber}. Ensure all brand hangtags and barcodes remain attached.`}
+                                </p>
+                              </div>
+                            </div>
+                          </div>
+                        )}
+
+                        {/* Case 2: Doorstep Reverse Courier Pickup Scheduled */}
+                        {trackedRequest.status === "pickup_scheduled" && (
+                          <div className="p-6 rounded-3xl bg-purple-50/80 dark:bg-purple-950/30 border border-purple-200 dark:border-purple-800 space-y-4">
+                            <div className="flex items-center gap-2 text-purple-900 dark:text-purple-200 font-black text-sm">
+                              <TruckIcon className="size-5 text-purple-600 dark:text-purple-400" />
+                              <span>Doorstep Reverse Courier Pickup Booked</span>
+                            </div>
+
+                            <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 text-xs bg-white dark:bg-neutral-900 p-4 rounded-2xl border border-purple-100 dark:border-neutral-800">
+                              <div>
+                                <span className="text-gray-400 block text-[10px] uppercase font-bold">Courier Partner</span>
+                                <p className="font-bold text-gray-900 dark:text-white mt-0.5">
+                                  {trackedRequest.reverseCourier || "Steadfast Courier Reverse"}
+                                </p>
+                                {trackedRequest.reverseTrackingNumber && (
+                                  <p className="font-mono text-purple-700 dark:text-purple-300 font-black text-xs mt-1">
+                                    Consignment #{trackedRequest.reverseTrackingNumber}
+                                  </p>
+                                )}
+                              </div>
+                              <div>
+                                <span className="text-gray-400 block text-[10px] uppercase font-bold">Scheduled Window</span>
+                                <p className="font-bold text-gray-900 dark:text-white mt-0.5">
+                                  📅 {trackedRequest.pickupDate || "Next business day"}
+                                </p>
+                                <p className="text-gray-500 text-[11px]">
+                                  ⏰ {trackedRequest.pickupTimeSlot || "10:00 AM – 02:00 PM"}
+                                </p>
+                                <p className="text-[11px] font-semibold text-emerald-600 dark:text-emerald-400 mt-1">
+                                  Fee: ৳{trackedRequest.pickupFee ?? (trackedRequest.zone === "inside_dhaka" ? data.exchangeFeeInsideDhaka : data.exchangeFeeOutsideDhaka)} (
+                                  {trackedRequest.pickupFeeStatus === "waived_defect"
+                                    ? "Waived (Defect Free)"
+                                    : trackedRequest.pickupFeeStatus === "paid_bkash"
+                                    ? "Paid via bKash"
+                                    : "Payable to Rider via Cash"}
+                                  )
+                                </p>
+                              </div>
+                              <div className="sm:border-l border-stone-200 dark:border-neutral-800 sm:pl-3">
+                                <span className="text-gray-400 block text-[10px] uppercase font-bold">Rider Handover Note</span>
+                                <p className="text-gray-600 dark:text-neutral-300 text-[11px] mt-0.5 leading-relaxed">
+                                  {trackedRequest.pickupInstructions ||
+                                    "The courier rider will call your phone prior to arrival. Keep the garment folded inside the Fedoll protective flyer."}
+                                </p>
+                              </div>
+                            </div>
+                          </div>
+                        )}
+
+                        {/* Case 3: Atelier Hub Inspection Done */}
+                        {(trackedRequest.status === "received_at_hub" || trackedRequest.inspectionResult) && (
+                          <div className="p-6 rounded-3xl bg-indigo-50/80 dark:bg-indigo-950/30 border border-indigo-200 dark:border-indigo-800 space-y-4">
+                            <div className="flex items-center justify-between">
+                              <div className="flex items-center gap-2 text-indigo-900 dark:text-indigo-200 font-black text-sm">
+                                <ClipboardDocumentCheckIcon className="size-5 text-indigo-600 dark:text-indigo-400" />
+                                <span>Atelier Quality Audit</span>
+                              </div>
+                              <span
+                                className={`px-3 py-1 rounded-full text-xs font-black uppercase ${
+                                  trackedRequest.inspectionResult === "passed"
+                                    ? "bg-emerald-100 text-emerald-800 dark:bg-emerald-950/60 dark:text-emerald-300"
+                                    : "bg-rose-100 text-rose-800 dark:bg-rose-950/60 dark:text-rose-300"
+                                }`}
+                              >
+                                {trackedRequest.inspectionResult === "passed"
+                                  ? "Passed Inspection"
+                                  : trackedRequest.inspectionResult?.replace(/_/g, " ") || "In Review"}
+                              </span>
+                            </div>
+
+                            <div className="bg-white dark:bg-neutral-900 p-4 rounded-2xl border border-indigo-100 dark:border-neutral-800 text-xs space-y-1.5">
+                              {trackedRequest.inspectedBy && (
+                                <p className="text-gray-500 text-[11px]">
+                                  Audited by: <strong className="text-gray-900 dark:text-white">{trackedRequest.inspectedBy}</strong>
+                                </p>
+                              )}
+                              <p className="text-gray-700 dark:text-neutral-300 leading-relaxed">
+                                {trackedRequest.inspectionNotes ||
+                                  "Garment physically audited at Uttara Atelier. Original tags and fabrics verified in pristine condition."}
+                              </p>
+                            </div>
+                          </div>
+                        )}
+
+                        {/* Case 4: Resolved (Replacement Dispatched OR Refund Settled) */}
+                        {trackedRequest.status === "resolved" && (
+                          <div className="p-6 rounded-3xl bg-emerald-50/80 dark:bg-emerald-950/30 border border-emerald-200 dark:border-emerald-800 space-y-4">
+                            <div className="flex items-center gap-2 text-emerald-900 dark:text-emerald-200 font-black text-sm">
+                              <CheckCircleIcon className="size-5 text-emerald-600 dark:text-emerald-400" />
+                              <span>Resolution Completed</span>
+                            </div>
+
+                            {/* If Exchange Dispatched */}
+                            {trackedRequest.replacementTrackingNumber ? (
+                              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-xs bg-white dark:bg-neutral-900 p-4 rounded-2xl border border-emerald-100 dark:border-neutral-800">
+                                <div>
+                                  <span className="text-gray-400 block text-[10px] uppercase font-bold">Outbound Replacement Courier</span>
+                                  <p className="font-bold text-gray-900 dark:text-white mt-0.5">
+                                    {trackedRequest.replacementCourier || "Steadfast Courier"}
+                                  </p>
+                                  <p className="font-mono text-emerald-700 dark:text-emerald-400 font-black text-xs mt-1">
+                                    Tracking #{trackedRequest.replacementTrackingNumber}
+                                  </p>
+                                </div>
+                                <div>
+                                  <span className="text-gray-400 block text-[10px] uppercase font-bold">Dispatched Item &amp; Delivery</span>
+                                  <p className="font-bold text-gray-900 dark:text-white mt-0.5">
+                                    {trackedRequest.replacementItemDetails || trackedRequest.requestedReplacement}
+                                  </p>
+                                  <p className="text-gray-500 text-[11px] mt-0.5">
+                                    Estimated Delivery: {trackedRequest.replacementEstimatedDelivery || "24–48 hours"}
+                                  </p>
+                                </div>
+                              </div>
+                            ) : null}
+
+                            {/* If Refund Settled */}
+                            {trackedRequest.refundAmount ? (
+                              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-xs bg-white dark:bg-neutral-900 p-4 rounded-2xl border border-emerald-100 dark:border-neutral-800">
+                                <div>
+                                  <span className="text-gray-400 block text-[10px] uppercase font-bold">Disbursed Refund</span>
+                                  <p className="font-black text-emerald-600 dark:text-emerald-400 text-sm mt-0.5">
+                                    ৳{trackedRequest.refundAmount} via {trackedRequest.refundMethod || "bKash"}
+                                  </p>
+                                  {trackedRequest.refundTransactionId && (
+                                    <p className="font-mono text-gray-700 dark:text-neutral-300 font-bold text-xs mt-1">
+                                      TrxID: {trackedRequest.refundTransactionId}
+                                    </p>
+                                  )}
+                                </div>
+                                <div>
+                                  <span className="text-gray-400 block text-[10px] uppercase font-bold">Account &amp; Notes</span>
+                                  <p className="font-mono text-gray-700 dark:text-neutral-300 mt-0.5">
+                                    {trackedRequest.refundAccountDetails || "Personal Wallet"}
+                                  </p>
+                                  {trackedRequest.adminNotes && (
+                                    <p className="text-gray-500 text-[11px] mt-0.5 italic">
+                                      {trackedRequest.adminNotes}
+                                    </p>
+                                  )}
+                                </div>
+                              </div>
+                            ) : null}
+                          </div>
+                        )}
 
                         {/* Ticket Details Summary */}
                         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 text-xs">
@@ -1110,12 +1484,14 @@ export default function ReturnsAndExchangesPage() {
                           </div>
 
                           <div className="p-4 rounded-2xl bg-stone-50 dark:bg-neutral-800/50 border border-stone-200/80 dark:border-neutral-700/80 space-y-1.5">
-                            <span className="text-gray-400 font-semibold block">Pickup Address &amp; Zone</span>
+                            <span className="text-gray-400 font-semibold block">Handover Mode &amp; Address</span>
                             <p className="text-gray-700 dark:text-neutral-300">
-                              {trackedRequest.pickupAddress}
+                              {trackedRequest.returnMethod === "hub_dropoff"
+                                ? `Drop-off at ${trackedRequest.dropoffHubName || "Fedoll Hub"}: ${trackedRequest.dropoffHubAddress || trackedRequest.pickupAddress}`
+                                : trackedRequest.pickupAddress}
                             </p>
                             <span className="inline-block mt-1 font-mono text-[11px] font-bold text-gray-500 uppercase">
-                              Zone: {trackedRequest.zone.replace("_", " ")}
+                              Method: {trackedRequest.returnMethod === "hub_dropoff" ? "HUB DROP-OFF" : "DOORSTEP PICKUP"} • Zone: {trackedRequest.zone.replace("_", " ")}
                             </span>
                           </div>
                         </div>

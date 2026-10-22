@@ -104,19 +104,60 @@ export interface ReturnExchangeRequest {
   type: "size_exchange" | "color_style_exchange" | "defective_replacement" | "refund";
   itemDetails: string;
   requestedReplacement?: string;
-  refundMethod?: "bKash" | "Nagad" | "Bank Transfer" | "Store Credit";
+
+  // Handover Method (Doorstep Pickup vs Atelier/Hub Drop-off)
+  returnMethod?: "doorstep_pickup" | "hub_dropoff";
+
+  // Doorstep Pickup specifics (Steadfast, Pathao, RedX, Paperfly)
+  pickupDate?: string;
+  pickupTimeSlot?: string;
+  pickupFee?: number;
+  pickupFeeStatus?: "pending_cod" | "paid_bkash" | "waived_defect";
+  reverseCourier?: string;
+  reverseTrackingNumber?: string;
+  pickupInstructions?: string;
+
+  // Drop-off specifics (Uttara Flagship Atelier Hub, Banani Desk, Dhanmondi Point, Partner Courier Branch)
+  dropoffHubName?: string;
+  dropoffHubAddress?: string;
+  dropoffHubPhone?: string;
+  dropoffHubHours?: string;
+  dropoffDeadline?: string;
+  dropoffInstructions?: string;
+
+  // Atelier Quality Inspection
+  inspectionResult?: "passed" | "failed_damaged" | "failed_tags_missing" | "pending";
+  inspectionNotes?: string;
+  inspectedAt?: string;
+  inspectedBy?: string;
+
+  // Exchange Replacement Dispatch specifics
+  replacementCourier?: string;
+  replacementTrackingNumber?: string;
+  replacementDispatchedAt?: string;
+  replacementEstimatedDelivery?: string;
+  replacementItemDetails?: string;
+
+  // Monetary Refund specifics
+  refundMethod?: "bKash" | "Nagad" | "Rocket" | "Bank Transfer" | "Store Credit";
   refundAccountDetails?: string;
   refundAmount?: number;
   refundTransactionId?: string;
+  refundProcessedAt?: string;
+  refundProofNote?: string;
+
   reason: string;
-  status: "pending" | "approved" | "pickup_scheduled" | "received_at_hub" | "resolved" | "rejected";
+  status:
+    | "pending"
+    | "approved"
+    | "pickup_scheduled"
+    | "dropoff_pending"
+    | "received_at_hub"
+    | "resolved"
+    | "rejected";
   createdAt: string;
   resolvedAt?: string;
   adminNotes?: string;
-  reverseCourier?: string;
-  reverseTrackingNumber?: string;
-  replacementTrackingNumber?: string;
-  inspectionResult?: "passed" | "failed_damaged" | "failed_tags_missing" | "pending";
 }
 
 /* ============================================================================
@@ -914,26 +955,99 @@ export const updateReturnRequest = async (
       })
     );
 
-    // If orderNumber is present, sync status to the order document as well
+    // If orderNumber is present, sync status and handover details to the order document
     const snap = await getDoc(docRef);
     if (snap.exists()) {
       const full = snap.data() as ReturnExchangeRequest;
-      if (full.orderNumber && updates.status) {
+      if (full.orderNumber) {
         try {
           const ordersCol = collection(db, "orders");
           const oSnap = await getDocs(
             query(ordersCol, where("orderNumber", "==", full.orderNumber.trim().toUpperCase()))
           );
           if (!oSnap.empty) {
-            await updateDoc(
-              oSnap.docs[0].ref,
-              sanitizeForFirestore({
-                "returnRequest.status": updates.status,
-                updatedAt: serverTimestamp(),
-              })
-            );
+            const orderDoc = oSnap.docs[0];
+            const orderData = orderDoc.data() as any;
+
+            const returnRequestUpdate: any = {
+              "returnRequest.status": full.status,
+              "returnRequest.returnMethod": full.returnMethod || null,
+              "returnRequest.reverseCourier": full.reverseCourier || null,
+              "returnRequest.reverseTrackingNumber": full.reverseTrackingNumber || null,
+              "returnRequest.pickupDate": full.pickupDate || null,
+              "returnRequest.pickupTimeSlot": full.pickupTimeSlot || null,
+              "returnRequest.dropoffHubName": full.dropoffHubName || null,
+              "returnRequest.dropoffHubAddress": full.dropoffHubAddress || null,
+              "returnRequest.dropoffDeadline": full.dropoffDeadline || null,
+              "returnRequest.dropoffHubPhone": full.dropoffHubPhone || null,
+              "returnRequest.replacementCourier": full.replacementCourier || null,
+              "returnRequest.replacementTrackingNumber": full.replacementTrackingNumber || null,
+              "returnRequest.replacementItemDetails": full.replacementItemDetails || null,
+              "returnRequest.refundMethod": full.refundMethod || null,
+              "returnRequest.refundAmount": full.refundAmount || null,
+              "returnRequest.refundTransactionId": full.refundTransactionId || null,
+              "returnRequest.inspectionResult": full.inspectionResult || null,
+              updatedAt: serverTimestamp(),
+            };
+
+            // Timeline milestone generator if status is provided in updates
+            if (updates.status) {
+              const now = new Date();
+              const timestampStr = now.toLocaleString("en-US", {
+                month: "short",
+                day: "numeric",
+                hour: "numeric",
+                minute: "2-digit",
+                hour12: true,
+              });
+
+              let timelineTitle = "";
+              let timelineDesc = "";
+
+              if (updates.status === "approved") {
+                timelineTitle = "Return Request Approved";
+                timelineDesc = `Ticket #${full.ticketNumber} approved. Proceeding with return handover arrangement.`;
+              } else if (updates.status === "pickup_scheduled") {
+                timelineTitle = "Reverse Pickup Scheduled";
+                timelineDesc = `Doorstep reverse pickup arranged with ${full.reverseCourier || "Courier"} (Consignment: ${full.reverseTrackingNumber || "Pending"})${full.pickupDate ? ` on ${full.pickupDate}` : ""}.`;
+              } else if (updates.status === "dropoff_pending") {
+                timelineTitle = "Return Drop-Off Designated";
+                timelineDesc = `Customer package to be dropped at ${full.dropoffHubName || "Atelier Hub"}${full.dropoffDeadline ? ` by ${full.dropoffDeadline}` : ""}.`;
+              } else if (updates.status === "received_at_hub") {
+                timelineTitle = "Package Received at Atelier";
+                timelineDesc = `Return consignment received at Dhaka Hub. Inspection: ${full.inspectionResult ? full.inspectionResult.replace(/_/g, " ") : "In review"}.`;
+              } else if (updates.status === "resolved") {
+                if (full.type === "refund") {
+                  timelineTitle = "Return Refund Settled";
+                  timelineDesc = `Refund of ৳${full.refundAmount || "—"} disbursed via ${full.refundMethod || "Online Gateway"}${full.refundTransactionId ? ` (TrxID: ${full.refundTransactionId})` : ""}.`;
+                } else {
+                  timelineTitle = "Replacement Dispatched";
+                  timelineDesc = `Fresh replacement garment dispatched via ${full.replacementCourier || "Courier"}${full.replacementTrackingNumber ? ` (Tracking: ${full.replacementTrackingNumber})` : ""}.`;
+                }
+              }
+
+              if (timelineTitle) {
+                const currentTimeline = orderData.trackingTimeline || [];
+                const updatedTimeline = [
+                  ...currentTimeline.map((step: any) => ({ ...step, isCurrent: false })),
+                  {
+                    status: orderData.orderStatus || "delivered",
+                    title: timelineTitle,
+                    description: timelineDesc,
+                    timestamp: timestampStr,
+                    completed: true,
+                    isCurrent: true,
+                  },
+                ];
+                returnRequestUpdate.trackingTimeline = updatedTimeline;
+              }
+            }
+
+            await updateDoc(orderDoc.ref, sanitizeForFirestore(returnRequestUpdate));
           }
-        } catch {}
+        } catch (syncErr) {
+          console.warn("Could not sync return request to order doc:", syncErr);
+        }
       }
     }
   } catch (err) {

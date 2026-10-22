@@ -1692,6 +1692,8 @@ export const AdminLegalTab: React.FC = () => {
                                 ? "bg-blue-50 text-blue-700 border-blue-300 dark:bg-blue-950/50 dark:text-blue-400"
                                 : req.status === "pickup_scheduled"
                                 ? "bg-purple-50 text-purple-700 border-purple-300 dark:bg-purple-950/50 dark:text-purple-400"
+                                : req.status === "dropoff_pending"
+                                ? "bg-sky-50 text-sky-700 border-sky-300 dark:bg-sky-950/50 dark:text-sky-400"
                                 : req.status === "received_at_hub"
                                 ? "bg-indigo-50 text-indigo-700 border-indigo-300 dark:bg-indigo-950/50 dark:text-indigo-400"
                                 : req.status === "resolved"
@@ -1702,6 +1704,7 @@ export const AdminLegalTab: React.FC = () => {
                             <option value="pending">Pending Review</option>
                             <option value="approved">Approved</option>
                             <option value="pickup_scheduled">Pickup Scheduled</option>
+                            <option value="dropoff_pending">Drop-Off Pending</option>
                             <option value="received_at_hub">Received at Hub</option>
                             <option value="resolved">Resolved / Dispatched</option>
                             <option value="rejected">Rejected</option>

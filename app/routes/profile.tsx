@@ -32,6 +32,7 @@ import {
   ClockIcon,
   ExclamationTriangleIcon,
   HeartIcon,
+  BuildingStorefrontIcon,
 } from "@heroicons/react/24/outline";
 import { toast } from "sonner";
 import { Spinner } from "~/components/ui/spinner";
@@ -784,27 +785,86 @@ export default function ProfilePage() {
 
                             {/* Return & Exchange Request Banner / Action */}
                             {order.returnRequest ? (
-                              <div className="p-3.5 rounded-2xl bg-indigo-50/70 dark:bg-indigo-950/40 border border-indigo-200/80 dark:border-indigo-800/60 text-xs text-indigo-950 dark:text-indigo-200 flex items-start justify-between gap-3">
-                                <div className="flex items-start gap-2.5">
-                                  <ArrowPathIcon className="size-4 text-indigo-600 dark:text-indigo-400 shrink-0 mt-0.5" />
-                                  <div>
-                                    <p className="font-bold flex items-center gap-2">
-                                      <span>Return / Exchange Ticket #{order.returnRequest.ticketNumber}</span>
-                                      <span className="capitalize px-2 py-0.5 rounded-full text-[10px] font-extrabold bg-indigo-100 dark:bg-indigo-900/60 text-indigo-800 dark:text-indigo-300">
-                                        {order.returnRequest.status.replace(/_/g, " ")}
-                                      </span>
-                                    </p>
-                                    <p className="text-[11px] text-indigo-900/80 dark:text-indigo-300/80 mt-0.5">
-                                      Type: <span className="font-semibold capitalize">{order.returnRequest.type.replace(/_/g, " ")}</span> • Reason: "{order.returnRequest.reason}"
-                                    </p>
+                              <div className="p-4 rounded-2xl bg-indigo-50/80 dark:bg-indigo-950/40 border border-indigo-200/80 dark:border-indigo-800/60 text-xs text-indigo-950 dark:text-indigo-200 space-y-2">
+                                <div className="flex items-start justify-between gap-3">
+                                  <div className="flex items-start gap-2.5">
+                                    <ArrowPathIcon className="size-4 text-indigo-600 dark:text-indigo-400 shrink-0 mt-0.5" />
+                                    <div>
+                                      <p className="font-bold flex items-center gap-2">
+                                        <span>Return / Exchange Ticket #{order.returnRequest.ticketNumber}</span>
+                                        <span className="capitalize px-2 py-0.5 rounded-full text-[10px] font-extrabold bg-indigo-100 dark:bg-indigo-900/60 text-indigo-800 dark:text-indigo-300">
+                                          {order.returnRequest.status.replace(/_/g, " ")}
+                                        </span>
+                                      </p>
+                                      <p className="text-[11px] text-indigo-900/80 dark:text-indigo-300/80 mt-0.5">
+                                        Type: <span className="font-semibold capitalize">{order.returnRequest.type.replace(/_/g, " ")}</span> • Reason: &quot;{order.returnRequest.reason}&quot;
+                                      </p>
+                                    </div>
                                   </div>
+                                  <Link
+                                    to={`/returns-and-exchanges?tab=track&ticket=${order.returnRequest.ticketNumber}`}
+                                    className="text-indigo-600 dark:text-indigo-400 hover:underline font-bold text-xs shrink-0 flex items-center gap-1"
+                                  >
+                                    <span>Track Live</span>
+                                    <span>&rarr;</span>
+                                  </Link>
                                 </div>
-                                <Link
-                                  to={`/returns-and-exchanges?tab=track&ticket=${order.returnRequest.ticketNumber}`}
-                                  className="text-indigo-600 dark:text-indigo-400 hover:underline font-bold text-xs shrink-0"
-                                >
-                                  Track Ticket &rarr;
-                                </Link>
+
+                                {/* Dynamic Handover & Resolution Milestone info */}
+                                {order.returnRequest.returnMethod === "hub_dropoff" && (
+                                  <div className="p-2.5 rounded-xl bg-white/80 dark:bg-neutral-900/80 border border-indigo-100 dark:border-neutral-800 flex items-start gap-2 text-[11px]">
+                                    <BuildingStorefrontIcon className="size-4 text-blue-600 shrink-0 mt-0.5" />
+                                    <div>
+                                      <span className="font-bold text-gray-900 dark:text-white">
+                                        Self Drop-Off Hub: {order.returnRequest.dropoffHubName || "Fedoll Flagship Atelier"}
+                                      </span>
+                                      {order.returnRequest.dropoffDeadline && (
+                                        <span className="text-rose-600 font-semibold ml-1.5">
+                                          (Drop off before {order.returnRequest.dropoffDeadline})
+                                        </span>
+                                      )}
+                                      <p className="text-gray-500 text-[10px] mt-0.5">
+                                        {order.returnRequest.dropoffHubAddress || "House 14, Road 7, Sector 3, Uttara, Dhaka"}
+                                      </p>
+                                    </div>
+                                  </div>
+                                )}
+
+                                {order.returnRequest.reverseCourier && (
+                                  <div className="p-2.5 rounded-xl bg-white/80 dark:bg-neutral-900/80 border border-indigo-100 dark:border-neutral-800 flex items-start gap-2 text-[11px]">
+                                    <TruckIcon className="size-4 text-purple-600 shrink-0 mt-0.5" />
+                                    <div>
+                                      <span className="font-bold text-gray-900 dark:text-white">
+                                        Reverse Pickup: {order.returnRequest.reverseCourier}
+                                      </span>
+                                      {order.returnRequest.reverseTrackingNumber && (
+                                        <span className="font-mono text-purple-700 dark:text-purple-300 font-bold ml-1.5">
+                                          (Consignment #{order.returnRequest.reverseTrackingNumber})
+                                        </span>
+                                      )}
+                                      {order.returnRequest.pickupDate && (
+                                        <p className="text-gray-500 text-[10px] mt-0.5">
+                                          Scheduled: {order.returnRequest.pickupDate} ({order.returnRequest.pickupTimeSlot || "Day slot"})
+                                        </p>
+                                      )}
+                                    </div>
+                                  </div>
+                                )}
+
+                                {order.returnRequest.status === "resolved" && (
+                                  <div className="p-2.5 rounded-xl bg-emerald-50 dark:bg-emerald-950/40 border border-emerald-200 dark:border-emerald-800/60 flex items-start gap-2 text-[11px] text-emerald-900 dark:text-emerald-200">
+                                    <CheckCircleIcon className="size-4 text-emerald-600 shrink-0 mt-0.5" />
+                                    <div>
+                                      <span className="font-bold">
+                                        {order.returnRequest.replacementTrackingNumber
+                                          ? `Replacement Dispatched via ${order.returnRequest.replacementCourier || "Courier"} (Tracking #${order.returnRequest.replacementTrackingNumber})`
+                                          : order.returnRequest.refundAmount
+                                          ? `Refund of ৳${order.returnRequest.refundAmount} Settled via ${order.returnRequest.refundMethod || "bKash"} (TrxID: ${order.returnRequest.refundTransactionId || "Processed"})`
+                                          : "Ticket Successfully Resolved"}
+                                      </span>
+                                    </div>
+                                  </div>
+                                )}
                               </div>
                             ) : ["delivered", "shipped"].includes(order.orderStatus) ? (
                               <div className="flex flex-wrap items-center justify-between gap-2 p-3 rounded-2xl bg-stone-50 dark:bg-neutral-800/40 border border-stone-200/60 dark:border-neutral-700/60 text-xs">

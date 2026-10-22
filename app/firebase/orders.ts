@@ -63,6 +63,22 @@ export interface OrderReturnRequest {
   requestedAt: string;
   reason: string;
   itemDetails?: string;
+  returnMethod?: "doorstep_pickup" | "hub_dropoff";
+  reverseCourier?: string;
+  reverseTrackingNumber?: string;
+  pickupDate?: string;
+  pickupTimeSlot?: string;
+  dropoffHubName?: string;
+  dropoffHubAddress?: string;
+  dropoffDeadline?: string;
+  dropoffHubPhone?: string;
+  replacementCourier?: string;
+  replacementTrackingNumber?: string;
+  replacementItemDetails?: string;
+  refundMethod?: string;
+  refundAmount?: number;
+  refundTransactionId?: string;
+  inspectionResult?: string;
 }
 
 export interface Order {
