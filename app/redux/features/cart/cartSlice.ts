@@ -9,6 +9,7 @@ export interface CartItem {
   size?: string;
   color?: string;
   category?: string;
+  maxStock?: number;
 }
 
 export interface CartState {
@@ -76,12 +77,24 @@ export const cartSlice = createSlice({
           item.size === action.payload.size &&
           item.color === action.payload.color
       );
+      const maxStock = action.payload.maxStock ?? existing?.maxStock;
+      const addQty = action.payload.quantity || 1;
+
       if (existing) {
-        existing.quantity += action.payload.quantity || 1;
+        if (maxStock !== undefined && existing.quantity + addQty > maxStock) {
+          existing.quantity = maxStock;
+        } else {
+          existing.quantity += addQty;
+        }
+        if (action.payload.maxStock !== undefined) {
+          existing.maxStock = action.payload.maxStock;
+        }
       } else {
+        const finalQty = maxStock !== undefined ? Math.min(addQty, maxStock) : addQty;
         state.items.push({
           ...action.payload,
-          quantity: action.payload.quantity || 1,
+          quantity: finalQty,
+          maxStock,
         });
       }
       const totals = calculateTotals(state.items);
@@ -90,8 +103,23 @@ export const cartSlice = createSlice({
       state.isCartOpen = true; // Automatically open cart drawer on add
       persistCart(state.items);
     },
-    removeFromCart: (state, action: PayloadAction<string | number>) => {
-      state.items = state.items.filter((item) => item.id !== action.payload);
+    removeFromCart: (
+      state,
+      action: PayloadAction<string | number | { id: string | number; size?: string; color?: string }>
+    ) => {
+      if (typeof action.payload === "object" && action.payload !== null) {
+        const { id, size, color } = action.payload;
+        state.items = state.items.filter(
+          (item) =>
+            !(
+              item.id === id &&
+              (!size || item.size === size) &&
+              (!color || item.color === color)
+            )
+        );
+      } else {
+        state.items = state.items.filter((item) => item.id !== action.payload);
+      }
       const totals = calculateTotals(state.items);
       state.totalQuantity = totals.totalQuantity;
       state.totalAmount = totals.totalAmount;
@@ -99,14 +127,30 @@ export const cartSlice = createSlice({
     },
     updateQuantity: (
       state,
-      action: PayloadAction<{ id: string | number; quantity: number }>
+      action: PayloadAction<{
+        id: string | number;
+        quantity: number;
+        size?: string;
+        color?: string;
+        maxStock?: number;
+      }>
     ) => {
-      const item = state.items.find((item) => item.id === action.payload.id);
+      const item = state.items.find(
+        (item) =>
+          item.id === action.payload.id &&
+          (!action.payload.size || item.size === action.payload.size) &&
+          (!action.payload.color || item.color === action.payload.color)
+      );
       if (item) {
         if (action.payload.quantity <= 0) {
-          state.items = state.items.filter((i) => i.id !== action.payload.id);
+          state.items = state.items.filter((i) => i !== item);
         } else {
-          item.quantity = action.payload.quantity;
+          const maxStock = action.payload.maxStock ?? item.maxStock;
+          if (maxStock !== undefined && action.payload.quantity > maxStock) {
+            item.quantity = maxStock;
+          } else {
+            item.quantity = action.payload.quantity;
+          }
         }
       }
       const totals = calculateTotals(state.items);

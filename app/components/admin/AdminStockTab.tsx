@@ -160,15 +160,15 @@ export const AdminStockTab: React.FC<AdminStockTabProps> = ({
       // Search query
       if (searchQuery.trim()) {
         const q = searchQuery.toLowerCase();
-        const matchName = p.name.toLowerCase().includes(q);
-        const matchCat = p.category.toLowerCase().includes(q);
-        const matchSku = p.sku?.toLowerCase().includes(q);
-        const matchId = p.id.toLowerCase().includes(q);
+        const matchName = String(p.name || "").toLowerCase().includes(q);
+        const matchCat = String(p.category || "").toLowerCase().includes(q);
+        const matchSku = String(p.sku || "").toLowerCase().includes(q);
+        const matchId = String(p.id || "").toLowerCase().includes(q);
         const matchVariant = p.variants?.some(
           (v) =>
-            v.sku?.toLowerCase().includes(q) ||
-            v.size.toLowerCase().includes(q) ||
-            v.color.toLowerCase().includes(q)
+            String(v.sku || "").toLowerCase().includes(q) ||
+            String(v.size || "").toLowerCase().includes(q) ||
+            String(v.color || "").toLowerCase().includes(q)
         );
         if (!matchName && !matchCat && !matchSku && !matchId && !matchVariant) return false;
       }
@@ -183,16 +183,16 @@ export const AdminStockTab: React.FC<AdminStockTabProps> = ({
       if (ledgerTypeFilter !== "all" && m.type !== ledgerTypeFilter) {
         return false;
       }
-      if (ledgerProductFilter !== "all" && m.productId !== ledgerProductFilter) {
+      if (ledgerProductFilter !== "all" && String(m.productId) !== String(ledgerProductFilter)) {
         return false;
       }
       if (ledgerSearch.trim()) {
         const q = ledgerSearch.toLowerCase();
-        const matchName = m.productName.toLowerCase().includes(q);
-        const matchRef = m.referenceId?.toLowerCase().includes(q);
-        const matchNote = m.note.toLowerCase().includes(q);
-        const matchSku = m.variantSku?.toLowerCase().includes(q);
-        const matchBy = m.performedBy.toLowerCase().includes(q);
+        const matchName = String(m.productName || "").toLowerCase().includes(q);
+        const matchRef = String(m.referenceId || "").toLowerCase().includes(q);
+        const matchNote = String(m.note || "").toLowerCase().includes(q);
+        const matchSku = String(m.variantSku || "").toLowerCase().includes(q);
+        const matchBy = String(m.performedBy || "").toLowerCase().includes(q);
         if (!matchName && !matchRef && !matchNote && !matchSku && !matchBy) return false;
       }
       return true;
@@ -207,6 +207,9 @@ export const AdminStockTab: React.FC<AdminStockTabProps> = ({
     } else if (localProducts.length > 0) {
       setSelectedProduct(localProducts[0]);
       setSelectedVariantId("all");
+    } else if (products && products.length > 0) {
+      setSelectedProduct(products[0]);
+      setSelectedVariantId("all");
     }
     setRestockQty(10);
     setRestockNote("Fresh batch received at Uttara Atelier Hub.");
@@ -217,8 +220,13 @@ export const AdminStockTab: React.FC<AdminStockTabProps> = ({
   // Submit Restock
   const handleExecuteRestock = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!selectedProduct) return;
-    if (restockQty <= 0) {
+    if (!selectedProduct) {
+      toast.error("Please select a catalog garment to restock.");
+      return;
+    }
+
+    const qty = Math.max(1, Math.floor(Number(restockQty) || 0));
+    if (qty <= 0) {
       toast.error("Restock quantity must be at least 1 unit.");
       return;
     }
@@ -227,27 +235,29 @@ export const AdminStockTab: React.FC<AdminStockTabProps> = ({
     try {
       const isVariant = selectedVariantId !== "all" && Boolean(selectedVariantId);
       const res = await restockProductOrVariant({
-        productId: selectedProduct.id,
+        productId: String(selectedProduct.id),
         variantId: isVariant ? selectedVariantId : undefined,
-        quantityToAdd: restockQty,
+        quantityToAdd: qty,
         note: `${restockNote.trim()} ${referenceBatch ? `[Batch: ${referenceBatch.trim()}]` : ""}`.trim(),
         performedBy: adminName,
+        product: selectedProduct,
       });
 
       // Immediate UI update in local state for instantaneous feedback
       setLocalProducts((prev) =>
         prev.map((p) => {
-          if (p.id !== selectedProduct.id) return p;
+          if (String(p.id) !== String(selectedProduct.id)) return p;
+          if (res.updatedProduct) return res.updatedProduct;
           let updatedVariants = p.variants ? [...p.variants] : [];
           if (isVariant && selectedVariantId) {
             updatedVariants = updatedVariants.map((v) =>
-              v.id === selectedVariantId
-                ? { ...v, stockCount: (Number(v.stockCount) || 0) + restockQty, inStock: true }
+              String(v.id) === String(selectedVariantId)
+                ? { ...v, stockCount: (Number(v.stockCount) || 0) + qty, inStock: true }
                 : v
             );
           } else if (updatedVariants.length > 0) {
-            const perVar = Math.floor(restockQty / updatedVariants.length);
-            const rem = restockQty % updatedVariants.length;
+            const perVar = Math.floor(qty / updatedVariants.length);
+            const rem = qty % updatedVariants.length;
             updatedVariants = updatedVariants.map((v, i) => ({
               ...v,
               stockCount: (Number(v.stockCount) || 0) + perVar + (i === 0 ? rem : 0),
@@ -264,11 +274,23 @@ export const AdminStockTab: React.FC<AdminStockTabProps> = ({
       );
 
       toast.success(
-        `Successfully restocked +${restockQty} units for "${selectedProduct.name}"! New stock: ${res.newStock} pcs.`
+        `Successfully restocked +${qty} units for "${selectedProduct.name}"! New stock: ${res.newStock} pcs.`
       );
       setIsRestockOpen(false);
-      await loadMovements();
-      onRefresh();
+
+      try {
+        await loadMovements();
+      } catch (movErr) {
+        console.warn("Could not reload movements after restock:", movErr);
+      }
+
+      try {
+        if (typeof onRefresh === "function") {
+          await onRefresh();
+        }
+      } catch (refErr) {
+        console.warn("Could not refresh admin data after restock:", refErr);
+      }
     } catch (err: unknown) {
       const error = err as Error;
       toast.error(error.message || "Failed to process restock intake.");
@@ -1013,7 +1035,7 @@ export const AdminStockTab: React.FC<AdminStockTabProps> = ({
                       <select
                         value={selectedProduct?.id || ""}
                         onChange={(e) => {
-                          const p = localProducts.find((prod) => prod.id === e.target.value) || null;
+                          const p = localProducts.find((prod) => String(prod.id) === String(e.target.value)) || null;
                           setSelectedProduct(p);
                           setSelectedVariantId("all");
                         }}
@@ -1134,7 +1156,7 @@ export const AdminStockTab: React.FC<AdminStockTabProps> = ({
                     {selectedProduct && (
                       <div className="p-3.5 rounded-2xl bg-orange-50/50 dark:bg-orange-950/20 border border-orange-200/80 dark:border-orange-800/40 text-xs space-y-1.5">
                         {selectedVariantId !== "all" && selectedProduct.variants ? (() => {
-                          const v = selectedProduct.variants.find((item) => item.id === selectedVariantId);
+                          const v = selectedProduct.variants.find((item) => String(item.id) === String(selectedVariantId));
                           const currentVarStock = Number(v?.stockCount) || 0;
                           return (
                             <>

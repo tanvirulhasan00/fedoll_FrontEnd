@@ -344,6 +344,7 @@ export const AdminReturnsTab: React.FC<AdminReturnsTabProps> = ({
         await deductExchangeReplacement({
           ticketNumber: ticket.ticketNumber,
           orderNumber: ticket.orderNumber,
+          originalItemDetails: ticket.itemDetails,
           replacementItemDetails: dispatchData.replacementItemDetails,
           quantity: 1,
           performedBy: "Exchange Dispatch Desk",

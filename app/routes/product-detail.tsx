@@ -1,5 +1,5 @@
 import React, { useEffect, useState, useMemo } from "react";
-import { Link, useParams } from "react-router";
+import { Link, useParams, useNavigate } from "react-router";
 import type { Route } from "./+types/product-detail";
 import Topbar from "~/components/main/Home/Topbar";
 import Header from "~/components/main/Home/Header";
@@ -27,6 +27,7 @@ import {
   ChevronRightIcon,
   InformationCircleIcon,
   ArrowLeftIcon,
+  BoltIcon,
 } from "@heroicons/react/24/outline";
 import {
   StarIcon as StarSolidIcon,
@@ -54,6 +55,7 @@ export function meta({}: Route.MetaArgs) {
 
 export default function ProductDetailPage() {
   const { id } = useParams<{ id: string }>();
+  const navigate = useNavigate();
   const dispatch = useAppDispatch();
 
   const { currentProduct, loadingProduct, productError, items: allProducts } =
@@ -61,6 +63,7 @@ export default function ProductDetailPage() {
 
   const { user } = useAppSelector((state) => state.auth);
   const { wishlistIds } = useAppSelector((state) => state.home);
+  const { items: cartItems } = useAppSelector((state) => state.cart);
 
   const [selectedImageIndex, setSelectedImageIndex] = useState(0);
   const [selectedSize, setSelectedSize] = useState<string>("");
@@ -106,6 +109,37 @@ export default function ProductDetailPage() {
     if (!currentProduct) return null;
     return getProductVariant(currentProduct, selectedColor, selectedSize);
   }, [currentProduct, selectedColor, selectedSize]);
+
+  const displayPrice = activeVariant?.price ?? currentProduct?.price ?? 0;
+  const displayOriginalPrice = activeVariant?.originalPrice ?? currentProduct?.originalPrice;
+  const hasDiscount = Boolean(displayOriginalPrice && displayOriginalPrice > displayPrice);
+  const discountPercent = hasDiscount
+    ? Math.round(((displayOriginalPrice! - displayPrice) / displayOriginalPrice!) * 100)
+    : 0;
+
+  const isVariantInStock = activeVariant
+    ? activeVariant.inStock && activeVariant.stockCount > 0
+    : Boolean(currentProduct?.inStock && (currentProduct?.stockCount === undefined || currentProduct.stockCount > 0));
+  const availableStock = activeVariant ? activeVariant.stockCount : (currentProduct?.stockCount ?? 25);
+  const variantStockCount = availableStock;
+
+  // Track existing quantity of this variant already inside the cart
+  const existingCartItem = currentProduct
+    ? cartItems.find(
+        (item) =>
+          String(item.id) === String(currentProduct.id) &&
+          item.size === selectedSize &&
+          item.color === selectedColor
+      )
+    : undefined;
+  const currentInCart = existingCartItem ? existingCartItem.quantity : 0;
+
+  // Cap selected quantity if stock decreases or variant changes
+  useEffect(() => {
+    if (availableStock > 0 && quantity > availableStock) {
+      setQuantity(Math.max(1, availableStock));
+    }
+  }, [availableStock, quantity]);
 
   if (loadingProduct || (!currentProduct && !productError)) {
     return (
@@ -156,28 +190,57 @@ export default function ProductDetailPage() {
 
   const isWishlisted = wishlistIds.includes(currentProduct.id);
 
-  const displayPrice = activeVariant?.price ?? currentProduct.price;
-  const displayOriginalPrice = activeVariant?.originalPrice ?? currentProduct.originalPrice;
-  const hasDiscount = displayOriginalPrice && displayOriginalPrice > displayPrice;
-  const discountPercent = hasDiscount
-    ? Math.round(((displayOriginalPrice! - displayPrice) / displayOriginalPrice!) * 100)
-    : 0;
-
-  const isVariantInStock = activeVariant
-    ? activeVariant.inStock && activeVariant.stockCount > 0
-    : currentProduct.inStock;
-  const variantStockCount = activeVariant ? activeVariant.stockCount : (currentProduct.stockCount ?? 25);
-
   const handleColorSelect = (colorName: string) => {
     setSelectedColor(colorName);
     setSelectedImageIndex(0);
   };
 
+  const handleIncrementQuantity = () => {
+    if (!isVariantInStock || availableStock <= 0) {
+      toast.error(`Sorry, this variant is currently sold out.`);
+      return;
+    }
+    if (quantity >= availableStock) {
+      toast.warning(
+        `Only ${availableStock} item${availableStock === 1 ? "" : "s"} available in stock. You cannot add more.`
+      );
+      return;
+    }
+    setQuantity((prev) => prev + 1);
+  };
+
+  const handleDecrementQuantity = () => {
+    setQuantity((prev) => Math.max(1, prev - 1));
+  };
+
   const handleAddToCart = () => {
-    if (!isVariantInStock) {
+    if (!isVariantInStock || availableStock <= 0) {
       toast.error(`Sorry, ${selectedColor} in size ${selectedSize} is currently out of stock.`);
       return;
     }
+
+    if (quantity > availableStock) {
+      toast.error(
+        `Only ${availableStock} item${availableStock === 1 ? "" : "s"} available in stock. Cannot add ${quantity}.`
+      );
+      setQuantity(Math.max(1, availableStock));
+      return;
+    }
+
+    if (currentInCart + quantity > availableStock) {
+      const remainingAllowed = Math.max(0, availableStock - currentInCart);
+      if (remainingAllowed === 0) {
+        toast.error(
+          `Only ${availableStock} item${availableStock === 1 ? "" : "s"} in stock. You already have all ${availableStock} in your shopping bag!`
+        );
+      } else {
+        toast.error(
+          `Only ${availableStock} item${availableStock === 1 ? "" : "s"} available in stock. You already have ${currentInCart} in your bag, so you can only add ${remainingAllowed} more.`
+        );
+      }
+      return;
+    }
+
     const chosenImage = activeImages[selectedImageIndex] || activeImages[0] || currentProduct.images[0];
     dispatch(
       addToCart({
@@ -189,9 +252,41 @@ export default function ProductDetailPage() {
         size: selectedSize,
         color: selectedColor,
         category: currentProduct.category,
+        maxStock: availableStock,
       })
     );
-    toast.success(`Added ${currentProduct.name} (${selectedColor} / ${selectedSize}) to your bag!`);
+    toast.success(`Added ${quantity} × ${currentProduct.name} (${selectedColor} / ${selectedSize}) to your bag!`);
+  };
+
+  const handleBuyNow = () => {
+    if (!isVariantInStock || availableStock <= 0) {
+      toast.error(`Sorry, ${selectedColor} in size ${selectedSize} is currently out of stock. Save to Wishlist!`);
+      return;
+    }
+
+    if (quantity > availableStock) {
+      toast.error(
+        `Only ${availableStock} item${availableStock === 1 ? "" : "s"} available in stock. Cannot buy ${quantity}.`
+      );
+      setQuantity(Math.max(1, availableStock));
+      return;
+    }
+
+    const chosenImage = activeImages[selectedImageIndex] || activeImages[0] || currentProduct.images[0];
+    dispatch(
+      addToCart({
+        id: currentProduct.id,
+        name: currentProduct.name,
+        price: displayPrice,
+        image: chosenImage,
+        quantity,
+        size: selectedSize,
+        color: selectedColor,
+        category: currentProduct.category,
+        maxStock: availableStock,
+      })
+    );
+    navigate("/checkout");
   };
 
   const handleWishlistToggle = () => {
@@ -257,21 +352,29 @@ export default function ProductDetailPage() {
                     className="w-full h-full object-cover transition-all duration-300"
                   />
 
-                  {/* Badge */}
-                  {currentProduct.badge && (
-                    <div className="absolute top-4 left-4">
-                      <span
-                        className={`text-xs font-extrabold uppercase px-3 py-1.5 rounded-full shadow-md ${
-                          currentProduct.badge === "Sale"
-                            ? "bg-rose-600 text-white"
-                            : currentProduct.badge === "Best Seller"
-                            ? "bg-stone-900 text-white"
-                            : "bg-orange-600 dark:bg-orange-500 text-white"
-                        }`}
-                      >
-                        {currentProduct.badge}
+                  {/* Sold Out / Badge */}
+                  {!isVariantInStock ? (
+                    <div className="absolute top-4 left-4 z-10 pointer-events-none">
+                      <span className="text-xs font-black uppercase tracking-wider px-3.5 py-1.5 rounded-full shadow-md bg-neutral-900/90 text-white border border-neutral-700/80 backdrop-blur-xs">
+                        Sold Out
                       </span>
                     </div>
+                  ) : (
+                    currentProduct.badge && (
+                      <div className="absolute top-4 left-4 z-10 pointer-events-none">
+                        <span
+                          className={`text-xs font-extrabold uppercase px-3 py-1.5 rounded-full shadow-md ${
+                            currentProduct.badge === "Sale"
+                              ? "bg-rose-600 text-white"
+                              : currentProduct.badge === "Best Seller"
+                              ? "bg-stone-900 text-white"
+                              : "bg-orange-600 dark:bg-orange-500 text-white"
+                          }`}
+                        >
+                          {currentProduct.badge}
+                        </span>
+                      </div>
+                    )
                   )}
 
                   {/* Wishlist Button */}
@@ -482,27 +585,28 @@ export default function ProductDetailPage() {
                     ) : (
                       <div className="flex items-center gap-2 p-2.5 rounded-xl bg-emerald-50 dark:bg-emerald-950/30 border border-emerald-200 dark:border-emerald-900/40 text-emerald-800 dark:text-emerald-300 text-xs font-semibold">
                         <CheckIcon className="size-4 text-emerald-600 dark:text-emerald-400 shrink-0" />
-                        <span>In Stock ({variantStockCount} units available in {selectedColor} / {selectedSize})</span>
+                        <span>Stock Available</span>
                       </div>
                     )
                   ) : (
                     <div className="flex items-center gap-2 p-2.5 rounded-xl bg-rose-50 dark:bg-rose-950/30 border border-rose-200 dark:border-rose-900/40 text-rose-800 dark:text-rose-300 text-xs font-semibold">
                       <InformationCircleIcon className="size-4 text-rose-600 shrink-0" />
-                      <span>{selectedColor} in size {selectedSize} is currently out of stock.</span>
+                      <span>Sold Out — {selectedColor} in size {selectedSize} is currently unavailable.</span>
                     </div>
                   )}
                 </div>
 
-                {/* Quantity and Add to Bag */}
+                {/* Quantity and Add to Bag / Wishlist */}
                 <div className="space-y-3 pt-2">
                   <div className="flex items-center gap-3">
                     {/* Quantity Selector */}
                     <div className="flex items-center border border-gray-300 dark:border-neutral-700 rounded-xl bg-white dark:bg-neutral-900 shadow-2xs">
                       <button
                         type="button"
-                        onClick={() => setQuantity(Math.max(1, quantity - 1))}
-                        disabled={quantity <= 1}
-                        className="px-3.5 py-3 text-gray-600 dark:text-neutral-300 hover:bg-stone-50 dark:hover:bg-neutral-800 disabled:opacity-30 rounded-l-xl transition cursor-pointer"
+                        onClick={handleDecrementQuantity}
+                        disabled={quantity <= 1 || !isVariantInStock}
+                        className="px-3.5 py-3 text-gray-600 dark:text-neutral-300 hover:bg-stone-50 dark:hover:bg-neutral-800 disabled:opacity-30 disabled:cursor-not-allowed rounded-l-xl transition cursor-pointer"
+                        title="Reduce quantity"
                       >
                         -
                       </button>
@@ -511,14 +615,20 @@ export default function ProductDetailPage() {
                       </span>
                       <button
                         type="button"
-                        onClick={() => setQuantity(quantity + 1)}
-                        className="px-3.5 py-3 text-gray-600 dark:text-neutral-300 hover:bg-stone-50 dark:hover:bg-neutral-800 rounded-r-xl transition cursor-pointer"
+                        onClick={handleIncrementQuantity}
+                        disabled={!isVariantInStock || quantity >= availableStock}
+                        className="px-3.5 py-3 text-gray-600 dark:text-neutral-300 hover:bg-stone-50 dark:hover:bg-neutral-800 disabled:opacity-30 disabled:cursor-not-allowed rounded-r-xl transition cursor-pointer"
+                        title={
+                          quantity >= availableStock
+                            ? `Only ${availableStock} item${availableStock === 1 ? "" : "s"} available in stock`
+                            : "Add 1 more"
+                        }
                       >
                         +
                       </button>
                     </div>
 
-                    {/* Primary Add to Bag Button */}
+                    {/* Primary Add to Bag / Sold Out Button */}
                     <button
                       type="button"
                       onClick={handleAddToCart}
@@ -529,23 +639,72 @@ export default function ProductDetailPage() {
                       <span>
                         {isVariantInStock
                           ? `Add to Shopping Bag • ৳${(displayPrice * quantity).toLocaleString()}`
-                          : "Variant Out of Stock"}
+                          : "Sold Out"}
                       </span>
                     </button>
+
+                    {/* Dedicated Wishlist Button */}
+                    <button
+                      type="button"
+                      onClick={handleWishlistToggle}
+                      className={`size-12 rounded-xl border flex items-center justify-center transition shadow-2xs cursor-pointer shrink-0 ${
+                        isWishlisted
+                          ? "border-rose-300 dark:border-rose-900 bg-rose-50/60 dark:bg-rose-950/40 text-rose-600 shadow-xs"
+                          : "border-stone-300 dark:border-neutral-700 bg-white dark:bg-neutral-900 text-gray-700 dark:text-neutral-200 hover:text-rose-600 hover:border-rose-300"
+                      }`}
+                      title={isWishlisted ? "Saved in Wishlist" : "Save to Wishlist"}
+                    >
+                      {isWishlisted ? (
+                        <HeartSolidIcon className="size-5 text-rose-600" />
+                      ) : (
+                        <HeartIcon className="size-5" />
+                      )}
+                    </button>
                   </div>
+
+                  {/* Instant Buy It Now Button */}
+                  <button
+                    type="button"
+                    onClick={handleBuyNow}
+                    disabled={!isVariantInStock}
+                    className="w-full py-3.5 px-6 rounded-xl border-2 border-orange-600 dark:border-orange-500 hover:bg-orange-50 dark:hover:bg-orange-950/30 text-orange-600 dark:text-orange-400 font-bold text-sm transition-all duration-200 flex items-center justify-center gap-2 disabled:opacity-40 disabled:cursor-not-allowed cursor-pointer"
+                  >
+                    <BoltIcon className="size-4" />
+                    <span>{isVariantInStock ? "Buy It Now" : "Sold Out"}</span>
+                  </button>
+
+                  {/* Max stock reached indicator */}
+                  {isVariantInStock && quantity >= availableStock && availableStock > 0 && (
+                    <div className="flex items-center gap-1.5 px-3 py-2 rounded-xl bg-amber-50/80 dark:bg-amber-950/30 border border-amber-200/60 dark:border-amber-900/40 text-amber-800 dark:text-amber-300 text-[11px] font-semibold">
+                      <span className="size-1.5 rounded-full bg-amber-500 animate-pulse shrink-0" />
+                      <span>Maximum stock reached: only {availableStock} item{availableStock === 1 ? "" : "s"} available in our studio.</span>
+                    </div>
+                  )}
                 </div>
 
                 {/* Stock & Delivery Promise */}
-                <div className="p-4 rounded-2xl bg-emerald-50/60 dark:bg-emerald-950/30 border border-emerald-200/60 dark:border-emerald-800/40 space-y-2 text-xs">
-                  <div className="flex items-center gap-2 text-emerald-900 dark:text-emerald-300 font-bold">
-                    <span className="size-2 rounded-full bg-emerald-500 animate-pulse" />
-                    <span>In Stock — Ready to Dispatch from Dhaka Studio</span>
+                {isVariantInStock ? (
+                  <div className="p-4 rounded-2xl bg-emerald-50/60 dark:bg-emerald-950/30 border border-emerald-200/60 dark:border-emerald-800/40 space-y-2 text-xs">
+                    <div className="flex items-center gap-2 text-emerald-900 dark:text-emerald-300 font-bold">
+                      <span className="size-2 rounded-full bg-emerald-500 animate-pulse" />
+                      <span>In Stock — Ready to Dispatch from Dhaka Studio</span>
+                    </div>
+                    <p className="text-emerald-800/90 dark:text-emerald-400/90 leading-relaxed text-[11px]">
+                      Orders in Dhaka metropolitan area are delivered within 24 to 48 hours. Orders
+                      across all other 63 districts arrive within 2 to 4 business days.
+                    </p>
                   </div>
-                  <p className="text-emerald-800/90 dark:text-emerald-400/90 leading-relaxed text-[11px]">
-                    Orders in Dhaka metropolitan area are delivered within 24 to 48 hours. Orders
-                    across all other 63 districts arrive within 2 to 4 business days.
-                  </p>
-                </div>
+                ) : (
+                  <div className="p-4 rounded-2xl bg-stone-100/80 dark:bg-neutral-900/90 border border-stone-200 dark:border-neutral-800 space-y-2 text-xs">
+                    <div className="flex items-center gap-2 text-stone-900 dark:text-white font-bold">
+                      <span className="size-2 rounded-full bg-rose-500" />
+                      <span>Sold Out — Save to Wishlist to Reserve</span>
+                    </div>
+                    <p className="text-gray-600 dark:text-neutral-400 leading-relaxed text-[11px]">
+                      This garment size or color is currently out of stock. Add it to your saved wishlist above so you can easily purchase when our atelier produces a fresh batch.
+                    </p>
+                  </div>
+                )}
 
                 {/* Fedoll Customer Guarantees List */}
                 <div className="border-t border-stone-200/80 dark:border-neutral-800 pt-4 space-y-2.5 text-xs text-gray-600 dark:text-neutral-400">

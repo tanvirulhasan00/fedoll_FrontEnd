@@ -194,9 +194,15 @@ export default function CartDrawer() {
                                 <button
                                   type="button"
                                   onClick={() =>
-                                    dispatch(removeFromCart(item.id))
+                                    dispatch(
+                                      removeFromCart({
+                                        id: item.id,
+                                        size: item.size,
+                                        color: item.color,
+                                      })
+                                    )
                                   }
-                                  className="text-gray-400 hover:text-rose-600 dark:hover:text-rose-400 transition"
+                                  className="text-gray-400 hover:text-rose-600 dark:hover:text-rose-400 transition cursor-pointer"
                                   title="Remove item"
                                 >
                                   <TrashIcon className="size-4" />
@@ -215,6 +221,12 @@ export default function CartDrawer() {
                                   </span>
                                 )}
                               </div>
+
+                              {item.maxStock !== undefined && item.quantity >= item.maxStock && (
+                                <span className="text-[10px] text-amber-600 dark:text-amber-400 font-semibold block mt-1">
+                                  Max stock available ({item.maxStock})
+                                </span>
+                              )}
                             </div>
 
                             <div className="mt-3 flex items-center justify-between">
@@ -227,10 +239,13 @@ export default function CartDrawer() {
                                       updateQuantity({
                                         id: item.id,
                                         quantity: item.quantity - 1,
+                                        size: item.size,
+                                        color: item.color,
                                       })
                                     )
                                   }
-                                  className="size-7 flex items-center justify-center text-gray-600 dark:text-neutral-300 hover:bg-gray-100 dark:hover:bg-neutral-800 rounded-l-lg transition"
+                                  className="size-7 flex items-center justify-center text-gray-600 dark:text-neutral-300 hover:bg-gray-100 dark:hover:bg-neutral-800 rounded-l-lg transition cursor-pointer"
+                                  title="Reduce quantity"
                                 >
                                   <MinusIcon className="size-3" />
                                 </button>
@@ -239,15 +254,29 @@ export default function CartDrawer() {
                                 </span>
                                 <button
                                   type="button"
-                                  onClick={() =>
+                                  onClick={() => {
+                                    if (item.maxStock !== undefined && item.quantity >= item.maxStock) {
+                                      toast.warning(
+                                        `Only ${item.maxStock} item${item.maxStock === 1 ? "" : "s"} available in stock. You cannot add more.`
+                                      );
+                                      return;
+                                    }
                                     dispatch(
                                       updateQuantity({
                                         id: item.id,
                                         quantity: item.quantity + 1,
+                                        size: item.size,
+                                        color: item.color,
                                       })
-                                    )
+                                    );
+                                  }}
+                                  disabled={item.maxStock !== undefined && item.quantity >= item.maxStock}
+                                  className="size-7 flex items-center justify-center text-gray-600 dark:text-neutral-300 hover:bg-gray-100 dark:hover:bg-neutral-800 disabled:opacity-30 disabled:cursor-not-allowed rounded-r-lg transition cursor-pointer"
+                                  title={
+                                    item.maxStock !== undefined && item.quantity >= item.maxStock
+                                      ? `Only ${item.maxStock} item${item.maxStock === 1 ? "" : "s"} available in stock`
+                                      : "Increase quantity"
                                   }
-                                  className="size-7 flex items-center justify-center text-gray-600 dark:text-neutral-300 hover:bg-gray-100 dark:hover:bg-neutral-800 rounded-r-lg transition"
                                 >
                                   <PlusIcon className="size-3" />
                                 </button>

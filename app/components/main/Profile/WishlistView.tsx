@@ -23,6 +23,7 @@ import {
 import { HeartIcon as HeartSolidIcon, StarIcon } from "@heroicons/react/24/solid";
 import { toast } from "sonner";
 import { Spinner } from "~/components/ui/spinner";
+import StockAvailabilityBadge from "~/components/ui/StockAvailabilityBadge";
 
 export const WishlistView: React.FC = () => {
   const dispatch = useAppDispatch();
@@ -30,6 +31,7 @@ export const WishlistView: React.FC = () => {
   const { wishlistIds } = useAppSelector((state) => state.home);
   const { items: catalogProducts } = useAppSelector((state) => state.products);
   const { products: homeProducts } = useAppSelector((state) => state.home);
+  const { items: cartItems } = useAppSelector((state) => state.cart);
 
   const [fetchedMissingProducts, setFetchedMissingProducts] = useState<
     ProductItem[]
@@ -128,6 +130,22 @@ export const WishlistView: React.FC = () => {
   };
 
   const handleAddToCart = (product: ProductItem) => {
+    const isSoldOut = product.inStock === false || (product.stockCount !== undefined && product.stockCount <= 0);
+    const availableStock = product.stockCount ?? (product.inStock ? 25 : 0);
+    if (isSoldOut || availableStock <= 0) {
+      toast.error(`${product.name} is currently sold out.`);
+      return;
+    }
+
+    const existingInCart = cartItems.find((item) => item.id === product.id);
+    const currentInCart = existingInCart ? existingInCart.quantity : 0;
+    if (currentInCart + 1 > availableStock) {
+      toast.error(
+        `Only ${availableStock} item${availableStock === 1 ? "" : "s"} available in stock. You already have all ${availableStock} in your bag!`
+      );
+      return;
+    }
+
     const chosenColor = product.colors[0]?.name || "Standard";
     const chosenSize = product.sizes[0] || "M";
     const chosenImage = product.images[0] || "";
@@ -142,6 +160,7 @@ export const WishlistView: React.FC = () => {
         size: chosenSize,
         color: chosenColor,
         category: product.category,
+        maxStock: availableStock,
       })
     );
 
@@ -152,25 +171,37 @@ export const WishlistView: React.FC = () => {
     if (lovedProducts.length === 0) return;
     setAddingAll(true);
 
-    const inStockItems = lovedProducts.filter((p) => p.inStock !== false);
+    const inStockItems = lovedProducts.filter(
+      (p) => p.inStock !== false && (p.stockCount === undefined || p.stockCount > 0)
+    );
+    let addedCount = 0;
     inStockItems.forEach((p) => {
-      dispatch(
-        addToCart({
-          id: p.id,
-          name: p.name,
-          price: p.price,
-          image: p.images[0] || "",
-          quantity: 1,
-          size: p.sizes[0] || "M",
-          color: p.colors[0]?.name || "Standard",
-          category: p.category,
-        })
-      );
+      const availableStock = p.stockCount ?? 25;
+      const existingInCart = cartItems.find((item) => item.id === p.id);
+      const currentInCart = existingInCart ? existingInCart.quantity : 0;
+      if (currentInCart < availableStock) {
+        dispatch(
+          addToCart({
+            id: p.id,
+            name: p.name,
+            price: p.price,
+            image: p.images[0] || "",
+            quantity: 1,
+            size: p.sizes[0] || "M",
+            color: p.colors[0]?.name || "Standard",
+            category: p.category,
+            maxStock: availableStock,
+          })
+        );
+        addedCount++;
+      }
     });
 
-    toast.success(
-      `Added ${inStockItems.length} available items to your shopping bag!`
-    );
+    if (addedCount > 0) {
+      toast.success(`Added ${addedCount} available item(s) to your shopping bag!`);
+    } else {
+      toast.warning("All available wishlisted items are already in your shopping bag at maximum stock limit.");
+    }
     setTimeout(() => setAddingAll(false), 500);
   };
 
@@ -352,6 +383,9 @@ export const WishlistView: React.FC = () => {
                         100
                     )
                   : 0;
+                const isSoldOut =
+                  product.inStock === false ||
+                  (product.stockCount !== undefined && product.stockCount <= 0);
 
                 return (
                   <div
@@ -367,13 +401,19 @@ export const WishlistView: React.FC = () => {
                         <img
                           src={primaryImage}
                           alt={product.name}
-                          className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
+                          className={`w-full h-full object-cover group-hover:scale-105 transition-transform duration-500 ${
+                            isSoldOut ? "opacity-85 grayscale-25" : ""
+                          }`}
                         />
                       </Link>
 
                       {/* Badges */}
-                      <div className="absolute top-3 left-3 flex flex-col gap-1.5 pointer-events-none">
-                        {product.badge && (
+                      <div className="absolute top-3 left-3 flex flex-col gap-1.5 pointer-events-none z-10">
+                        {isSoldOut ? (
+                          <span className="text-[10px] font-black uppercase px-2.5 py-0.5 rounded-full shadow-md bg-neutral-900/90 text-white tracking-wider backdrop-blur-xs border border-white/20">
+                            Sold Out
+                          </span>
+                        ) : product.badge ? (
                           <span
                             className={`text-[10px] font-extrabold uppercase px-2.5 py-0.5 rounded-full shadow-xs ${
                               product.badge === "Sale"
@@ -385,8 +425,8 @@ export const WishlistView: React.FC = () => {
                           >
                             {product.badge}
                           </span>
-                        )}
-                        {hasDiscount && (
+                        ) : null}
+                        {hasDiscount && !isSoldOut && (
                           <span className="text-[10px] font-extrabold px-2 py-0.5 rounded-full bg-emerald-600 text-white shadow-xs">
                             {discountPct}% OFF
                           </span>
@@ -405,15 +445,10 @@ export const WishlistView: React.FC = () => {
 
                       {/* In Stock Pill */}
                       <div className="absolute bottom-3 left-3 pointer-events-none">
-                        <span
-                          className={`text-[10px] font-bold px-2 py-0.5 rounded-md backdrop-blur-xs ${
-                            product.inStock !== false
-                              ? "bg-white/90 dark:bg-neutral-900/90 text-emerald-700 dark:text-emerald-400"
-                              : "bg-rose-900/90 text-rose-200"
-                          }`}
-                        >
-                          {product.inStock !== false ? "In Stock" : "Out of Stock"}
-                        </span>
+                        <StockAvailabilityBadge
+                          stockCount={product.stockCount}
+                          inStock={product.inStock !== false}
+                        />
                       </div>
                     </div>
 
@@ -467,15 +502,35 @@ export const WishlistView: React.FC = () => {
                           </div>
                         </div>
 
-                        <button
-                          type="button"
-                          onClick={() => handleAddToCart(product)}
-                          disabled={product.inStock === false}
-                          className="px-3 py-1.5 rounded-xl bg-orange-600 hover:bg-orange-700 active:scale-98 disabled:opacity-50 disabled:pointer-events-none text-white text-xs font-bold transition flex items-center gap-1.5 cursor-pointer shadow-xs"
-                        >
-                          <ShoppingBagIcon className="size-3.5" />
-                          <span>Add to Bag</span>
-                        </button>
+                        {(() => {
+                          const availableStock = product.stockCount ?? (product.inStock ? 25 : 0);
+                          const existingInCart = cartItems.find((item) => item.id === product.id);
+                          const currentInCart = existingInCart ? existingInCart.quantity : 0;
+                          const isMaxStockReached = currentInCart >= availableStock;
+
+                          return (
+                            <button
+                              type="button"
+                              onClick={() => handleAddToCart(product)}
+                              disabled={isSoldOut || isMaxStockReached}
+                              className={`px-3 py-1.5 rounded-xl text-xs font-bold transition flex items-center gap-1.5 shadow-xs ${
+                                isSoldOut || isMaxStockReached
+                                  ? "bg-neutral-300 dark:bg-neutral-700 text-neutral-500 dark:text-neutral-400 cursor-not-allowed opacity-60"
+                                  : "bg-orange-600 hover:bg-orange-700 active:scale-98 text-white cursor-pointer"
+                              }`}
+                              title={
+                                isSoldOut
+                                  ? "Sold Out"
+                                  : isMaxStockReached
+                                  ? `Only ${availableStock} in stock (already in bag)`
+                                  : "Add to Bag"
+                              }
+                            >
+                              <ShoppingBagIcon className="size-3.5" />
+                              <span>{isSoldOut ? "Sold Out" : isMaxStockReached ? "Max in Bag" : "Add to Bag"}</span>
+                            </button>
+                          );
+                        })()}
                       </div>
                     </div>
                   </div>

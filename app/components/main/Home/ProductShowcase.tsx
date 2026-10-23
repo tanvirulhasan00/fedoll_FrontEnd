@@ -21,6 +21,7 @@ import {
 } from "@heroicons/react/24/solid";
 import { toast } from "sonner";
 import QuickViewModal from "./QuickViewModal";
+import StockAvailabilityBadge from "~/components/ui/StockAvailabilityBadge";
 import type { ProductItem } from "~/firebase";
 import { getVariantImages } from "~/firebase";
 
@@ -56,10 +57,32 @@ const ShowcaseProductCard: React.FC<ShowcaseProductCardProps> = ({
   const primaryImage = activeVariantImages[0] || product.images[0];
   const secondaryImage = activeVariantImages[1] || product.images[1];
   const hasDiscount = product.originalPrice && product.originalPrice > product.price;
+  const isSoldOut = !product.inStock || (product.stockCount !== undefined && product.stockCount <= 0);
+  const availableStock = product.stockCount ?? (product.inStock ? 25 : 0);
+
+  const cartItems = useAppSelector((state) => state.cart.items);
+  const existingInCart = cartItems.find(
+    (item) =>
+      item.id === product.id &&
+      item.color === (selectedColor || product.colors[0]?.name || "Standard")
+  );
+  const currentInCart = existingInCart ? existingInCart.quantity : 0;
 
   const handleQuickAdd = (e: React.MouseEvent) => {
     e.preventDefault();
     e.stopPropagation();
+
+    if (isSoldOut || availableStock <= 0) {
+      toast.error(`${product.name} is currently sold out. Save it to your wishlist!`);
+      return;
+    }
+
+    if (currentInCart + 1 > availableStock) {
+      toast.error(
+        `Only ${availableStock} item${availableStock === 1 ? "" : "s"} available in stock. You already have all ${availableStock} in your bag!`
+      );
+      return;
+    }
 
     dispatch(
       addToCart({
@@ -71,6 +94,7 @@ const ShowcaseProductCard: React.FC<ShowcaseProductCardProps> = ({
         size: product.sizes[0] || "M",
         color: selectedColor || product.colors[0]?.name || "Standard",
         category: product.category,
+        maxStock: availableStock,
       })
     );
     toast.success(`Added ${product.name} (${selectedColor || "Standard"}) to your shopping bag!`);
@@ -84,7 +108,9 @@ const ShowcaseProductCard: React.FC<ShowcaseProductCardProps> = ({
           <img
             src={primaryImage}
             alt={`${product.name} - ${selectedColor}`}
-            className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
+            className={`w-full h-full object-cover group-hover:scale-105 transition-transform duration-500 ${
+              isSoldOut ? "opacity-85 grayscale-25" : ""
+            }`}
           />
 
           {/* Secondary Image on Hover if available */}
@@ -92,14 +118,22 @@ const ShowcaseProductCard: React.FC<ShowcaseProductCardProps> = ({
             <img
               src={secondaryImage}
               alt={`${product.name} alternate view`}
-              className="absolute inset-0 w-full h-full object-cover opacity-0 group-hover:opacity-100 transition-opacity duration-500"
+              className={`absolute inset-0 w-full h-full object-cover opacity-0 group-hover:opacity-100 transition-opacity duration-500 ${
+                isSoldOut ? "opacity-85 grayscale-25" : ""
+              }`}
             />
           )}
         </Link>
 
-        {/* Badge (Sale, Best Seller, New) */}
-        {product.badge && (
-          <div className="absolute top-3 left-3 pointer-events-none">
+        {/* Badge (Sold Out, Sale, Best Seller, New) */}
+        {isSoldOut ? (
+          <div className="absolute top-3 left-3 pointer-events-none z-10">
+            <span className="text-[10px] font-black uppercase px-2.5 py-1 rounded-full shadow-md bg-neutral-900/90 text-white tracking-wider backdrop-blur-xs border border-white/20">
+              Sold Out
+            </span>
+          </div>
+        ) : product.badge ? (
+          <div className="absolute top-3 left-3 pointer-events-none z-10">
             <span
               className={`text-[10px] font-extrabold uppercase px-2.5 py-1 rounded-full shadow-xs ${
                 product.badge === "Sale"
@@ -112,14 +146,18 @@ const ShowcaseProductCard: React.FC<ShowcaseProductCardProps> = ({
               {product.badge}
             </span>
           </div>
-        )}
+        ) : null}
 
         {/* Wishlist Button */}
         <button
           type="button"
           onClick={(e) => onWishlist(e, product.id)}
-          className="absolute top-3 right-3 size-8 rounded-full bg-white/90 dark:bg-neutral-800/90 backdrop-blur-xs flex items-center justify-center text-gray-700 dark:text-neutral-200 hover:text-rose-600 hover:scale-110 transition shadow-xs cursor-pointer z-10"
-          title="Save to wishlist"
+          className={`absolute top-3 right-3 size-8 rounded-full backdrop-blur-xs flex items-center justify-center transition shadow-xs cursor-pointer z-10 ${
+            isWishlisted
+              ? "bg-white/95 dark:bg-neutral-800/95 text-rose-600 shadow-sm"
+              : "bg-white/90 dark:bg-neutral-800/90 text-gray-700 dark:text-neutral-200 hover:text-rose-600 hover:scale-110"
+          }`}
+          title={isWishlisted ? "Saved in wishlist" : "Save to wishlist"}
         >
           {isWishlisted ? (
             <HeartSolidIcon className="size-4 text-rose-600" />
@@ -146,8 +184,19 @@ const ShowcaseProductCard: React.FC<ShowcaseProductCardProps> = ({
           <button
             type="button"
             onClick={handleQuickAdd}
-            className="size-9 rounded-xl bg-orange-700 hover:bg-orange-800 active:scale-95 text-white flex items-center justify-center shadow-md transition cursor-pointer shrink-0"
-            title={`Quick Add (${selectedColor})`}
+            disabled={isSoldOut || currentInCart >= availableStock}
+            className={`size-9 rounded-xl flex items-center justify-center shadow-md transition shrink-0 ${
+              isSoldOut || currentInCart >= availableStock
+                ? "bg-neutral-300 dark:bg-neutral-700 text-neutral-500 dark:text-neutral-400 cursor-not-allowed opacity-60"
+                : "bg-orange-700 hover:bg-orange-800 active:scale-95 text-white cursor-pointer"
+            }`}
+            title={
+              isSoldOut
+                ? "Sold Out"
+                : currentInCart >= availableStock
+                ? `Only ${availableStock} in stock (already in bag)`
+                : `Quick Add (${selectedColor})`
+            }
           >
             <ShoppingBagIcon className="size-4" />
           </button>
@@ -161,13 +210,10 @@ const ShowcaseProductCard: React.FC<ShowcaseProductCardProps> = ({
             <span className="font-semibold text-orange-700 dark:text-orange-500 uppercase tracking-wider text-[11px]">
               {product.category}
             </span>
-            <div className="flex items-center gap-1">
-              <StarSolidIcon className="size-3.5 text-amber-500 fill-current" />
-              <span className="font-bold text-gray-700 dark:text-neutral-300">
-                {product.rating}
-              </span>
-              <span className="text-gray-400 dark:text-neutral-500">({product.reviewCount})</span>
-            </div>
+            <StockAvailabilityBadge
+              stockCount={product.stockCount}
+              inStock={product.inStock}
+            />
           </div>
 
           <Link
@@ -176,6 +222,14 @@ const ShowcaseProductCard: React.FC<ShowcaseProductCardProps> = ({
           >
             {product.name}
           </Link>
+
+          <div className="flex items-center gap-1 mt-1">
+            <StarSolidIcon className="size-3.5 text-amber-500 fill-current" />
+            <span className="font-bold text-xs text-gray-700 dark:text-neutral-300">
+              {product.rating}
+            </span>
+            <span className="text-[11px] text-gray-400 dark:text-neutral-500">({product.reviewCount})</span>
+          </div>
 
           <p className="mt-1 text-xs text-gray-500 dark:text-neutral-400 line-clamp-2 leading-relaxed">
             {product.description}

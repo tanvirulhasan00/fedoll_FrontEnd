@@ -252,7 +252,7 @@ export const initialProductsData: ProductItem[] = [
       { id: "var-coat-gry-l", color: "Charcoal Grey", colorHex: "#374151", size: "L", sku: "FD-WL-01-GRY-L", stockCount: 5, inStock: true, images: ["https://images.unsplash.com/photo-1544441893-675973e31985?auto=format&fit=crop&w=800&q=80", "https://images.unsplash.com/photo-1539571696357-5a69c17a67c6?auto=format&fit=crop&w=800&q=80"] },
       { id: "var-coat-cml-s", color: "Warm Camel", colorHex: "#c29b62", size: "S", sku: "FD-WL-01-CML-S", stockCount: 4, inStock: true, images: ["https://images.unsplash.com/photo-1578932750294-f5075e85f44a?auto=format&fit=crop&w=800&q=80"] },
       { id: "var-coat-cml-m", color: "Warm Camel", colorHex: "#c29b62", size: "M", sku: "FD-WL-01-CML-M", stockCount: 6, inStock: true, images: ["https://images.unsplash.com/photo-1578932750294-f5075e85f44a?auto=format&fit=crop&w=800&q=80"] },
-      { id: "var-coat-cml-l", color: "Warm Camel", colorHex: "#c29b62", size: "L", sku: "FD-WL-01-CML-L", stockCount: 2, inStock: true, images: ["https://images.unsplash.com/photo-1578932750294-f5075e85f44a?auto=format&fit=crop&w=800&q=80"] },
+      { id: "var-coat-cml-l", color: "Warm Camel", colorHex: "#c29b62", size: "L", sku: "FD-WL-01-CML-L", stockCount: 1, inStock: true, images: ["https://images.unsplash.com/photo-1578932750294-f5075e85f44a?auto=format&fit=crop&w=800&q=80"] },
       { id: "var-coat-blk-m", color: "Classic Black", colorHex: "#111827", size: "M", sku: "FD-WL-01-BLK-M", stockCount: 7, inStock: true, images: ["https://images.unsplash.com/photo-1507679799987-c73779587ccf?auto=format&fit=crop&w=800&q=80"] },
       { id: "var-coat-blk-l", color: "Classic Black", colorHex: "#111827", size: "L", sku: "FD-WL-01-BLK-L", stockCount: 4, inStock: true, images: ["https://images.unsplash.com/photo-1507679799987-c73779587ccf?auto=format&fit=crop&w=800&q=80"] },
     ],
@@ -659,8 +659,10 @@ export const saveAllLocalProducts = (products: ProductItem[]) => {
  * Ensure every catalog garment has a concrete variant matrix for variant-level stock management
  */
 export const ensureProductHasVariants = (p: ProductItem): ProductItem => {
+  if (!p) return p;
+
   if (p.variants && p.variants.length > 0) {
-    const totalFromVars = p.variants.reduce((sum, v) => sum + (Number(v.stockCount) || 0), 0);
+    const totalFromVars = p.variants.reduce((sum, v) => sum + (Number(v?.stockCount) || 0), 0);
     return {
       ...p,
       stockCount: totalFromVars,
@@ -677,27 +679,35 @@ export const ensureProductHasVariants = (p: ProductItem): ProductItem => {
 
   const variants: ProductVariant[] = [];
   let variantIdx = 0;
-  colors.forEach((c) => {
-    sizes.forEach((s) => {
-      const slugColor = (c.name || "col").toLowerCase().replace(/[^a-z0-9]/g, "-");
-      const slugSize = (s || "sz").toLowerCase().replace(/[^a-z0-9]/g, "-");
+  const prodIdStr = String(p.id || "prod");
+  const skuPrefix = p.sku || `FD-${prodIdStr.slice(-4).toUpperCase()}`;
+
+  colors.forEach((c: any) => {
+    const colorName = typeof c === "string" ? c : c?.name || "Default";
+    const colorHex = typeof c === "object" && c?.hex ? c.hex : "#111827";
+    const colorImages = typeof c === "object" && Array.isArray(c?.images) && c.images.length > 0 ? c.images : p.images || [];
+
+    sizes.forEach((s: any) => {
+      const sizeStr = String(s || "Standard");
+      const slugColor = colorName.toLowerCase().replace(/[^a-z0-9]/g, "-");
+      const slugSize = sizeStr.toLowerCase().replace(/[^a-z0-9]/g, "-");
       const stock = baseStock + (variantIdx === 0 ? remainder : 0);
       variants.push({
-        id: `var-${p.id}-${slugColor}-${slugSize}`,
-        color: c.name,
-        colorHex: c.hex || "#111827",
-        size: s,
-        sku: `${p.sku || `FD-${p.id.slice(-4).toUpperCase()}`}-${slugColor.slice(0, 3).toUpperCase()}-${slugSize.toUpperCase()}`,
+        id: `var-${prodIdStr}-${slugColor}-${slugSize}`,
+        color: colorName,
+        colorHex,
+        size: sizeStr,
+        sku: `${skuPrefix}-${slugColor.slice(0, 3).toUpperCase()}-${slugSize.toUpperCase()}`,
         price: p.price,
         stockCount: stock,
         inStock: stock > 0,
-        images: c.images || p.images,
+        images: colorImages,
       });
       variantIdx++;
     });
   });
 
-  const resolvedStock = variants.reduce((sum, v) => sum + v.stockCount, 0);
+  const resolvedStock = variants.reduce((sum, v) => sum + (Number(v.stockCount) || 0), 0);
 
   return {
     ...p,
@@ -735,10 +745,10 @@ export const fetchProductsFromFirestore = async (params?: {
   const localItems = getLocalProducts();
 
   if (items.length > 0) {
-    // Merge: local updates take priority so live restocks/sales are never reverted by stale Firestore reads
+    // Merge: Seed map with localItems first, then Firestore items overwrite so live database state is authoritative
     const map = new Map<string, ProductItem>();
-    items.forEach((p) => map.set(p.id, ensureProductHasVariants(p)));
-    localItems.forEach((lp) => map.set(lp.id, ensureProductHasVariants(lp)));
+    localItems.forEach((lp) => map.set(String(lp.id), ensureProductHasVariants(lp)));
+    items.forEach((p) => map.set(String(p.id), ensureProductHasVariants(p)));
     items = Array.from(map.values());
     saveAllLocalProducts(items);
   } else if (localItems.length > 0) {
@@ -800,14 +810,12 @@ export const fetchProductsFromFirestore = async (params?: {
 export const fetchProductByIdFromFirestore = async (
   id: string
 ): Promise<ProductItem | null> => {
-  // First check local cache for fastest and most up-to-date state
-  const local = getLocalProducts().find((p) => p.id === id);
-  if (local) {
-    return ensureProductHasVariants(local);
-  }
+  if (!id) return null;
+  const idStr = String(id).trim();
 
+  // Primary: Live Firestore Read
   try {
-    const docRef = doc(db, "products", id);
+    const docRef = doc(db, "products", idStr);
     const snap = await getDoc(docRef);
 
     if (snap.exists()) {
@@ -819,8 +827,18 @@ export const fetchProductByIdFromFirestore = async (
     console.warn(`Could not fetch product ${id} from Firestore:`, err);
   }
 
-  // Fallback to in-memory/initial mock data
-  const fallback = initialProductsData.find((p) => p.id === id);
+  // Secondary Fallback: Local Cache
+  const local = getLocalProducts().find(
+    (p) => String(p.id).trim() === idStr || p.name.trim().toLowerCase() === idStr.toLowerCase()
+  );
+  if (local) {
+    return ensureProductHasVariants(local);
+  }
+
+  // Tertiary Fallback: In-memory Catalog
+  const fallback = initialProductsData.find(
+    (p) => String(p.id).trim() === idStr || p.name.trim().toLowerCase() === idStr.toLowerCase()
+  );
   return fallback ? ensureProductHasVariants(fallback) : null;
 };
 

@@ -866,6 +866,25 @@ export const updateOrderStatusInFirestore = async (
   };
 
   saveLocalOrder(updatedOrderResult);
+
+  // Synchronize inventory when order status transitions to or from cancelled
+  if (newStatus === "cancelled" && existingOrder.orderStatus !== "cancelled") {
+    try {
+      await restoreStockForOrder(
+        existingOrder,
+        options?.note || "Admin marked order cancelled via status update"
+      );
+    } catch (stockErr) {
+      console.warn("Failed to restore stock on admin order cancellation:", stockErr);
+    }
+  } else if (existingOrder.orderStatus === "cancelled" && newStatus !== "cancelled") {
+    try {
+      await deductStockForOrder(existingOrder);
+    } catch (stockErr) {
+      console.warn("Failed to deduct stock on order reactivation:", stockErr);
+    }
+  }
+
   return updatedOrderResult;
 };
 

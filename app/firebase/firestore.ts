@@ -31,6 +31,11 @@ export function sanitizeForFirestore<T>(data: T): T {
     return null as unknown as T;
   }
 
+  // Handle NaN and infinite numbers which Firestore rejects
+  if (typeof data === "number" && (Number.isNaN(data) || !Number.isFinite(data))) {
+    return 0 as unknown as T;
+  }
+
   // Preserve non-objects and special Firestore types
   if (
     typeof data !== "object" ||
