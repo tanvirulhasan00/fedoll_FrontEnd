@@ -4,25 +4,24 @@ import { getFirestore, type Firestore } from "firebase/firestore";
 import { getStorage, type FirebaseStorage } from "firebase/storage";
 import { getAnalytics, isSupported, type Analytics } from "firebase/analytics";
 
-// Your web app's Firebase configuration
+// Your web app's Firebase configuration loaded from environment variables
 export const firebaseConfig = {
-  apiKey:
-    import.meta.env.VITE_FIREBASE_API_KEY ||
-    "AIzaSyBB89yzBIwmNen7mqzdIWGC48f8Os55hpY",
-  authDomain:
-    import.meta.env.VITE_FIREBASE_AUTH_DOMAIN || "fedolldb.firebaseapp.com",
-  projectId: import.meta.env.VITE_FIREBASE_PROJECT_ID || "fedolldb",
-  storageBucket:
-    import.meta.env.VITE_FIREBASE_STORAGE_BUCKET ||
-    "fedolldb.firebasestorage.app",
-  messagingSenderId:
-    import.meta.env.VITE_FIREBASE_MESSAGING_SENDER_ID || "84848394092",
-  appId:
-    import.meta.env.VITE_FIREBASE_APP_ID ||
-    "1:84848394092:web:27879ca442f96dfbfffd49",
-  measurementId:
-    import.meta.env.VITE_FIREBASE_MEASUREMENT_ID || "G-7GS1F3K007",
+  apiKey: import.meta.env.VITE_FIREBASE_API_KEY || "",
+  authDomain: import.meta.env.VITE_FIREBASE_AUTH_DOMAIN || "",
+  projectId: import.meta.env.VITE_FIREBASE_PROJECT_ID || "",
+  storageBucket: import.meta.env.VITE_FIREBASE_STORAGE_BUCKET || "",
+  messagingSenderId: import.meta.env.VITE_FIREBASE_MESSAGING_SENDER_ID || "",
+  appId: import.meta.env.VITE_FIREBASE_APP_ID || "",
+  measurementId: import.meta.env.VITE_FIREBASE_MEASUREMENT_ID || "",
 };
+
+// Validate that required Firebase configuration is present
+if (!firebaseConfig.apiKey || !firebaseConfig.projectId) {
+  console.warn(
+    "[Firebase Config] Missing required Firebase configuration in environment variables. " +
+    "Ensure VITE_FIREBASE_API_KEY and VITE_FIREBASE_PROJECT_ID are configured in your .env file."
+  );
+}
 
 // Initialize Firebase App (prevents re-initialization during Vite HMR / SSR)
 export const app: FirebaseApp =
