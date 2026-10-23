@@ -31,9 +31,9 @@ export interface ProductState {
 }
 
 const initialState: ProductState = {
-  items: initialProductsData,
+  items: [...initialProductsData],
   currentProduct: null,
-  categories: initialProductCategories,
+  categories: [...initialProductCategories],
   selectedCategory: "All",
   searchQuery: "",
   sortBy: "featured",

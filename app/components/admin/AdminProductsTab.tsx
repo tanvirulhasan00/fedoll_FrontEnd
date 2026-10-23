@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { Link } from "react-router";
 import {
   PlusIcon,
@@ -11,10 +11,13 @@ import {
   SparklesIcon,
   EyeIcon,
   ArchiveBoxIcon,
+  ExclamationTriangleIcon,
 } from "@heroicons/react/24/outline";
+import { Dialog, DialogPanel, DialogTitle, Transition, TransitionChild } from "@headlessui/react";
 import { toast } from "sonner";
 import type { ProductItem, ProductCategoryItem } from "~/firebase";
 import { deleteProductFromFirestore } from "~/firebase";
+import { Spinner } from "~/components/ui/spinner";
 
 interface AdminProductsTabProps {
   products: ProductItem[];
@@ -31,22 +34,48 @@ export const AdminProductsTab: React.FC<AdminProductsTabProps> = ({
 }) => {
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedCategory, setSelectedCategory] = useState("all");
+  const [localProducts, setLocalProducts] = useState<ProductItem[]>(products || []);
+  const [deleteModalOpen, setDeleteModalOpen] = useState(false);
+  const [productToDelete, setProductToDelete] = useState<ProductItem | null>(null);
+  const [isDeleting, setIsDeleting] = useState(false);
 
-  const handleDeleteProduct = async (id: string, name: string) => {
-    const confirmDelete = window.confirm(`Are you sure you want to delete "${name}" from store catalog?`);
-    if (!confirmDelete) return;
+  useEffect(() => {
+    setLocalProducts(products || []);
+  }, [products]);
 
+  const handleOpenDeleteConfirm = (product: ProductItem) => {
+    setProductToDelete(product);
+    setDeleteModalOpen(true);
+  };
+
+  const handleConfirmDelete = async () => {
+    if (!productToDelete) return;
+
+    setIsDeleting(true);
     try {
-      await deleteProductFromFirestore(id);
-      toast.success(`Product "${name}" deleted.`);
-      onRefresh();
+      await deleteProductFromFirestore(productToDelete.id);
+
+      // Optimistically remove from local state immediately
+      setLocalProducts((prev) =>
+        prev.filter((p) => String(p.id).trim() !== String(productToDelete.id).trim())
+      );
+
+      toast.success(`Garment "${productToDelete.name}" deleted from store catalog.`);
+      setDeleteModalOpen(false);
+      setProductToDelete(null);
+
+      if (onRefresh) {
+        onRefresh();
+      }
     } catch (err: unknown) {
       const error = err as Error;
       toast.error(error.message || "Could not delete product.");
+    } finally {
+      setIsDeleting(false);
     }
   };
 
-  const filteredProducts = products.filter((p) => {
+  const filteredProducts = localProducts.filter((p) => {
     if (selectedCategory !== "all" && p.category !== selectedCategory) {
       return false;
     }
@@ -305,9 +334,9 @@ export const AdminProductsTab: React.FC<AdminProductsTabProps> = ({
                         </Link>
                         <button
                           type="button"
-                          onClick={() => handleDeleteProduct(p.id, p.name)}
+                          onClick={() => handleOpenDeleteConfirm(p)}
                           className="p-1.5 rounded-lg border border-rose-200 dark:border-rose-900/60 text-rose-600 dark:text-rose-400 hover:bg-rose-50 dark:hover:bg-rose-950/40 transition cursor-pointer"
-                          title="Delete product"
+                          title="Delete product from catalog"
                         >
                           <TrashIcon className="size-4" />
                         </button>
@@ -320,6 +349,121 @@ export const AdminProductsTab: React.FC<AdminProductsTabProps> = ({
           </table>
         </div>
       </div>
+
+      {/* Delete Product Confirmation Modal */}
+      <Transition appear show={deleteModalOpen} as={React.Fragment}>
+        <Dialog
+          as="div"
+          className="relative z-50 font-sans"
+          onClose={() => !isDeleting && setDeleteModalOpen(false)}
+        >
+          <TransitionChild
+            as={React.Fragment}
+            enter="ease-out duration-300"
+            enterFrom="opacity-0"
+            enterTo="opacity-100"
+            leave="ease-in duration-200"
+            leaveFrom="opacity-100"
+            leaveTo="opacity-0"
+          >
+            <div className="fixed inset-0 bg-black/60 backdrop-blur-xs" />
+          </TransitionChild>
+
+          <div className="fixed inset-0 z-50 overflow-y-auto">
+            <div className="flex min-h-full items-center justify-center p-4 text-center sm:p-6">
+              <TransitionChild
+                as={React.Fragment}
+                enter="ease-out duration-300"
+                enterFrom="opacity-0 scale-95"
+                enterTo="opacity-100 scale-100"
+                leave="ease-in duration-200"
+                leaveFrom="opacity-100 scale-100"
+                leaveTo="opacity-0 scale-95"
+              >
+                <DialogPanel className="w-full max-w-md transform overflow-hidden rounded-3xl bg-white dark:bg-neutral-900 p-6 sm:p-8 text-left shadow-2xl transition-all border border-stone-200/80 dark:border-neutral-800 text-gray-900 dark:text-white space-y-5">
+                  <div className="flex items-center gap-3.5">
+                    <div className="size-12 rounded-2xl bg-rose-100 dark:bg-rose-950/60 text-rose-600 dark:text-rose-400 flex items-center justify-center shrink-0 ring-4 ring-rose-50 dark:ring-rose-950/20">
+                      <ExclamationTriangleIcon className="size-6" />
+                    </div>
+                    <div>
+                      <DialogTitle className="text-base font-bold text-gray-900 dark:text-white">
+                        Delete Catalog Garment
+                      </DialogTitle>
+                      <p className="text-xs text-gray-500 dark:text-neutral-400 mt-0.5">
+                        This action permanently removes this garment from the store catalog.
+                      </p>
+                    </div>
+                  </div>
+
+                  {/* Product Details Preview Box */}
+                  {productToDelete && (
+                    <div className="p-4 rounded-2xl bg-stone-50 dark:bg-neutral-800/60 border border-stone-200/80 dark:border-neutral-700/80 flex items-center gap-3.5">
+                      <div className="relative size-14 rounded-xl overflow-hidden bg-white dark:bg-neutral-800 border border-gray-200 dark:border-neutral-700 shrink-0">
+                        <img
+                          src={productToDelete.images?.[0] || "https://images.unsplash.com/photo-1544441893-675973e31985?auto=format&fit=crop&w=100&q=80"}
+                          alt={productToDelete.name}
+                          className="w-full h-full object-cover"
+                          onError={(e) => {
+                            (e.target as HTMLImageElement).src =
+                              "https://images.unsplash.com/photo-1544441893-675973e31985?auto=format&fit=crop&w=100&q=80";
+                          }}
+                        />
+                      </div>
+                      <div className="min-w-0 flex-1">
+                        <h4 className="font-bold text-sm text-gray-900 dark:text-white truncate">
+                          {productToDelete.name}
+                        </h4>
+                        <div className="flex items-center gap-2 mt-1">
+                          <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-stone-200 dark:bg-neutral-700 text-gray-700 dark:text-neutral-300">
+                            {productToDelete.category}
+                          </span>
+                          <span className="text-xs font-bold text-orange-600 dark:text-orange-400">
+                            ৳{productToDelete.price.toLocaleString()}
+                          </span>
+                          {productToDelete.sku && (
+                            <span className="text-[10px] text-gray-400 font-mono">
+                              {productToDelete.sku}
+                            </span>
+                          )}
+                        </div>
+                        <p className="text-[11px] text-gray-500 dark:text-neutral-400 mt-1">
+                          {productToDelete.colors?.length || 1} Color{(productToDelete.colors?.length || 1) > 1 ? "s" : ""} •{" "}
+                          {productToDelete.variants?.length || 1} Variant{(productToDelete.variants?.length || 1) > 1 ? "s" : ""} •{" "}
+                          {productToDelete.stockCount ?? 0} in stock
+                        </p>
+                      </div>
+                    </div>
+                  )}
+
+                  <div className="p-4 rounded-2xl bg-rose-50 dark:bg-rose-950/30 border border-rose-200/80 dark:border-rose-900/50 text-xs text-rose-900 dark:text-rose-300 leading-relaxed">
+                    Are you sure you want to delete <strong className="font-bold">"{productToDelete?.name}"</strong>? Once deleted, customers will no longer be able to discover, view, or purchase this garment.
+                  </div>
+
+                  <div className="flex justify-end gap-2.5 pt-2 border-t border-gray-100 dark:border-neutral-800">
+                    <button
+                      type="button"
+                      disabled={isDeleting}
+                      onClick={() => setDeleteModalOpen(false)}
+                      className="px-4 py-2.5 rounded-xl border border-gray-200 dark:border-neutral-700 text-gray-700 dark:text-neutral-300 font-semibold text-xs hover:bg-stone-50 dark:hover:bg-neutral-800 transition cursor-pointer disabled:opacity-50"
+                    >
+                      Cancel
+                    </button>
+                    <button
+                      type="button"
+                      disabled={isDeleting}
+                      onClick={handleConfirmDelete}
+                      className="px-5 py-2.5 rounded-xl bg-rose-600 hover:bg-rose-700 text-white font-bold text-xs shadow-md transition flex items-center gap-1.5 cursor-pointer disabled:opacity-50"
+                    >
+                      {isDeleting && <Spinner className="size-3.5 text-white" />}
+                      <span>{isDeleting ? "Deleting Garment..." : "Delete Garment"}</span>
+                    </button>
+                  </div>
+                </DialogPanel>
+              </TransitionChild>
+            </div>
+          </div>
+        </Dialog>
+      </Transition>
     </div>
   );
 };

@@ -5,6 +5,8 @@ import {
   getDocs,
   setDoc,
   deleteDoc,
+  updateDoc,
+  writeBatch,
   query,
   where,
   serverTimestamp,
@@ -22,7 +24,21 @@ export type ProductCategory =
   | "Essentials"
   | "Shirts"
   | "Trousers"
+  | "Uncategorized"
   | (string & {});
+
+export const DEFAULT_CATEGORY_NAME = "Uncategorized";
+export const DEFAULT_CATEGORY_ID = "cat-uncategorized";
+
+export const DEFAULT_CATEGORY_ITEM: ProductCategoryItem = {
+  id: DEFAULT_CATEGORY_ID,
+  name: DEFAULT_CATEGORY_NAME,
+  slug: "uncategorized",
+  tagline: "Standard collection for unassigned garments",
+  image:
+    "https://images.unsplash.com/photo-1558769132-cb1aea458c5e?auto=format&fit=crop&w=800&q=80",
+  itemCount: 0,
+};
 
 export interface ProductCategoryItem {
   id: string;
@@ -190,6 +206,7 @@ export const initialProductCategories: ProductCategoryItem[] = [
       "https://images.unsplash.com/photo-1473966968600-fa801b869a1a?auto=format&fit=crop&w=800&q=80",
     itemCount: 18,
   },
+  DEFAULT_CATEGORY_ITEM,
 ];
 
 export const initialProductsData: ProductItem[] = [
@@ -745,11 +762,7 @@ export const fetchProductsFromFirestore = async (params?: {
   const localItems = getLocalProducts();
 
   if (items.length > 0) {
-    // Merge: Seed map with localItems first, then Firestore items overwrite so live database state is authoritative
-    const map = new Map<string, ProductItem>();
-    localItems.forEach((lp) => map.set(String(lp.id), ensureProductHasVariants(lp)));
-    items.forEach((p) => map.set(String(p.id), ensureProductHasVariants(p)));
-    items = Array.from(map.values());
+    items = items.map(ensureProductHasVariants);
     saveAllLocalProducts(items);
   } else if (localItems.length > 0) {
     items = localItems.map(ensureProductHasVariants);
@@ -849,10 +862,31 @@ export const fetchCategoriesFromFirestore = async (): Promise<ProductCategoryIte
   try {
     const snap = await getDocs(collection(db, "product_categories"));
     if (!snap.empty) {
-      return snap.docs.map((d) => ({
+      const list = snap.docs.map((d) => ({
         id: d.id,
         ...(d.data() as DocumentData),
       })) as ProductCategoryItem[];
+
+      const hasDefault = list.some(
+        (c) =>
+          c.id === DEFAULT_CATEGORY_ID ||
+          c.name.trim().toLowerCase() === DEFAULT_CATEGORY_NAME.toLowerCase()
+      );
+
+      if (!hasDefault) {
+        list.push(DEFAULT_CATEGORY_ITEM);
+        setDoc(
+          doc(db, "product_categories", DEFAULT_CATEGORY_ID),
+          sanitizeForFirestore({
+            ...DEFAULT_CATEGORY_ITEM,
+            createdAt: serverTimestamp(),
+            updatedAt: serverTimestamp(),
+          }),
+          { merge: true }
+        ).catch(() => {});
+      }
+
+      return list;
     }
 
     // Auto-seed initial categories to Firestore if empty
@@ -927,29 +961,33 @@ export const saveProductToFirestore = async (
 ): Promise<ProductItem> => {
   const prepared = ensureProductHasVariants(product);
 
-  try {
-    const docRef = doc(db, "products", prepared.id);
-    await setDoc(
-      docRef,
-      sanitizeForFirestore({
-        ...prepared,
-        updatedAt: serverTimestamp(),
-      }),
-      { merge: true }
-    );
-  } catch (err) {
-    console.error("Could not save product directly to Firestore:", err);
-  }
+  const docRef = doc(db, "products", prepared.id);
+  await setDoc(
+    docRef,
+    sanitizeForFirestore({
+      ...prepared,
+      updatedAt: serverTimestamp(),
+    }),
+    { merge: true }
+  );
 
   // Update local storage cache
-  saveLocalProduct(prepared);
+  try {
+    saveLocalProduct(prepared);
+  } catch (err) {
+    console.warn("Could not save product to local cache:", err);
+  }
 
   // Update in-memory dataset
-  const index = initialProductsData.findIndex((p) => p.id === prepared.id);
-  if (index >= 0) {
-    initialProductsData[index] = prepared;
-  } else {
-    initialProductsData.unshift(prepared);
+  try {
+    const index = initialProductsData.findIndex((p) => p.id === prepared.id);
+    if (index >= 0) {
+      initialProductsData[index] = prepared;
+    } else {
+      initialProductsData.unshift(prepared);
+    }
+  } catch (err) {
+    console.warn("Could not mutate in-memory initialProductsData:", err);
   }
 
   return prepared;
@@ -959,18 +997,22 @@ export const saveProductToFirestore = async (
  * Admin: Delete a product
  */
 export const deleteProductFromFirestore = async (id: string): Promise<boolean> => {
+  await deleteDoc(doc(db, "products", id));
+
   try {
-    await deleteDoc(doc(db, "products", id));
+    const updated = getLocalProducts().filter((p) => p.id !== id);
+    saveAllLocalProducts(updated);
   } catch (err) {
-    console.error("Could not delete product from Firestore:", err);
+    console.warn("Could not update local products cache on delete:", err);
   }
 
-  const updated = getLocalProducts().filter((p) => p.id !== id);
-  saveAllLocalProducts(updated);
-
-  const index = initialProductsData.findIndex((p) => p.id === id);
-  if (index >= 0) {
-    initialProductsData.splice(index, 1);
+  try {
+    const index = initialProductsData.findIndex((p) => p.id === id);
+    if (index >= 0) {
+      initialProductsData.splice(index, 1);
+    }
+  } catch (err) {
+    console.warn("Could not mutate in-memory initialProductsData on delete:", err);
   }
 
   return true;
@@ -982,46 +1024,145 @@ export const deleteProductFromFirestore = async (id: string): Promise<boolean> =
 export const saveCategoryToFirestore = async (
   category: ProductCategoryItem
 ): Promise<ProductCategoryItem> => {
-  try {
-    const docRef = doc(db, "product_categories", category.id);
-    await setDoc(
-      docRef,
-      sanitizeForFirestore({
-        ...category,
-        updatedAt: serverTimestamp(),
-      }),
-      { merge: true }
-    );
-  } catch (err) {
-    console.error("Could not save category directly to Firestore:", err);
-  }
+  const docRef = doc(db, "product_categories", category.id);
+  await setDoc(
+    docRef,
+    sanitizeForFirestore({
+      ...category,
+      updatedAt: serverTimestamp(),
+    }),
+    { merge: true }
+  );
 
-  const index = initialProductCategories.findIndex((c) => c.id === category.id);
-  if (index >= 0) {
-    initialProductCategories[index] = category;
-  } else {
-    initialProductCategories.push(category);
+  try {
+    const index = initialProductCategories.findIndex((c) => c.id === category.id);
+    if (index >= 0) {
+      initialProductCategories[index] = category;
+    } else {
+      initialProductCategories.push(category);
+    }
+  } catch (err) {
+    console.warn("Could not mutate in-memory initialProductCategories:", err);
   }
 
   return category;
 };
 
 /**
- * Admin: Delete a product category
+ * Admin: Delete a product category.
+ * If any products were assigned to this category, automatically reassign them
+ * to the default fallback "Uncategorized" category across Cloud Firestore,
+ * in-memory cache, and local storage.
  */
-export const deleteCategoryFromFirestore = async (id: string): Promise<boolean> => {
+export const deleteCategoryFromFirestore = async (
+  id: string,
+  categoryName?: string
+): Promise<{ success: boolean; reassignedCount: number }> => {
+  // Prevent deleting the default fallback category
+  if (
+    id === DEFAULT_CATEGORY_ID ||
+    (categoryName && categoryName.trim().toLowerCase() === DEFAULT_CATEGORY_NAME.toLowerCase())
+  ) {
+    throw new Error(
+      `The default "${DEFAULT_CATEGORY_NAME}" category is required as a fallback and cannot be deleted.`
+    );
+  }
+
+  const catToDelete = initialProductCategories.find((c) => c.id === id);
+  const targetName = (categoryName || catToDelete?.name || "").trim();
+
+  let reassignedCount = 0;
+
+  // 1. Ensure the default category exists in Firestore
   try {
-    await deleteDoc(doc(db, "product_categories", id));
+    const defaultDocRef = doc(db, "product_categories", DEFAULT_CATEGORY_ID);
+    await setDoc(
+      defaultDocRef,
+      sanitizeForFirestore({
+        ...DEFAULT_CATEGORY_ITEM,
+        updatedAt: serverTimestamp(),
+      }),
+      { merge: true }
+    );
   } catch (err) {
-    console.error("Could not delete category from Firestore:", err);
+    console.warn("Could not ensure default category in Firestore:", err);
   }
 
-  const index = initialProductCategories.findIndex((c) => c.id === id);
-  if (index >= 0) {
-    initialProductCategories.splice(index, 1);
+  // 2. Query and reassign products assigned to this category
+  if (targetName) {
+    try {
+      const q = query(collection(db, "products"), where("category", "==", targetName));
+      const snap = await getDocs(q);
+
+      if (!snap.empty) {
+        const batch = writeBatch(db);
+        snap.docs.forEach((d) => {
+          batch.update(d.ref, {
+            category: DEFAULT_CATEGORY_NAME,
+            updatedAt: serverTimestamp(),
+          });
+          reassignedCount++;
+        });
+        await batch.commit();
+      }
+    } catch (err) {
+      console.warn("Batch product reassignment failed, trying individual updates:", err);
+      try {
+        const allSnap = await getDocs(collection(db, "products"));
+        for (const docSnap of allSnap.docs) {
+          const data = docSnap.data();
+          if (data.category && String(data.category).toLowerCase() === targetName.toLowerCase()) {
+            await updateDoc(docSnap.ref, {
+              category: DEFAULT_CATEGORY_NAME,
+              updatedAt: serverTimestamp(),
+            });
+            reassignedCount++;
+          }
+        }
+      } catch (innerErr) {
+        console.warn("Fallback product reassignment failed:", innerErr);
+      }
+    }
+
+    // 3. Update in-memory initialProductsData
+    try {
+      initialProductsData.forEach((p) => {
+        if (p.category && p.category.toLowerCase() === targetName.toLowerCase()) {
+          p.category = DEFAULT_CATEGORY_NAME;
+        }
+      });
+    } catch (e) {
+      // In-memory array may be frozen in production Redux state
+    }
+
+    // 4. Update local storage cached products
+    try {
+      const localProducts = getLocalProducts().map((p) => {
+        if (p.category && p.category.toLowerCase() === targetName.toLowerCase()) {
+          return { ...p, category: DEFAULT_CATEGORY_NAME };
+        }
+        return p;
+      });
+      saveAllLocalProducts(localProducts);
+    } catch (e) {
+      // Storage error ignored
+    }
   }
 
-  return true;
+  // 5. Delete category document from Firestore
+  await deleteDoc(doc(db, "product_categories", id));
+
+  // 6. Update in-memory initialProductCategories
+  try {
+    const index = initialProductCategories.findIndex((c) => c.id === id);
+    if (index >= 0) {
+      initialProductCategories.splice(index, 1);
+    }
+  } catch (err) {
+    console.warn("Could not mutate in-memory initialProductCategories on delete:", err);
+  }
+
+  return { success: true, reassignedCount };
 };
 
 

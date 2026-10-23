@@ -1,34 +1,50 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import {
   PlusIcon,
   PencilSquareIcon,
   TrashIcon,
   XMarkIcon,
-  RectangleStackIcon,
-  PhotoIcon,
+  ExclamationTriangleIcon,
+  LockClosedIcon,
+  ShieldCheckIcon,
+  ArrowPathRoundedSquareIcon,
 } from "@heroicons/react/24/outline";
 import { Dialog, DialogPanel, DialogTitle, Transition, TransitionChild } from "@headlessui/react";
 import { toast } from "sonner";
-import type { ProductCategoryItem } from "~/firebase";
-import { saveCategoryToFirestore, deleteCategoryFromFirestore } from "~/firebase";
+import {
+  saveCategoryToFirestore,
+  deleteCategoryFromFirestore,
+  DEFAULT_CATEGORY_NAME,
+  DEFAULT_CATEGORY_ID,
+  type ProductCategoryItem,
+  type ProductItem,
+} from "~/firebase";
 import { Spinner } from "~/components/ui/spinner";
 
 interface AdminCategoriesTabProps {
   categories: ProductCategoryItem[];
+  products?: ProductItem[];
   onRefresh: () => void;
   isAddModalOpen?: boolean;
   onCloseAddModal?: () => void;
 }
 
 export const AdminCategoriesTab: React.FC<AdminCategoriesTabProps> = ({
-  categories,
+  categories = [],
+  products = [],
   onRefresh,
   isAddModalOpen = false,
   onCloseAddModal,
 }) => {
   const [modalOpen, setModalOpen] = useState(isAddModalOpen);
+  const [localCategories, setLocalCategories] = useState<ProductCategoryItem[]>(categories || []);
   const [editingCategory, setEditingCategory] = useState<ProductCategoryItem | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
+
+  // Delete Confirmation Modal State
+  const [deleteModalOpen, setDeleteModalOpen] = useState(false);
+  const [categoryToDelete, setCategoryToDelete] = useState<ProductCategoryItem | null>(null);
+  const [isDeleting, setIsDeleting] = useState(false);
 
   // Form Fields
   const [name, setName] = useState("");
@@ -36,6 +52,20 @@ export const AdminCategoriesTab: React.FC<AdminCategoriesTabProps> = ({
   const [tagline, setTagline] = useState("");
   const [image, setImage] = useState("");
   const [itemCount, setItemCount] = useState(15);
+
+  // Synchronize localCategories with incoming props
+  useEffect(() => {
+    if (categories) {
+      setLocalCategories(categories);
+    }
+  }, [categories]);
+
+  // Synchronize modalOpen when triggered from parent
+  useEffect(() => {
+    if (isAddModalOpen) {
+      handleOpenCreate();
+    }
+  }, [isAddModalOpen]);
 
   const handleOpenCreate = () => {
     setEditingCategory(null);
@@ -85,18 +115,31 @@ export const AdminCategoriesTab: React.FC<AdminCategoriesTabProps> = ({
       slug: slug.trim() || name.toLowerCase().replace(/\s+/g, "-"),
       tagline: tagline.trim(),
       image: image.trim() || "https://images.unsplash.com/photo-1544441893-675973e31985?auto=format&fit=crop&w=800&q=80",
-      itemCount: Number(itemCount),
+      itemCount: Number(itemCount) || 0,
     };
 
     try {
       await saveCategoryToFirestore(newCategory);
+      // Optimistically update local state immediately
+      setLocalCategories((prev) => {
+        const existingIdx = prev.findIndex((c) => c.id === newCategory.id);
+        if (existingIdx >= 0) {
+          const next = [...prev];
+          next[existingIdx] = newCategory;
+          return next;
+        }
+        return [newCategory, ...prev];
+      });
+
       toast.success(
         editingCategory
           ? `Category "${newCategory.name}" updated successfully!`
           : `New category "${newCategory.name}" created!`
       );
       handleCloseModal();
-      onRefresh();
+      if (onRefresh) {
+        onRefresh();
+      }
     } catch (err: unknown) {
       const error = err as Error;
       toast.error(error.message || "Failed to save category.");
@@ -105,19 +148,61 @@ export const AdminCategoriesTab: React.FC<AdminCategoriesTabProps> = ({
     }
   };
 
-  const handleDeleteCategory = async (id: string, catName: string) => {
-    const confirmDelete = window.confirm(`Are you sure you want to delete category "${catName}"?`);
-    if (!confirmDelete) return;
+  const handleOpenDeleteConfirm = (category: ProductCategoryItem) => {
+    const isDefault =
+      category.id === DEFAULT_CATEGORY_ID ||
+      category.name.trim().toLowerCase() === DEFAULT_CATEGORY_NAME.toLowerCase();
 
+    if (isDefault) {
+      toast.error(
+        `"${DEFAULT_CATEGORY_NAME}" is the default fallback category for unassigned products and cannot be deleted.`
+      );
+      return;
+    }
+
+    setCategoryToDelete(category);
+    setDeleteModalOpen(true);
+  };
+
+  const handleConfirmDelete = async () => {
+    if (!categoryToDelete) return;
+
+    setIsDeleting(true);
     try {
-      await deleteCategoryFromFirestore(id);
-      toast.success(`Category "${catName}" deleted.`);
-      onRefresh();
+      const res = await deleteCategoryFromFirestore(categoryToDelete.id, categoryToDelete.name);
+
+      // Optimistically remove from local state
+      setLocalCategories((prev) => prev.filter((c) => c.id !== categoryToDelete.id));
+
+      if (res.reassignedCount > 0) {
+        toast.success(
+          `Category "${categoryToDelete.name}" deleted. ${res.reassignedCount} garment${
+            res.reassignedCount === 1 ? "" : "s"
+          } automatically adapted to "${DEFAULT_CATEGORY_NAME}".`
+        );
+      } else {
+        toast.success(`Category "${categoryToDelete.name}" deleted successfully.`);
+      }
+
+      setDeleteModalOpen(false);
+      setCategoryToDelete(null);
+      if (onRefresh) {
+        onRefresh();
+      }
     } catch (err: unknown) {
       const error = err as Error;
       toast.error(error.message || "Could not delete category.");
+    } finally {
+      setIsDeleting(false);
     }
   };
+
+  // Calculate assigned products for the category pending deletion
+  const assignedGarmentsCount = categoryToDelete
+    ? products.filter(
+        (p) => p.category?.trim().toLowerCase() === categoryToDelete.name.trim().toLowerCase()
+      ).length
+    : 0;
 
   return (
     <div className="space-y-6">
@@ -144,61 +229,104 @@ export const AdminCategoriesTab: React.FC<AdminCategoriesTabProps> = ({
 
       {/* Categories Grid */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
-        {categories.map((cat) => (
-          <div
-            key={cat.id}
-            className="group rounded-3xl bg-white dark:bg-neutral-900 border border-stone-200/80 dark:border-neutral-800 overflow-hidden shadow-xs hover:shadow-md transition flex flex-col justify-between"
-          >
-            <div>
-              <div className="relative h-44 overflow-hidden bg-stone-100">
-                <img
-                  src={cat.image}
-                  alt={cat.name}
-                  className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
-                />
-                <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/20 to-transparent" />
-                <div className="absolute bottom-3 left-4 right-4">
-                  <h3 className="text-lg font-black text-white">{cat.name}</h3>
-                  <span className="text-[11px] font-mono text-orange-300">
-                    /{cat.slug}
-                  </span>
+        {localCategories.map((cat) => {
+          const isDefault =
+            cat.id === DEFAULT_CATEGORY_ID ||
+            cat.name.trim().toLowerCase() === DEFAULT_CATEGORY_NAME.toLowerCase();
+
+          const assignedCount = products.filter(
+            (p) => p.category?.trim().toLowerCase() === cat.name.trim().toLowerCase()
+          ).length;
+
+          return (
+            <div
+              key={cat.id}
+              className={`group rounded-3xl bg-white dark:bg-neutral-900 border overflow-hidden shadow-xs hover:shadow-md transition flex flex-col justify-between ${
+                isDefault
+                  ? "border-amber-300 dark:border-amber-700/60 ring-1 ring-amber-400/20"
+                  : "border-stone-200/80 dark:border-neutral-800"
+              }`}
+            >
+              <div>
+                <div className="relative h-44 overflow-hidden bg-stone-100">
+                  <img
+                    src={cat.image}
+                    alt={cat.name}
+                    className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
+                  />
+                  <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/20 to-transparent" />
+
+                  {/* Badges on Cover Image */}
+                  <div className="absolute top-3 right-3 flex items-center gap-1.5">
+                    {isDefault && (
+                      <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full bg-amber-500/90 text-white font-bold text-[10px] backdrop-blur-xs shadow-xs">
+                        <ShieldCheckIcon className="size-3.5" />
+                        <span>Default Fallback</span>
+                      </span>
+                    )}
+                  </div>
+
+                  <div className="absolute bottom-3 left-4 right-4">
+                    <h3 className="text-lg font-black text-white">{cat.name}</h3>
+                    <span className="text-[11px] font-mono text-orange-300">
+                      /{cat.slug}
+                    </span>
+                  </div>
+                </div>
+
+                <div className="p-5 space-y-2 text-xs">
+                  <p className="text-gray-600 dark:text-neutral-400 leading-relaxed text-[11px]">
+                    {cat.tagline || "High-quality collection curated for everyday elegance."}
+                  </p>
+                  <div className="flex items-center justify-between text-[11px] text-gray-500 dark:text-neutral-400 pt-2 border-t border-gray-100 dark:border-neutral-800">
+                    <span>Assigned Garments:</span>
+                    <strong className="text-gray-900 dark:text-white font-mono">
+                      {assignedCount > 0 ? `${assignedCount} garments` : `${cat.itemCount || 0} items`}
+                    </strong>
+                  </div>
                 </div>
               </div>
 
-              <div className="p-5 space-y-2 text-xs">
-                <p className="text-gray-600 dark:text-neutral-400 leading-relaxed text-[11px]">
-                  {cat.tagline || "High-quality collection curated for everyday elegance."}
-                </p>
-                <div className="flex items-center justify-between text-[11px] text-gray-500 dark:text-neutral-400 pt-2 border-t border-gray-100 dark:border-neutral-800">
-                  <span>Assigned Garments:</span>
-                  <strong className="text-gray-900 dark:text-white font-mono">
-                    {cat.itemCount || 10} items
-                  </strong>
+              <div className="p-4 bg-stone-50/60 dark:bg-neutral-950/60 border-t border-stone-200/60 dark:border-neutral-800 flex items-center justify-between gap-2">
+                <div className="text-[10px] text-gray-400 dark:text-neutral-500 font-mono">
+                  {isDefault ? "Permanent" : `#${cat.id.slice(-6)}`}
+                </div>
+
+                <div className="flex items-center gap-2">
+                  <button
+                    type="button"
+                    onClick={() => handleOpenEdit(cat)}
+                    className="px-3 py-1.5 rounded-xl border border-gray-200 dark:border-neutral-700 hover:bg-stone-100 dark:hover:bg-neutral-800 text-gray-700 dark:text-neutral-300 text-xs font-semibold transition flex items-center gap-1 cursor-pointer"
+                  >
+                    <PencilSquareIcon className="size-3.5" />
+                    <span>Edit</span>
+                  </button>
+
+                  {isDefault ? (
+                    <button
+                      type="button"
+                      disabled
+                      title={`The "${DEFAULT_CATEGORY_NAME}" category is required as the default fallback and cannot be deleted.`}
+                      className="px-3 py-1.5 rounded-xl border border-stone-200 dark:border-neutral-800 text-stone-400 dark:text-neutral-600 text-xs font-semibold flex items-center gap-1 cursor-not-allowed opacity-60"
+                    >
+                      <LockClosedIcon className="size-3.5" />
+                      <span>Protected</span>
+                    </button>
+                  ) : (
+                    <button
+                      type="button"
+                      onClick={() => handleOpenDeleteConfirm(cat)}
+                      className="px-3 py-1.5 rounded-xl border border-rose-200 dark:border-rose-900/60 text-rose-600 dark:text-rose-400 hover:bg-rose-50 dark:hover:bg-rose-950/40 text-xs font-semibold transition flex items-center gap-1 cursor-pointer"
+                    >
+                      <TrashIcon className="size-3.5" />
+                      <span>Delete</span>
+                    </button>
+                  )}
                 </div>
               </div>
             </div>
-
-            <div className="p-4 bg-stone-50/60 dark:bg-neutral-950/60 border-t border-stone-200/60 dark:border-neutral-800 flex items-center justify-end gap-2">
-              <button
-                type="button"
-                onClick={() => handleOpenEdit(cat)}
-                className="px-3 py-1.5 rounded-xl border border-gray-200 dark:border-neutral-700 hover:bg-stone-100 dark:hover:bg-neutral-800 text-gray-700 dark:text-neutral-300 text-xs font-semibold transition flex items-center gap-1 cursor-pointer"
-              >
-                <PencilSquareIcon className="size-3.5" />
-                <span>Edit</span>
-              </button>
-
-              <button
-                type="button"
-                onClick={() => handleDeleteCategory(cat.id, cat.name)}
-                className="px-3 py-1.5 rounded-xl border border-rose-200 dark:border-rose-900/60 text-rose-600 dark:text-rose-400 hover:bg-rose-50 dark:hover:bg-rose-950/40 text-xs font-semibold transition flex items-center gap-1 cursor-pointer"
-              >
-                <TrashIcon className="size-3.5" />
-                <span>Delete</span>
-              </button>
-            </div>
-          </div>
-        ))}
+          );
+        })}
       </div>
 
       {/* Add / Edit Category Modal */}
@@ -235,7 +363,7 @@ export const AdminCategoriesTab: React.FC<AdminCategoriesTabProps> = ({
                     <button
                       type="button"
                       onClick={handleCloseModal}
-                      className="size-8 rounded-full flex items-center justify-center text-gray-400 hover:text-gray-900 dark:hover:text-white"
+                      className="size-8 rounded-full flex items-center justify-center text-gray-400 hover:text-gray-900 dark:hover:text-white cursor-pointer"
                     >
                       <XMarkIcon className="size-5" />
                     </button>
@@ -251,7 +379,7 @@ export const AdminCategoriesTab: React.FC<AdminCategoriesTabProps> = ({
                         required
                         value={name}
                         onChange={(e) => handleNameChange(e.target.value)}
-                        placeholder="e.g. Knitwear & Sweaters"
+                        placeholder="e.g. Knitwear &amp; Sweaters"
                         className="w-full px-3 py-2 bg-stone-50 dark:bg-neutral-800 border border-gray-200 dark:border-neutral-700 rounded-xl text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-orange-600"
                       />
                     </div>
@@ -315,20 +443,121 @@ export const AdminCategoriesTab: React.FC<AdminCategoriesTabProps> = ({
                       <button
                         type="button"
                         onClick={handleCloseModal}
-                        className="px-4 py-2 rounded-xl border border-gray-200 dark:border-neutral-700 text-gray-700 dark:text-neutral-300 font-semibold text-xs"
+                        className="px-4 py-2 rounded-xl border border-gray-200 dark:border-neutral-700 text-gray-700 dark:text-neutral-300 font-semibold text-xs cursor-pointer"
                       >
                         Cancel
                       </button>
                       <button
                         type="submit"
                         disabled={isSubmitting}
-                        className="px-6 py-2 rounded-xl bg-orange-600 hover:bg-orange-700 text-white font-bold text-xs shadow-md transition flex items-center gap-1.5 cursor-pointer"
+                        className="px-6 py-2 rounded-xl bg-orange-600 hover:bg-orange-700 text-white font-bold text-xs shadow-md transition flex items-center gap-1.5 cursor-pointer disabled:opacity-50"
                       >
                         {isSubmitting && <Spinner className="size-3.5 text-white" />}
                         <span>{editingCategory ? "Save Changes" : "Create Category"}</span>
                       </button>
                     </div>
                   </form>
+                </DialogPanel>
+              </TransitionChild>
+            </div>
+          </div>
+        </Dialog>
+      </Transition>
+
+      {/* Delete Confirmation Modal with Auto-Adapt Notice */}
+      <Transition show={deleteModalOpen} as={React.Fragment}>
+        <Dialog
+          as="div"
+          className="relative z-50 font-sans"
+          onClose={() => !isDeleting && setDeleteModalOpen(false)}
+        >
+          <TransitionChild
+            as={React.Fragment}
+            enter="ease-out duration-300"
+            enterFrom="opacity-0"
+            enterTo="opacity-100"
+            leave="ease-in duration-200"
+            leaveFrom="opacity-100"
+            leaveTo="opacity-0"
+          >
+            <div className="fixed inset-0 bg-black/60 backdrop-blur-xs" />
+          </TransitionChild>
+
+          <div className="fixed inset-0 z-50 overflow-y-auto">
+            <div className="flex min-h-full items-center justify-center p-4 text-center sm:p-6">
+              <TransitionChild
+                as={React.Fragment}
+                enter="ease-out duration-300"
+                enterFrom="opacity-0 scale-95"
+                enterTo="opacity-100 scale-100"
+                leave="ease-in duration-200"
+                leaveFrom="opacity-100 scale-100"
+                leaveTo="opacity-0 scale-95"
+              >
+                <DialogPanel className="w-full max-w-md transform overflow-hidden rounded-3xl bg-white dark:bg-neutral-900 p-6 sm:p-8 text-left shadow-2xl transition-all border border-stone-200/80 dark:border-neutral-800 text-gray-900 dark:text-white space-y-5">
+                  <div className="flex items-center gap-3.5">
+                    <div className="size-12 rounded-2xl bg-rose-100 dark:bg-rose-950/60 text-rose-600 dark:text-rose-400 flex items-center justify-center shrink-0 ring-4 ring-rose-50 dark:ring-rose-950/20">
+                      <ExclamationTriangleIcon className="size-6" />
+                    </div>
+                    <div>
+                      <DialogTitle className="text-base font-bold text-gray-900 dark:text-white">
+                        Delete Collection Category
+                      </DialogTitle>
+                      <p className="text-xs text-gray-500 dark:text-neutral-400 mt-0.5">
+                        This action permanently deletes the category.
+                      </p>
+                    </div>
+                  </div>
+
+                  {/* Auto-reassignment explanation */}
+                  {assignedGarmentsCount > 0 ? (
+                    <div className="p-4 rounded-2xl bg-amber-50 dark:bg-amber-950/40 border border-amber-200 dark:border-amber-800/60 text-xs text-amber-900 dark:text-amber-200 space-y-2">
+                      <div className="font-bold flex items-center gap-1.5 text-amber-800 dark:text-amber-300">
+                        <ArrowPathRoundedSquareIcon className="size-4" />
+                        <span>Automatic Product Reassignment</span>
+                      </div>
+                      <p className="leading-relaxed">
+                        There {assignedGarmentsCount === 1 ? "is" : "are"}{" "}
+                        <strong className="underline decoration-amber-400">
+                          {assignedGarmentsCount} garment{assignedGarmentsCount === 1 ? "" : "s"}
+                        </strong>{" "}
+                        currently assigned to "{categoryToDelete?.name}".
+                      </p>
+                      <p className="leading-relaxed text-[11px] opacity-90">
+                        Deleting this category will <strong>not</strong> delete those products. Instead, all{" "}
+                        {assignedGarmentsCount} garment{assignedGarmentsCount === 1 ? "" : "s"} will{" "}
+                        <strong>automatically adapt to the default "{DEFAULT_CATEGORY_NAME}"</strong> category across Cloud Firestore and storefront filters.
+                      </p>
+                    </div>
+                  ) : (
+                    <div className="p-4 rounded-2xl bg-stone-50 dark:bg-neutral-950 border border-stone-200/80 dark:border-neutral-800 text-xs text-gray-600 dark:text-neutral-300 leading-relaxed">
+                      Are you sure you want to delete category{" "}
+                      <strong className="text-gray-900 dark:text-white font-semibold">
+                        "{categoryToDelete?.name}"
+                      </strong>
+                      ? No garments are currently assigned to this category.
+                    </div>
+                  )}
+
+                  <div className="flex justify-end gap-2.5 pt-2 border-t border-gray-100 dark:border-neutral-800">
+                    <button
+                      type="button"
+                      disabled={isDeleting}
+                      onClick={() => setDeleteModalOpen(false)}
+                      className="px-4 py-2.5 rounded-xl border border-gray-200 dark:border-neutral-700 text-gray-700 dark:text-neutral-300 font-semibold text-xs hover:bg-stone-50 dark:hover:bg-neutral-800 transition cursor-pointer disabled:opacity-50"
+                    >
+                      Cancel
+                    </button>
+                    <button
+                      type="button"
+                      disabled={isDeleting}
+                      onClick={handleConfirmDelete}
+                      className="px-5 py-2.5 rounded-xl bg-rose-600 hover:bg-rose-700 text-white font-bold text-xs shadow-md transition flex items-center gap-1.5 cursor-pointer disabled:opacity-50"
+                    >
+                      {isDeleting && <Spinner className="size-3.5 text-white" />}
+                      <span>{isDeleting ? "Reassigning & Deleting..." : "Delete Category"}</span>
+                    </button>
+                  </div>
                 </DialogPanel>
               </TransitionChild>
             </div>
