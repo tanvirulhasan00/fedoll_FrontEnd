@@ -16,7 +16,11 @@ import {
 import { Dialog, DialogPanel, DialogTitle, Transition, TransitionChild } from "@headlessui/react";
 import { toast } from "sonner";
 import type { ProductItem, ProductCategoryItem } from "~/firebase";
-import { deleteProductFromFirestore } from "~/firebase";
+import {
+  deleteProductFromFirestore,
+  formatCategoryHierarchy,
+  getCategoryDescendantNames,
+} from "~/firebase";
 import { Spinner } from "~/components/ui/spinner";
 
 interface AdminProductsTabProps {
@@ -76,8 +80,13 @@ export const AdminProductsTab: React.FC<AdminProductsTabProps> = ({
   };
 
   const filteredProducts = localProducts.filter((p) => {
-    if (selectedCategory !== "all" && p.category !== selectedCategory) {
-      return false;
+    if (selectedCategory !== "all") {
+      const allowedNames = new Set(
+        getCategoryDescendantNames(selectedCategory, categories).map((n) => n.trim().toLowerCase())
+      );
+      if (!allowedNames.has((p.category || "").trim().toLowerCase())) {
+        return false;
+      }
     }
     if (searchQuery.trim()) {
       const q = searchQuery.toLowerCase();
@@ -127,12 +136,12 @@ export const AdminProductsTab: React.FC<AdminProductsTabProps> = ({
           <select
             value={selectedCategory}
             onChange={(e) => setSelectedCategory(e.target.value)}
-            className="px-3 py-2 text-xs bg-stone-50 dark:bg-neutral-800 border border-gray-200 dark:border-neutral-700 rounded-xl text-gray-800 dark:text-neutral-200 focus:outline-none focus:ring-1 focus:ring-orange-600 cursor-pointer"
+            className="px-3 py-2 text-xs bg-stone-50 dark:bg-neutral-800 border border-gray-200 dark:border-neutral-700 rounded-xl text-gray-800 dark:text-neutral-200 focus:outline-none focus:ring-1 focus:ring-orange-600 cursor-pointer font-sans"
           >
             <option value="all">All Categories</option>
-            {categories.map((c) => (
-              <option key={c.id} value={c.name}>
-                {c.name}
+            {formatCategoryHierarchy(categories).map(({ category: c, label, fullPath }) => (
+              <option key={c.id} value={c.name} title={fullPath}>
+                {label}
               </option>
             ))}
           </select>

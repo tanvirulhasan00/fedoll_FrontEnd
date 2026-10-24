@@ -25,6 +25,7 @@ export interface ProductState {
   onlyInStock: boolean;
   loading: boolean;
   loadingProduct: boolean;
+  loadingCategories: boolean;
   error: string | null;
   productError: string | null;
   syncing: boolean;
@@ -41,6 +42,7 @@ const initialState: ProductState = {
   onlyInStock: false,
   loading: false,
   loadingProduct: false,
+  loadingCategories: false,
   error: null,
   productError: null,
   syncing: false,
@@ -151,6 +153,10 @@ export const productSlice = createSlice({
       state.currentProduct = null;
       state.productError = null;
     },
+    setProductCategories: (state, action: PayloadAction<ProductCategoryItem[]>) => {
+      state.categories = action.payload;
+      state.loadingCategories = false;
+    },
   },
   extraReducers: (builder) => {
     builder
@@ -181,8 +187,15 @@ export const productSlice = createSlice({
         state.productError = (action.payload as string) || "Product not found";
       })
       // fetchProductCategories
+      .addCase(fetchProductCategories.pending, (state) => {
+        state.loadingCategories = true;
+      })
       .addCase(fetchProductCategories.fulfilled, (state, action) => {
+        state.loadingCategories = false;
         state.categories = action.payload;
+      })
+      .addCase(fetchProductCategories.rejected, (state) => {
+        state.loadingCategories = false;
       })
       // seedProducts
       .addCase(seedProducts.pending, (state) => {
@@ -205,6 +218,7 @@ export const {
   setOnlyInStock,
   resetProductFilters,
   clearCurrentProduct,
+  setProductCategories,
 } = productSlice.actions;
 
 export default productSlice.reducer;

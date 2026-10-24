@@ -7,6 +7,8 @@ import {
   fetchCategoriesFromFirestore,
   saveProductToFirestore,
   recordInitialProductStock,
+  formatCategoryHierarchy,
+  normalizeGoogleDriveImageUrl,
   type ProductItem,
   type ProductCategoryItem,
   type ProductColor,
@@ -186,6 +188,12 @@ export default function AdminProductFormPage() {
         if (!isMounted) return;
         setCategories(fetchedCats);
 
+        if (!isEditMode && fetchedCats.length > 0) {
+          if (!fetchedCats.some((c) => c.name.toLowerCase() === formCategory.toLowerCase())) {
+            setFormCategory(fetchedCats[0].name);
+          }
+        }
+
         if (isEditMode && id) {
           let foundProduct = await fetchProductByIdFromFirestore(id);
           if (!foundProduct) {
@@ -318,11 +326,12 @@ export default function AdminProductFormPage() {
   };
 
   const handleAddColorImage = (colorIdx: number) => {
-    const inputUrl = (newColorImageUrl[colorIdx] || "").trim();
-    if (!inputUrl) {
+    const rawInput = (newColorImageUrl[colorIdx] || "").trim();
+    if (!rawInput) {
       toast.error("Please enter a valid image URL.");
       return;
     }
+    const inputUrl = normalizeGoogleDriveImageUrl(rawInput);
     const updated = [...formColors];
     updated[colorIdx] = {
       ...updated[colorIdx],
@@ -394,11 +403,12 @@ export default function AdminProductFormPage() {
   const handleSaveProduct = async (e: React.FormEvent) => {
     e.preventDefault();
 
-    const primary = formPrimaryImage.trim();
-    if (!primary) {
+    const rawPrimary = formPrimaryImage.trim();
+    if (!rawPrimary) {
       toast.error("Please provide at least Photo 1 (Primary Front View).");
       return;
     }
+    const primary = normalizeGoogleDriveImageUrl(rawPrimary);
 
     if (!formName.trim()) {
       toast.error("Please enter a garment title.");
@@ -410,18 +420,23 @@ export default function AdminProductFormPage() {
 
     // Collect all unique images
     const allImages: string[] = [primary];
-    if (formSecondaryImage.trim() && !allImages.includes(formSecondaryImage.trim())) {
-      allImages.push(formSecondaryImage.trim());
+    if (formSecondaryImage.trim()) {
+      const secNorm = normalizeGoogleDriveImageUrl(formSecondaryImage.trim());
+      if (!allImages.includes(secNorm)) {
+        allImages.push(secNorm);
+      }
     }
     formGalleryImages.forEach((img) => {
-      if (img.trim() && !allImages.includes(img.trim())) {
-        allImages.push(img.trim());
+      const norm = normalizeGoogleDriveImageUrl(img.trim());
+      if (norm && !allImages.includes(norm)) {
+        allImages.push(norm);
       }
     });
     formColors.forEach((c) => {
       c.images.forEach((img) => {
-        if (img.trim() && !allImages.includes(img.trim())) {
-          allImages.push(img.trim());
+        const norm = normalizeGoogleDriveImageUrl(img.trim());
+        if (norm && !allImages.includes(norm)) {
+          allImages.push(norm);
         }
       });
     });
@@ -430,7 +445,9 @@ export default function AdminProductFormPage() {
     const finalColors: ProductColor[] = formColors.map((c) => ({
       name: c.name.trim(),
       hex: c.hex.trim(),
-      images: c.images.filter((img) => Boolean(img.trim())),
+      images: c.images
+        .map((img) => normalizeGoogleDriveImageUrl(img.trim()))
+        .filter((img) => Boolean(img.trim())),
     }));
 
     // Ensure variants are present
@@ -683,13 +700,19 @@ export default function AdminProductFormPage() {
                       <select
                         value={formCategory}
                         onChange={(e) => setFormCategory(e.target.value)}
-                        className="w-full px-3 py-2 bg-stone-50 dark:bg-neutral-800 border border-gray-200 dark:border-neutral-700 rounded-xl text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-orange-600 cursor-pointer"
+                        className="w-full px-3 py-2 bg-stone-50 dark:bg-neutral-800 border border-gray-200 dark:border-neutral-700 rounded-xl text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-orange-600 cursor-pointer font-sans"
                       >
-                        {categories.map((c) => (
-                          <option key={c.id} value={c.name}>
-                            {c.name}
+                        {formatCategoryHierarchy(categories).map(({ category: c, label, fullPath }) => (
+                          <option key={c.id} value={c.name} title={fullPath}>
+                            {label}
                           </option>
                         ))}
+                        {formCategory &&
+                          !categories.some(
+                            (c) => c.name.toLowerCase() === formCategory.toLowerCase()
+                          ) && (
+                            <option value={formCategory}>{formCategory}</option>
+                          )}
                       </select>
                     </div>
 

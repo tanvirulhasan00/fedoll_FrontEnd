@@ -2,6 +2,7 @@ import React, { useState, useEffect } from "react";
 import { useSearchParams, Link, useNavigate } from "react-router";
 import { useAppDispatch, useAppSelector } from "~/redux/hooks/hook";
 import { setUser } from "~/redux/features/auth/authSlice";
+import { setProductCategories } from "~/redux/features/productSlice";
 import {
   fetchProductsFromFirestore,
   fetchCategoriesFromFirestore,
@@ -186,6 +187,7 @@ export default function AdminDashboardPage() {
       setOrders(fetchedOrders);
       setProducts(fetchedProducts);
       setCategories(fetchedCategories);
+      dispatch(setProductCategories(fetchedCategories));
       setCustomers(fetchedCustomers);
       setShippingProviders(fetchedProviders);
       setShippingSettings(fetchedShipSettings);

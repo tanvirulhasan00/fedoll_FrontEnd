@@ -9,6 +9,7 @@ import {
   writeBatch,
   query,
   where,
+  onSnapshot,
   serverTimestamp,
   type DocumentData,
 } from "firebase/firestore";
@@ -38,6 +39,8 @@ export const DEFAULT_CATEGORY_ITEM: ProductCategoryItem = {
   image:
     "https://images.unsplash.com/photo-1558769132-cb1aea458c5e?auto=format&fit=crop&w=800&q=80",
   itemCount: 0,
+  parentId: null,
+  level: 0,
 };
 
 export interface ProductCategoryItem {
@@ -47,6 +50,9 @@ export interface ProductCategoryItem {
   tagline: string;
   image: string;
   itemCount: number;
+  parentId?: string | null;
+  level?: number;
+  order?: number;
 }
 
 export interface ProductColor {
@@ -127,6 +133,68 @@ export const getVariantImages = (
 };
 
 /**
+ * Extracts a Google Drive File ID from various Google Drive and Google Docs share URL formats:
+ * - https://drive.google.com/file/d/FILE_ID/view?usp=sharing
+ * - https://drive.google.com/file/d/FILE_ID
+ * - https://drive.google.com/open?id=FILE_ID
+ * - https://drive.google.com/uc?id=FILE_ID or export=view&id=FILE_ID
+ * - https://drive.google.com/thumbnail?id=FILE_ID
+ * - https://lh3.googleusercontent.com/d/FILE_ID
+ */
+export function extractGoogleDriveFileId(url: string | null | undefined): string | null {
+  if (!url || typeof url !== "string") return null;
+  const trimmed = url.trim();
+
+  // Pattern 1: /file/d/{id} or /d/{id} in drive.google.com, docs.google.com, or googleusercontent.com
+  const fileDMatch = trimmed.match(/(?:drive|docs)\.google\.com\/(?:file\/)?d\/([a-zA-Z0-9_-]+)/i);
+  if (fileDMatch && fileDMatch[1]) return fileDMatch[1];
+
+  const lh3Match = trimmed.match(/googleusercontent\.com\/d\/([a-zA-Z0-9_-]+)/i);
+  if (lh3Match && lh3Match[1]) return lh3Match[1];
+
+  // Pattern 2: id={id} parameter in query string
+  if (/(?:drive|docs)\.google\.com/i.test(trimmed)) {
+    const idParamMatch = trimmed.match(/[?&]id=([a-zA-Z0-9_-]+)/i);
+    if (idParamMatch && idParamMatch[1]) return idParamMatch[1];
+  }
+
+  // Pattern 3: thumbnail?id={id}
+  const thumbnailMatch = trimmed.match(/thumbnail\?(?:.*&)?id=([a-zA-Z0-9_-]+)/i);
+  if (thumbnailMatch && thumbnailMatch[1]) return thumbnailMatch[1];
+
+  return null;
+}
+
+/**
+ * Converts any Google Drive share URL into a direct, embeddable Google CDN image URL.
+ * If the URL is not a Google Drive link, returns the original URL untouched.
+ */
+export function normalizeGoogleDriveImageUrl(url: string | null | undefined): string {
+  if (!url || typeof url !== "string") return "";
+  const trimmed = url.trim();
+  const fileId = extractGoogleDriveFileId(trimmed);
+
+  if (fileId) {
+    // Return Google's direct CDN content URL for public Drive files
+    return `https://lh3.googleusercontent.com/d/${fileId}`;
+  }
+
+  return trimmed;
+}
+
+/**
+ * Returns alternative fallback URL for Google Drive files if CDN fails (e.g. thumbnail endpoint)
+ */
+export function getGoogleDriveThumbnailUrl(url: string | null | undefined, width = 1600): string {
+  if (!url || typeof url !== "string") return "";
+  const fileId = extractGoogleDriveFileId(url);
+  if (fileId) {
+    return `https://drive.google.com/thumbnail?id=${fileId}&sz=w${width}`;
+  }
+  return url || "";
+}
+
+/**
  * Helper: Find variant matching selected color and size
  */
 export const getProductVariant = (
@@ -144,6 +212,42 @@ export const getProductVariant = (
 
 export const initialProductCategories: ProductCategoryItem[] = [
   {
+    id: "cat-winter",
+    name: "Winter",
+    slug: "winter",
+    tagline: "Essential cold-weather layers, outerwear, hoodies & thermal fleece",
+    image:
+      "https://images.unsplash.com/photo-1544441893-675973e31985?auto=format&fit=crop&w=800&q=80",
+    itemCount: 45,
+    parentId: null,
+    level: 0,
+    order: 1,
+  },
+  {
+    id: "cat-winter-mens",
+    name: "Mens",
+    slug: "winter-mens",
+    tagline: "Heavyweight winter essentials, coats, and fleece hoodies tailored for men",
+    image:
+      "https://images.unsplash.com/photo-1487222477894-8943e31ef7b2?auto=format&fit=crop&w=800&q=80",
+    itemCount: 26,
+    parentId: "cat-winter",
+    level: 1,
+    order: 1,
+  },
+  {
+    id: "cat-winter-mens-hoodie",
+    name: "Hoodie",
+    slug: "winter-mens-hoodie",
+    tagline: "420 GSM brushed heavyweight cotton fleece pullover and zip hoodies",
+    image:
+      "https://images.unsplash.com/photo-1556905055-8f358a7a47b2?auto=format&fit=crop&w=800&q=80",
+    itemCount: 14,
+    parentId: "cat-winter-mens",
+    level: 2,
+    order: 1,
+  },
+  {
     id: "cat-outerwear",
     name: "Outerwear",
     slug: "outerwear",
@@ -151,6 +255,9 @@ export const initialProductCategories: ProductCategoryItem[] = [
     image:
       "https://images.unsplash.com/photo-1544441893-675973e31985?auto=format&fit=crop&w=800&q=80",
     itemCount: 28,
+    parentId: null,
+    level: 0,
+    order: 2,
   },
   {
     id: "cat-workwear",
@@ -160,6 +267,9 @@ export const initialProductCategories: ProductCategoryItem[] = [
     image:
       "https://images.unsplash.com/photo-1487222477894-8943e31ef7b2?auto=format&fit=crop&w=800&q=80",
     itemCount: 34,
+    parentId: null,
+    level: 0,
+    order: 3,
   },
   {
     id: "cat-denim",
@@ -169,6 +279,9 @@ export const initialProductCategories: ProductCategoryItem[] = [
     image:
       "https://images.unsplash.com/photo-1582552938357-32b906df40cb?auto=format&fit=crop&w=800&q=80",
     itemCount: 19,
+    parentId: null,
+    level: 0,
+    order: 4,
   },
   {
     id: "cat-knitwear",
@@ -178,6 +291,9 @@ export const initialProductCategories: ProductCategoryItem[] = [
     image:
       "https://images.unsplash.com/photo-1558769132-cb1aea458c5e?auto=format&fit=crop&w=800&q=80",
     itemCount: 22,
+    parentId: null,
+    level: 0,
+    order: 5,
   },
   {
     id: "cat-essentials",
@@ -187,6 +303,9 @@ export const initialProductCategories: ProductCategoryItem[] = [
     image:
       "https://images.unsplash.com/photo-1521572267360-ee0c2909d518?auto=format&fit=crop&w=800&q=80",
     itemCount: 16,
+    parentId: null,
+    level: 0,
+    order: 6,
   },
   {
     id: "cat-shirts",
@@ -196,6 +315,9 @@ export const initialProductCategories: ProductCategoryItem[] = [
     image:
       "https://images.unsplash.com/photo-1602810318383-e386cc2a3ccf?auto=format&fit=crop&w=800&q=80",
     itemCount: 24,
+    parentId: null,
+    level: 0,
+    order: 7,
   },
   {
     id: "cat-trousers",
@@ -205,11 +327,105 @@ export const initialProductCategories: ProductCategoryItem[] = [
     image:
       "https://images.unsplash.com/photo-1473966968600-fa801b869a1a?auto=format&fit=crop&w=800&q=80",
     itemCount: 18,
+    parentId: null,
+    level: 0,
+    order: 8,
   },
   DEFAULT_CATEGORY_ITEM,
 ];
 
 export const initialProductsData: ProductItem[] = [
+  {
+    id: "prod-winter-hoodie",
+    name: "Heavyweight 420 GSM Brushed Fleece Hoodie",
+    category: "Hoodie",
+    price: 2450,
+    originalPrice: 2950,
+    badge: "Trending",
+    rating: 4.9,
+    reviewCount: 98,
+    images: [
+      "https://images.unsplash.com/photo-1556905055-8f358a7a47b2?auto=format&fit=crop&w=800&q=80",
+      "https://images.unsplash.com/photo-1509967419530-da38b4704bc6?auto=format&fit=crop&w=800&q=80",
+      "https://images.unsplash.com/photo-1516762689617-e1cffcef479d?auto=format&fit=crop&w=800&q=80",
+    ],
+    description:
+      "Ultra-heavy 420 GSM combed organic cotton fleece hoodie featuring double-layer warm hood, front kangaroo pocket, and durable ribbed hems. Crafted specifically for cold winter evenings in Dhaka and northern Bangladesh.",
+    details: [
+      "420 GSM 100% combed cotton fleece exterior",
+      "Plush brushed interior for maximum warmth and softness",
+      "Double-layered structured hood with heavy-duty metal aglets",
+      "Reinforced bartack stitching at stress points and kangaroo pocket",
+    ],
+    material: "100% Combed Organic Cotton Fleece",
+    fit: "Modern Relaxed Boxy Fit",
+    care: "Machine wash cold inside out, tumble dry gentle.",
+    sizes: ["M", "L", "XL", "XXL"],
+    colors: [
+      {
+        name: "Vintage Ash Grey",
+        hex: "#9ca3af",
+        images: [
+          "https://images.unsplash.com/photo-1556905055-8f358a7a47b2?auto=format&fit=crop&w=800&q=80",
+        ],
+      },
+      {
+        name: "Jet Black",
+        hex: "#111827",
+        images: [
+          "https://images.unsplash.com/photo-1509967419530-da38b4704bc6?auto=format&fit=crop&w=800&q=80",
+        ],
+      },
+    ],
+    variants: [
+      {
+        id: "prod-winter-hoodie-grey-m",
+        color: "Vintage Ash Grey",
+        colorHex: "#9ca3af",
+        size: "M",
+        sku: "FD-HD-WTR-GRY-M",
+        stockCount: 15,
+        inStock: true,
+        images: ["https://images.unsplash.com/photo-1556905055-8f358a7a47b2?auto=format&fit=crop&w=800&q=80"],
+      },
+      {
+        id: "prod-winter-hoodie-grey-l",
+        color: "Vintage Ash Grey",
+        colorHex: "#9ca3af",
+        size: "L",
+        sku: "FD-HD-WTR-GRY-L",
+        stockCount: 12,
+        inStock: true,
+        images: ["https://images.unsplash.com/photo-1556905055-8f358a7a47b2?auto=format&fit=crop&w=800&q=80"],
+      },
+      {
+        id: "prod-winter-hoodie-blk-m",
+        color: "Jet Black",
+        colorHex: "#111827",
+        size: "M",
+        sku: "FD-HD-WTR-BLK-M",
+        stockCount: 14,
+        inStock: true,
+        images: ["https://images.unsplash.com/photo-1509967419530-da38b4704bc6?auto=format&fit=crop&w=800&q=80"],
+      },
+      {
+        id: "prod-winter-hoodie-blk-l",
+        color: "Jet Black",
+        colorHex: "#111827",
+        size: "L",
+        sku: "FD-HD-WTR-BLK-L",
+        stockCount: 9,
+        inStock: true,
+        images: ["https://images.unsplash.com/photo-1509967419530-da38b4704bc6?auto=format&fit=crop&w=800&q=80"],
+      },
+    ],
+    isFeatured: true,
+    isNewArrival: true,
+    isBestSeller: true,
+    inStock: true,
+    stockCount: 50,
+    sku: "FD-HD-WTR-01",
+  },
   {
     id: "prod-wool-coat",
     name: "Double-Layer Wool Long Coat",
@@ -862,10 +1078,14 @@ export const fetchCategoriesFromFirestore = async (): Promise<ProductCategoryIte
   try {
     const snap = await getDocs(collection(db, "product_categories"));
     if (!snap.empty) {
-      const list = snap.docs.map((d) => ({
-        id: d.id,
-        ...(d.data() as DocumentData),
-      })) as ProductCategoryItem[];
+      const list = snap.docs.map((d) => {
+        const data = d.data() as DocumentData;
+        return {
+          id: d.id,
+          ...data,
+          image: normalizeGoogleDriveImageUrl(data.image || ""),
+        } as ProductCategoryItem;
+      });
 
       const hasDefault = list.some(
         (c) =>
@@ -910,6 +1130,61 @@ export const fetchCategoriesFromFirestore = async (): Promise<ProductCategoryIte
   } catch (error) {
     console.warn("Failed to fetch categories from Firestore:", error);
     return initialProductCategories;
+  }
+};
+
+/**
+ * Real-time listener for product categories from Cloud Firestore.
+ * Automatically notifies subscribers whenever categories are added, updated, or removed in Firestore.
+ */
+export const subscribeToCategoriesFromFirestore = (
+  callback: (categories: ProductCategoryItem[]) => void,
+  onError?: (error: Error) => void
+): (() => void) => {
+  if (typeof window === "undefined") {
+    return () => {};
+  }
+
+  try {
+    const colRef = collection(db, "product_categories");
+    const unsubscribe = onSnapshot(
+      colRef,
+      (snap) => {
+        if (!snap.empty) {
+          const list = snap.docs.map((d) => {
+            const data = d.data() as DocumentData;
+            return {
+              id: d.id,
+              ...data,
+              image: normalizeGoogleDriveImageUrl(data.image || ""),
+            } as ProductCategoryItem;
+          });
+
+          const hasDefault = list.some(
+            (c) =>
+              c.id === DEFAULT_CATEGORY_ID ||
+              c.name.trim().toLowerCase() === DEFAULT_CATEGORY_NAME.toLowerCase()
+          );
+
+          if (!hasDefault) {
+            list.push(DEFAULT_CATEGORY_ITEM);
+          }
+
+          callback(list);
+        } else {
+          // If Firestore collection is empty, trigger fallback fetch
+          fetchCategoriesFromFirestore().then((cats) => callback(cats));
+        }
+      },
+      (error) => {
+        console.warn("Realtime category subscription error:", error);
+        if (onError) onError(error);
+      }
+    );
+    return unsubscribe;
+  } catch (err) {
+    console.warn("Could not set up realtime category subscription:", err);
+    return () => {};
   }
 };
 
@@ -1024,28 +1299,32 @@ export const deleteProductFromFirestore = async (id: string): Promise<boolean> =
 export const saveCategoryToFirestore = async (
   category: ProductCategoryItem
 ): Promise<ProductCategoryItem> => {
-  const docRef = doc(db, "product_categories", category.id);
+  const normalizedCategory: ProductCategoryItem = {
+    ...category,
+    image: normalizeGoogleDriveImageUrl(category.image),
+  };
+  const docRef = doc(db, "product_categories", normalizedCategory.id);
   await setDoc(
     docRef,
     sanitizeForFirestore({
-      ...category,
+      ...normalizedCategory,
       updatedAt: serverTimestamp(),
     }),
     { merge: true }
   );
 
   try {
-    const index = initialProductCategories.findIndex((c) => c.id === category.id);
+    const index = initialProductCategories.findIndex((c) => c.id === normalizedCategory.id);
     if (index >= 0) {
-      initialProductCategories[index] = category;
+      initialProductCategories[index] = normalizedCategory;
     } else {
-      initialProductCategories.push(category);
+      initialProductCategories.push(normalizedCategory);
     }
   } catch (err) {
     console.warn("Could not mutate in-memory initialProductCategories:", err);
   }
 
-  return category;
+  return normalizedCategory;
 };
 
 /**
@@ -1152,17 +1431,226 @@ export const deleteCategoryFromFirestore = async (
   // 5. Delete category document from Firestore
   await deleteDoc(doc(db, "product_categories", id));
 
+  // 5b. Reassign any children of this category to its parent (or root null)
+  try {
+    const childrenSnap = await getDocs(
+      query(collection(db, "product_categories"), where("parentId", "==", id))
+    );
+    if (!childrenSnap.empty) {
+      const batch = writeBatch(db);
+      const newParentId = catToDelete?.parentId || null;
+      childrenSnap.docs.forEach((childDoc) => {
+        batch.update(childDoc.ref, {
+          parentId: newParentId,
+          updatedAt: serverTimestamp(),
+        });
+      });
+      await batch.commit();
+    }
+  } catch (childErr) {
+    console.warn("Could not reassign children of deleted category:", childErr);
+  }
+
   // 6. Update in-memory initialProductCategories
   try {
     const index = initialProductCategories.findIndex((c) => c.id === id);
     if (index >= 0) {
       initialProductCategories.splice(index, 1);
     }
+    // Update in-memory children parentId
+    const newParentId = catToDelete?.parentId || null;
+    initialProductCategories.forEach((c) => {
+      if (c.parentId === id) {
+        c.parentId = newParentId;
+      }
+    });
   } catch (err) {
     console.warn("Could not mutate in-memory initialProductCategories on delete:", err);
   }
 
   return { success: true, reassignedCount };
 };
+
+/**
+ * Find a category by ID, slug, or name (case-insensitive)
+ */
+export const findCategory = (
+  identifier: string | null | undefined,
+  categories: ProductCategoryItem[]
+): ProductCategoryItem | undefined => {
+  if (!identifier) return undefined;
+  const clean = identifier.trim().toLowerCase();
+  return categories.find(
+    (c) =>
+      c.id.toLowerCase() === clean ||
+      c.name.trim().toLowerCase() === clean ||
+      c.slug?.trim().toLowerCase() === clean
+  );
+};
+
+/**
+ * Get category chain of ancestors from root down to this category.
+ * e.g. for "Hoodie", returns [WinterCategory, MensCategory, HoodieCategory]
+ */
+export const getCategoryAncestors = (
+  targetIdOrName: string | null | undefined,
+  allCategories: ProductCategoryItem[]
+): ProductCategoryItem[] => {
+  if (!targetIdOrName) return [];
+  const target = findCategory(targetIdOrName, allCategories);
+  if (!target) return [];
+
+  const chain: ProductCategoryItem[] = [target];
+  const visited = new Set<string>([target.id]);
+  let current = target;
+
+  while (current.parentId) {
+    const parent = allCategories.find((c) => c.id === current.parentId);
+    if (!parent || visited.has(parent.id)) break;
+    visited.add(parent.id);
+    chain.unshift(parent);
+    current = parent;
+  }
+
+  return chain;
+};
+
+/**
+ * Get category descendants (the category itself + all its children, grandchildren, etc.)
+ */
+export const getCategoryDescendants = (
+  targetIdOrName: string | null | undefined,
+  allCategories: ProductCategoryItem[]
+): ProductCategoryItem[] => {
+  if (!targetIdOrName) return [];
+  const target = findCategory(targetIdOrName, allCategories);
+  if (!target) return [];
+
+  const descendants: ProductCategoryItem[] = [target];
+  const queue: string[] = [target.id];
+  const visited = new Set<string>([target.id]);
+
+  while (queue.length > 0) {
+    const parentId = queue.shift()!;
+    const children = allCategories.filter((c) => c.parentId === parentId && !visited.has(c.id));
+    for (const child of children) {
+      visited.add(child.id);
+      descendants.push(child);
+      queue.push(child.id);
+    }
+  }
+
+  return descendants;
+};
+
+/**
+ * Get all matching lowercase category names for a category and its descendants.
+ * e.g. for "Winter" -> ["winter", "mens", "hoodie"]
+ */
+export const getCategoryDescendantNames = (
+  targetIdOrName: string | null | undefined,
+  allCategories: ProductCategoryItem[]
+): string[] => {
+  if (!targetIdOrName || targetIdOrName === "All") {
+    return [];
+  }
+  const descendants = getCategoryDescendants(targetIdOrName, allCategories);
+  if (descendants.length === 0) {
+    return [targetIdOrName.trim().toLowerCase()];
+  }
+  return descendants.map((d) => d.name.trim().toLowerCase());
+};
+
+/**
+ * Get immediate child categories of a given parent category (or root categories if null)
+ */
+export const getCategoryChildren = (
+  parentId: string | null | undefined,
+  allCategories: ProductCategoryItem[]
+): ProductCategoryItem[] => {
+  if (!parentId || parentId === "root") {
+    return allCategories.filter((c) => !c.parentId);
+  }
+  return allCategories.filter((c) => c.parentId === parentId);
+};
+
+/**
+ * Check if candidateParentId is a descendant of candidateChildId (to prevent cyclical category hierarchies)
+ */
+export const isCategoryDescendantOf = (
+  candidateChildId: string,
+  candidateParentId: string,
+  allCategories: ProductCategoryItem[]
+): boolean => {
+  if (candidateChildId === candidateParentId) return true;
+  const descendants = getCategoryDescendants(candidateChildId, allCategories);
+  return descendants.some((d) => d.id === candidateParentId);
+};
+
+export interface FormattedHierarchyItem {
+  category: ProductCategoryItem;
+  path: string;
+  fullPath: string;
+  label: string;
+  depth: number;
+}
+
+/**
+ * Formats categories into a sorted hierarchical list with indentation depth, formatted label, and breadcrumb path
+ */
+export const formatCategoryHierarchy = (
+  allCategories: ProductCategoryItem[]
+): FormattedHierarchyItem[] => {
+  const result: FormattedHierarchyItem[] = [];
+  const visited = new Set<string>();
+
+  const traverse = (parentId: string | null, depth: number, parentPath: string) => {
+    const children = allCategories.filter((c) => {
+      if (parentId === null) {
+        return !c.parentId;
+      }
+      return c.parentId === parentId;
+    });
+
+    // Sort by order then name
+    children.sort((a, b) => (a.order ?? 0) - (b.order ?? 0) || a.name.localeCompare(b.name));
+
+    for (const child of children) {
+      if (visited.has(child.id)) continue;
+      visited.add(child.id);
+
+      const currentPath = parentPath ? `${parentPath} > ${child.name}` : child.name;
+      const label = depth === 0 ? child.name : `${"\u00A0\u00A0".repeat(depth)}↳ ${child.name}`;
+      result.push({
+        category: child,
+        path: currentPath,
+        fullPath: currentPath,
+        label,
+        depth,
+      });
+
+      traverse(child.id, depth + 1, currentPath);
+    }
+  };
+
+  // 1. Traverse from root (parentId = null)
+  traverse(null, 0, "");
+
+  // 2. Catch any orphaned categories whose parentId doesn't exist
+  for (const cat of allCategories) {
+    if (!visited.has(cat.id)) {
+      result.push({
+        category: cat,
+        path: cat.name,
+        fullPath: cat.name,
+        label: cat.name,
+        depth: 0,
+      });
+    }
+  }
+
+  return result;
+};
+
 
 

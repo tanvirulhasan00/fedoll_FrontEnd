@@ -23,16 +23,11 @@ import { toast } from "sonner";
 import QuickViewModal from "./QuickViewModal";
 import StockAvailabilityBadge from "~/components/ui/StockAvailabilityBadge";
 import type { ProductItem } from "~/firebase";
-import { getVariantImages } from "~/firebase";
-
-const TABS = [
-  "All",
-  "Outerwear",
-  "Workwear",
-  "Denim",
-  "Knitwear",
-  "Essentials",
-];
+import {
+  getVariantImages,
+  initialProductCategories,
+  DEFAULT_CATEGORY_NAME,
+} from "~/firebase";
 
 interface ShowcaseProductCardProps {
   product: ProductItem;
@@ -286,10 +281,46 @@ export default function ProductShowcase() {
   const { products, activeProductTab, wishlistIds } = useAppSelector(
     (state) => state.home
   );
+  const { categories } = useAppSelector((state) => state.products);
+
+  // Dynamically compute category tabs from database categories + home products
+  const tabs = useMemo(() => {
+    const list = ["All"];
+    const seen = new Set<string>(["all"]);
+
+    const sourceCategories =
+      categories && categories.length > 0 ? categories : initialProductCategories;
+
+    for (const cat of sourceCategories) {
+      const name = cat.name?.trim();
+      if (name && !seen.has(name.toLowerCase())) {
+        if (name.toLowerCase() === DEFAULT_CATEGORY_NAME.toLowerCase()) {
+          const hasUncat = products.some(
+            (p) => p.category?.trim().toLowerCase() === DEFAULT_CATEGORY_NAME.toLowerCase()
+          );
+          if (!hasUncat) continue;
+        }
+        seen.add(name.toLowerCase());
+        list.push(name);
+      }
+    }
+
+    for (const p of products) {
+      const name = p.category?.trim();
+      if (name && !seen.has(name.toLowerCase())) {
+        seen.add(name.toLowerCase());
+        list.push(name);
+      }
+    }
+
+    return list;
+  }, [categories, products]);
 
   const filteredProducts = useMemo(() => {
     if (activeProductTab === "All") return products;
-    return products.filter((p) => p.category === activeProductTab);
+    return products.filter(
+      (p) => p.category?.trim().toLowerCase() === activeProductTab.trim().toLowerCase()
+    );
   }, [products, activeProductTab]);
 
   const handleWishlist = (e: React.MouseEvent, id: string) => {
@@ -321,10 +352,13 @@ export default function ProductShowcase() {
           </p>
         </div>
 
-        {/* Category Tabs */}
+        {/* Dynamic Category Tabs */}
         <div className="flex items-center gap-2 overflow-x-auto pb-2 scrollbar-none">
-          {TABS.map((tab) => {
-            const isActive = activeProductTab === tab;
+          {tabs.map((tab) => {
+            const isActive =
+              tab === "All"
+                ? !activeProductTab || activeProductTab === "All"
+                : activeProductTab.trim().toLowerCase() === tab.trim().toLowerCase();
             return (
               <button
                 key={tab}

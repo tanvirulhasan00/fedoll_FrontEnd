@@ -13,6 +13,7 @@ import CommunityGallery from "~/components/main/Home/CommunityGallery";
 import { useAppDispatch, useAppSelector } from "~/redux/hooks/hook";
 import { fetchHomeData, seedHomeData } from "~/redux/features/homeSlice";
 import { fetchBlogs } from "~/redux/features/blogSlice";
+import { fetchProducts, fetchProductCategories } from "~/redux/features/productSlice";
 import { ArrowPathIcon, SparklesIcon } from "@heroicons/react/24/outline";
 import { toast } from "sonner";
 
@@ -24,6 +25,8 @@ const Home = () => {
     // Fetch all dynamic data from Firebase Firestore
     dispatch(fetchHomeData());
     dispatch(fetchBlogs());
+    dispatch(fetchProducts());
+    dispatch(fetchProductCategories());
   }, [dispatch]);
 
   const handleSyncFirebase = async () => {

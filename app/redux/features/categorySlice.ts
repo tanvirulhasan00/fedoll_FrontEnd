@@ -1,4 +1,5 @@
 import { createSlice, createAsyncThunk, type PayloadAction } from "@reduxjs/toolkit";
+import { fetchCategoriesFromFirestore } from "~/firebase";
 
 export interface CategoryItem {
   id: number | string;
@@ -86,7 +87,28 @@ export const getAllCategory = createAsyncThunk(
     { rejectWithValue }
   ) => {
     try {
-      // Prepared for API integration, returns category items
+      const dbCategories = await fetchCategoriesFromFirestore();
+      if (dbCategories && dbCategories.length > 0) {
+        const mapped: CategoryItem[] = [
+          {
+            id: "all",
+            name: "All Collections",
+            description: "Browse all everyday export quality apparel",
+            link: "/products",
+            icon: "FaShirt",
+          },
+          ...dbCategories
+            .filter((c) => c.name.toLowerCase() !== "uncategorized")
+            .map((c) => ({
+              id: c.id,
+              name: c.name,
+              description: c.tagline || "",
+              link: `/products?category=${encodeURIComponent(c.name)}`,
+              icon: "FaShirt",
+            })),
+        ];
+        return mapped;
+      }
       return defaultCategories;
     } catch (err: unknown) {
       const error = err as Error;

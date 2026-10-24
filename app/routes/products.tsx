@@ -16,6 +16,7 @@ import {
   setSortBy,
   setOnlyInStock,
   resetProductFilters,
+  setProductCategories,
 } from "~/redux/features/productSlice";
 import { setQuickViewProduct, toggleWishlistAsync } from "~/redux/features/homeSlice";
 import { addToCart } from "~/redux/features/cart/cartSlice";
@@ -38,8 +39,17 @@ import {
 import { HeartIcon } from "@heroicons/react/24/outline";
 import { toast } from "sonner";
 import { Spinner } from "~/components/ui/spinner";
-import type { ProductItem } from "~/firebase";
-import { getVariantImages } from "~/firebase";
+import type { ProductItem, ProductCategoryItem } from "~/firebase";
+import {
+  getVariantImages,
+  subscribeToCategoriesFromFirestore,
+  DEFAULT_CATEGORY_NAME,
+  initialProductCategories,
+  findCategory,
+  getCategoryAncestors,
+  getCategoryDescendantNames,
+  getCategoryChildren,
+} from "~/firebase";
 
 export function meta({}: Route.MetaArgs) {
   return [
@@ -56,17 +66,6 @@ export function meta({}: Route.MetaArgs) {
     },
   ];
 }
-
-const CATEGORY_TABS = [
-  "All",
-  "Outerwear",
-  "Workwear",
-  "Denim",
-  "Knitwear",
-  "Essentials",
-  "Shirts",
-  "Trousers",
-];
 
 interface CatalogProductCardProps {
   product: ProductItem;
@@ -320,6 +319,7 @@ export default function ProductsPage() {
 
   const {
     items: products,
+    categories,
     selectedCategory,
     searchQuery,
     sortBy,
@@ -339,18 +339,32 @@ export default function ProductsPage() {
   useEffect(() => {
     const categoryParam = searchParams.get("category");
     if (categoryParam) {
-      dispatch(setProductCategory(categoryParam));
+      const matched = categories.find(
+        (c) =>
+          c.name.trim().toLowerCase() === categoryParam.trim().toLowerCase() ||
+          c.slug?.trim().toLowerCase() === categoryParam.trim().toLowerCase()
+      );
+      dispatch(setProductCategory(matched ? matched.name : categoryParam));
     }
     const searchParam = searchParams.get("search");
     if (searchParam) {
       dispatch(setProductSearchQuery(searchParam));
       setLocalSearch(searchParam);
     }
-  }, [searchParams, dispatch]);
+  }, [searchParams, categories, dispatch]);
 
   useEffect(() => {
     dispatch(fetchProducts());
     dispatch(fetchProductCategories());
+
+    // Subscribe to realtime updates from Firestore product_categories collection
+    const unsubscribe = subscribeToCategoriesFromFirestore((liveCats) => {
+      dispatch(setProductCategories(liveCats));
+    });
+
+    return () => {
+      unsubscribe();
+    };
   }, [dispatch]);
 
   const handleCategoryChange = (cat: string) => {
@@ -436,14 +450,58 @@ export default function ProductsPage() {
     }
   };
 
-  // Filter and sort products in memory
+  // Active category object & hierarchy ancestors
+  const activeCategoryObj = useMemo(() => {
+    if (selectedCategory === "All") return null;
+    return findCategory(selectedCategory, categories);
+  }, [categories, selectedCategory]);
+
+  const categoryAncestors = useMemo(() => {
+    if (!activeCategoryObj) return [];
+    return getCategoryAncestors(activeCategoryObj.id, categories);
+  }, [activeCategoryObj, categories]);
+
+  // Subcategory data for drilling down (children or siblings)
+  const subcategoryData = useMemo(() => {
+    if (!activeCategoryObj) return null;
+
+    const directChildren = getCategoryChildren(activeCategoryObj.id, categories);
+    if (directChildren.length > 0) {
+      return {
+        parentName: activeCategoryObj.name,
+        isRootOfStrip: true,
+        items: directChildren,
+      };
+    }
+
+    if (activeCategoryObj.parentId) {
+      const parentCat = categories.find((c) => c.id === activeCategoryObj.parentId);
+      const siblings = getCategoryChildren(activeCategoryObj.parentId, categories);
+      if (parentCat && siblings.length > 0) {
+        return {
+          parentName: parentCat.name,
+          isRootOfStrip: false,
+          items: siblings,
+        };
+      }
+    }
+
+    return null;
+  }, [activeCategoryObj, categories]);
+
+  // Filter and sort products in memory (hierarchically)
   const filteredProducts = useMemo(() => {
     let result = [...products];
 
-    // Category filter
+    // Hierarchical Category filter: match selected category and all its children/descendants
     if (selectedCategory !== "All") {
-      result = result.filter(
-        (p) => p.category?.toLowerCase() === selectedCategory.toLowerCase()
+      const allowedCategories = new Set(
+        getCategoryDescendantNames(selectedCategory, categories).map((c) =>
+          c.trim().toLowerCase()
+        )
+      );
+      result = result.filter((p) =>
+        allowedCategories.has((p.category || "").trim().toLowerCase())
       );
     }
 
@@ -487,16 +545,65 @@ export default function ProductsPage() {
     }
 
     return result;
-  }, [products, selectedCategory, searchQuery, onlyInStock, maxPrice, sortBy]);
+  }, [products, selectedCategory, categories, searchQuery, onlyInStock, maxPrice, sortBy]);
 
-  // Compute category counts
-  const categoryCounts = useMemo(() => {
-    const counts: Record<string, number> = { All: products.length };
+  // Compute dynamic top-level root category tabs
+  const categoryTabs = useMemo(() => {
+    const tabs: { id: string; name: string }[] = [{ id: "all", name: "All" }];
+    const seen = new Set<string>(["all"]);
+
+    const sourceCategories =
+      categories && categories.length > 0 ? categories : initialProductCategories;
+
+    // First list top-level root categories (parentId === null or empty)
+    for (const cat of sourceCategories) {
+      if (!cat.parentId) {
+        const name = cat.name?.trim();
+        if (name && !seen.has(name.toLowerCase())) {
+          if (name.toLowerCase() === DEFAULT_CATEGORY_NAME.toLowerCase()) {
+            const hasUncat = products.some(
+              (p) => p.category?.trim().toLowerCase() === DEFAULT_CATEGORY_NAME.toLowerCase()
+            );
+            if (!hasUncat) continue;
+          }
+          seen.add(name.toLowerCase());
+          tabs.push({ id: cat.id, name });
+        }
+      }
+    }
+
+    // Add any category from products that has no matching parent or is root
     for (const p of products) {
-      counts[p.category] = (counts[p.category] || 0) + 1;
+      const catName = p.category?.trim();
+      if (catName && !seen.has(catName.toLowerCase())) {
+        const match = findCategory(catName, sourceCategories);
+        if (!match || !match.parentId) {
+          seen.add(catName.toLowerCase());
+          tabs.push({ id: `cat-${catName.toLowerCase()}`, name: catName });
+        }
+      }
+    }
+
+    return tabs;
+  }, [categories, products]);
+
+  // Compute category counts dynamically including all descendant subcategories
+  const categoryCounts = useMemo(() => {
+    const counts: Record<string, number> = { all: products.length };
+    const sourceCategories =
+      categories && categories.length > 0 ? categories : initialProductCategories;
+
+    for (const cat of sourceCategories) {
+      const descendants = new Set(
+        getCategoryDescendantNames(cat.name, sourceCategories).map((n) => n.trim().toLowerCase())
+      );
+      const count = products.filter((p) =>
+        descendants.has((p.category || "").trim().toLowerCase())
+      ).length;
+      counts[cat.name.trim().toLowerCase()] = count;
     }
     return counts;
-  }, [products]);
+  }, [products, categories]);
 
   return (
     <div className="min-h-screen bg-white dark:bg-neutral-950 text-gray-900 dark:text-neutral-100 flex flex-col font-sans selection:bg-orange-500 selection:text-white transition-colors">
@@ -508,16 +615,48 @@ export default function ProductsPage() {
         {/* Breadcrumb Navigation */}
         <div className="bg-stone-50 dark:bg-neutral-900/60 border-b border-stone-200/60 dark:border-neutral-800 py-3 transition-colors">
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-            <nav className="flex items-center gap-2 text-xs text-gray-500 dark:text-neutral-400" aria-label="Breadcrumb">
-              <Link to="/" className="hover:text-orange-600 dark:hover:text-orange-400 transition">
+            <nav className="flex items-center gap-2 text-xs text-gray-500 dark:text-neutral-400 overflow-x-auto scrollbar-none" aria-label="Breadcrumb">
+              <Link to="/" className="hover:text-orange-600 dark:hover:text-orange-400 transition shrink-0">
                 Home
               </Link>
               <span>/</span>
-              <span className="text-gray-400 dark:text-neutral-500">Collections</span>
-              <span>/</span>
-              <span className="font-medium text-gray-900 dark:text-white">
-                {selectedCategory === "All" ? "All Products" : selectedCategory}
-              </span>
+              <button
+                type="button"
+                onClick={() => handleCategoryChange("All")}
+                className="hover:text-orange-600 dark:hover:text-orange-400 transition cursor-pointer shrink-0"
+              >
+                Collections
+              </button>
+              {selectedCategory === "All" || categoryAncestors.length === 0 ? (
+                <>
+                  <span>/</span>
+                  <span className="font-bold text-gray-900 dark:text-white shrink-0">
+                    {selectedCategory === "All" ? "All Products" : selectedCategory}
+                  </span>
+                </>
+              ) : (
+                categoryAncestors.map((anc, idx) => {
+                  const isLast = idx === categoryAncestors.length - 1;
+                  return (
+                    <React.Fragment key={anc.id}>
+                      <span>/</span>
+                      {isLast ? (
+                        <span className="font-bold text-gray-900 dark:text-white shrink-0">
+                          {anc.name}
+                        </span>
+                      ) : (
+                        <button
+                          type="button"
+                          onClick={() => handleCategoryChange(anc.name)}
+                          className="hover:text-orange-600 dark:hover:text-orange-400 transition cursor-pointer shrink-0 font-medium"
+                        >
+                          {anc.name}
+                        </button>
+                      )}
+                    </React.Fragment>
+                  );
+                })
+              )}
             </nav>
           </div>
         </div>
@@ -549,8 +688,8 @@ export default function ProductsPage() {
                   )}
                 </h1>
                 <p className="mt-4 text-sm sm:text-base text-gray-600 dark:text-neutral-400 max-w-2xl leading-relaxed">
-                  Crafted with heavy 14oz shuttle-loom selvedge denim, pure double-layer wool,
-                  and 240 GSM combed cotton. Shipped anywhere in Bangladesh with Cash on Delivery.
+                  {activeCategoryObj?.tagline ||
+                    "Crafted with heavy 14oz shuttle-loom selvedge denim, pure double-layer wool, and 240 GSM combed cotton. Shipped anywhere in Bangladesh with Cash on Delivery."}
                 </p>
               </div>
 
@@ -575,23 +714,34 @@ export default function ProductsPage() {
               </div>
             </div>
 
-            {/* Category Filter Pills */}
+            {/* Dynamic Category Filter Pills */}
             <div className="mt-10 flex items-center gap-2 overflow-x-auto pb-2 scrollbar-none">
-              {CATEGORY_TABS.map((cat) => {
-                const isActive = selectedCategory === cat;
-                const count = categoryCounts[cat] || 0;
+              {categoryTabs.map((tab) => {
+                const isAll = tab.name === "All";
+                const isDirectMatch = isAll
+                  ? !selectedCategory || selectedCategory === "All"
+                  : selectedCategory.trim().toLowerCase() === tab.name.trim().toLowerCase();
+                const isAncestorMatch =
+                  !isAll &&
+                  categoryAncestors.some(
+                    (anc) => anc.name.trim().toLowerCase() === tab.name.trim().toLowerCase()
+                  );
+                const isActive = isDirectMatch || isAncestorMatch;
+                const count = isAll
+                  ? products.length
+                  : categoryCounts[tab.name.trim().toLowerCase()] || 0;
                 return (
                   <button
-                    key={cat}
+                    key={tab.id || tab.name}
                     type="button"
-                    onClick={() => handleCategoryChange(cat)}
+                    onClick={() => handleCategoryChange(tab.name)}
                     className={`inline-flex items-center gap-2 whitespace-nowrap px-4 py-2.5 rounded-full text-xs font-semibold transition cursor-pointer ${
                       isActive
                         ? "bg-orange-600 dark:bg-orange-500 text-white shadow-md shadow-orange-600/20"
                         : "bg-white dark:bg-neutral-900 text-gray-700 dark:text-neutral-300 border border-stone-200/80 dark:border-neutral-800 hover:bg-stone-50 dark:hover:bg-neutral-800 hover:text-orange-600 dark:hover:text-orange-400"
                     }`}
                   >
-                    <span>{cat}</span>
+                    <span>{tab.name}</span>
                     <span
                       className={`text-[10px] px-1.5 py-0.5 rounded-full font-bold ${
                         isActive
@@ -605,6 +755,61 @@ export default function ProductsPage() {
                 );
               })}
             </div>
+
+            {/* Multi-Level Subcategory Exploration Strip */}
+            {subcategoryData && (
+              <div className="mt-4 pt-4 border-t border-stone-200/60 dark:border-neutral-800 flex items-center gap-2 overflow-x-auto pb-1 scrollbar-none">
+                <div className="flex items-center gap-1.5 text-xs text-stone-500 dark:text-neutral-400 shrink-0 font-medium mr-1">
+                  <span>↳ {subcategoryData.parentName} Subcategories:</span>
+                </div>
+
+                {/* "All [Parent]" option button */}
+                <button
+                  type="button"
+                  onClick={() => handleCategoryChange(subcategoryData.parentName)}
+                  className={`inline-flex items-center gap-1.5 whitespace-nowrap px-3.5 py-1.5 rounded-full text-xs font-semibold transition cursor-pointer ${
+                    selectedCategory.trim().toLowerCase() === subcategoryData.parentName.trim().toLowerCase()
+                      ? "bg-stone-900 dark:bg-white text-white dark:text-neutral-900 shadow-xs"
+                      : "bg-stone-100 dark:bg-neutral-800 text-stone-700 dark:text-neutral-300 hover:bg-stone-200 dark:hover:bg-neutral-700"
+                  }`}
+                >
+                  <span>All {subcategoryData.parentName}</span>
+                  <span className="text-[10px] opacity-75 font-mono">
+                    ({categoryCounts[subcategoryData.parentName.trim().toLowerCase()] || 0})
+                  </span>
+                </button>
+
+                {/* Child categories */}
+                {subcategoryData.items.map((sub) => {
+                  const isSubActive =
+                    selectedCategory.trim().toLowerCase() === sub.name.trim().toLowerCase();
+                  const subCount = categoryCounts[sub.name.trim().toLowerCase()] || 0;
+                  return (
+                    <button
+                      key={sub.id}
+                      type="button"
+                      onClick={() => handleCategoryChange(sub.name)}
+                      className={`inline-flex items-center gap-1.5 whitespace-nowrap px-3.5 py-1.5 rounded-full text-xs font-semibold transition cursor-pointer ${
+                        isSubActive
+                          ? "bg-orange-600 text-white shadow-xs"
+                          : "bg-white dark:bg-neutral-900 border border-stone-200/90 dark:border-neutral-800 text-stone-700 dark:text-neutral-300 hover:border-orange-500 hover:text-orange-600 dark:hover:text-orange-400"
+                      }`}
+                    >
+                      <span>{sub.name}</span>
+                      <span
+                        className={`text-[10px] px-1.5 py-0.2 rounded-full font-bold ${
+                          isSubActive
+                            ? "bg-white/20 text-white"
+                            : "bg-stone-100 dark:bg-neutral-800 text-stone-500 dark:text-neutral-400"
+                        }`}
+                      >
+                        {subCount}
+                      </span>
+                    </button>
+                  );
+                })}
+              </div>
+            )}
           </div>
         </section>
 

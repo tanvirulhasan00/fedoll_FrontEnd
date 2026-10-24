@@ -16,6 +16,8 @@ import {
   ChatBubbleBottomCenterTextIcon,
   CheckBadgeIcon,
 } from "@heroicons/react/24/outline";
+import React, { useMemo } from "react";
+import { useAppSelector } from "~/redux/hooks/hook";
 import { Link } from "react-router";
 import NewsLetter from "./Newsletter";
 
@@ -104,6 +106,26 @@ const SOCIAL_LINKS = [
 ];
 
 const Footer = () => {
+  const { categories } = useAppSelector((state) => state.products);
+
+  const dynamicShopLinks = useMemo(() => {
+    const links = [{ name: "All Products", href: "/products" }];
+    if (categories && categories.length > 0) {
+      const valid = categories.filter(
+        (c) => c.name.trim().toLowerCase() !== "uncategorized"
+      );
+      valid.slice(0, 5).forEach((c) => {
+        links.push({
+          name: c.name,
+          href: `/products?category=${encodeURIComponent(c.name)}`,
+        });
+      });
+    } else {
+      links.push(...SHOP_LINKS.slice(1));
+    }
+    return links;
+  }, [categories]);
+
   return (
     <footer className="relative bg-[#0c0e12] text-neutral-300 border-t border-neutral-800/80 overflow-hidden">
       {/* Decorative ambient background glows */}
@@ -229,7 +251,7 @@ const Footer = () => {
                 Collections
               </h3>
               <ul className="mt-4 space-y-3">
-                {SHOP_LINKS.map((link) => (
+                {dynamicShopLinks.map((link) => (
                   <li key={link.name}>
                     <Link
                       to={link.href}

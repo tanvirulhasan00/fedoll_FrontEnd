@@ -10,11 +10,17 @@ import { useAppDispatch, useAppSelector } from "~/redux/hooks/hook";
 import {
   fetchProductById,
   fetchProducts,
+  fetchProductCategories,
   clearCurrentProduct,
 } from "~/redux/features/productSlice";
 import { addToCart } from "~/redux/features/cart/cartSlice";
 import { toggleWishlistAsync } from "~/redux/features/homeSlice";
-import { getVariantImages, getProductVariant } from "~/firebase";
+import {
+  getVariantImages,
+  getProductVariant,
+  getCategoryAncestors,
+  getCategoryDescendantNames,
+} from "~/firebase";
 import {
   ShoppingBagIcon,
   HeartIcon,
@@ -58,7 +64,7 @@ export default function ProductDetailPage() {
   const navigate = useNavigate();
   const dispatch = useAppDispatch();
 
-  const { currentProduct, loadingProduct, productError, items: allProducts } =
+  const { currentProduct, loadingProduct, productError, items: allProducts, categories } =
     useAppSelector((state) => state.products);
 
   const { user } = useAppSelector((state) => state.auth);
@@ -87,6 +93,18 @@ export default function ProductDetailPage() {
       dispatch(fetchProducts());
     }
   }, [allProducts.length, dispatch]);
+
+  useEffect(() => {
+    if (categories.length === 0) {
+      dispatch(fetchProductCategories());
+    }
+  }, [categories.length, dispatch]);
+
+  // Compute category ancestors for multi-level breadcrumbs
+  const categoryAncestors = useMemo(() => {
+    if (!currentProduct?.category) return [];
+    return getCategoryAncestors(currentProduct.category, categories);
+  }, [currentProduct?.category, categories]);
 
   // Set default size and color when product loads
   useEffect(() => {
@@ -298,12 +316,24 @@ export default function ProductDetailPage() {
     }
   };
 
-  // Related products in the same category
-  const relatedProducts = allProducts
-    .filter(
-      (p) => p.category === currentProduct.category && p.id !== currentProduct.id
-    )
-    .slice(0, 4);
+  // Related products in the same hierarchy branch or category
+  const relatedProducts = useMemo(() => {
+    if (!currentProduct) return [];
+    const rootOrParent = categoryAncestors[0]?.name || currentProduct.category;
+    const branchNames = new Set(
+      getCategoryDescendantNames(rootOrParent, categories).map((n) => n.trim().toLowerCase())
+    );
+    const candidates = allProducts.filter((p) => p.id !== currentProduct.id);
+    const sameCat = candidates.filter(
+      (p) => p.category?.trim().toLowerCase() === currentProduct.category?.trim().toLowerCase()
+    );
+    const sameBranch = candidates.filter(
+      (p) =>
+        p.category?.trim().toLowerCase() !== currentProduct.category?.trim().toLowerCase() &&
+        branchNames.has((p.category || "").trim().toLowerCase())
+    );
+    return [...sameCat, ...sameBranch].slice(0, 4);
+  }, [allProducts, currentProduct, categoryAncestors, categories]);
 
   return (
     <div className="min-h-screen bg-white dark:bg-neutral-950 text-gray-900 dark:text-neutral-100 flex flex-col font-sans selection:bg-orange-500 selection:text-white transition-colors">
@@ -312,26 +342,42 @@ export default function ProductDetailPage() {
       <Header />
 
       <main className="flex-1">
-        {/* Breadcrumb Navigation */}
+        {/* Breadcrumb Navigation with Hierarchy Support */}
         <div className="bg-stone-50 dark:bg-neutral-900/60 border-b border-stone-200/60 dark:border-neutral-800 py-3 transition-colors">
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-            <nav className="flex items-center gap-2 text-xs text-gray-500 dark:text-neutral-400" aria-label="Breadcrumb">
-              <Link to="/" className="hover:text-orange-600 dark:hover:text-orange-400 transition">
+            <nav className="flex items-center gap-2 text-xs text-gray-500 dark:text-neutral-400 overflow-x-auto scrollbar-none" aria-label="Breadcrumb">
+              <Link to="/" className="hover:text-orange-600 dark:hover:text-orange-400 transition shrink-0">
                 Home
               </Link>
               <span>/</span>
-              <Link to="/products" className="hover:text-orange-600 dark:hover:text-orange-400 transition">
+              <Link to="/products" className="hover:text-orange-600 dark:hover:text-orange-400 transition shrink-0">
                 Products
               </Link>
+              {categoryAncestors.length > 0 ? (
+                categoryAncestors.map((anc) => (
+                  <React.Fragment key={anc.id}>
+                    <span>/</span>
+                    <Link
+                      to={`/products?category=${encodeURIComponent(anc.name)}`}
+                      className="hover:text-orange-600 dark:hover:text-orange-400 transition shrink-0 font-medium"
+                    >
+                      {anc.name}
+                    </Link>
+                  </React.Fragment>
+                ))
+              ) : currentProduct.category ? (
+                <>
+                  <span>/</span>
+                  <Link
+                    to={`/products?category=${encodeURIComponent(currentProduct.category)}`}
+                    className="hover:text-orange-600 dark:hover:text-orange-400 transition shrink-0 font-medium"
+                  >
+                    {currentProduct.category}
+                  </Link>
+                </>
+              ) : null}
               <span>/</span>
-              <Link
-                to={`/products?category=${encodeURIComponent(currentProduct.category)}`}
-                className="hover:text-orange-600 dark:hover:text-orange-400 transition"
-              >
-                {currentProduct.category}
-              </Link>
-              <span>/</span>
-              <span className="font-medium text-gray-900 dark:text-white truncate max-w-xs">
+              <span className="font-medium text-gray-900 dark:text-white truncate max-w-xs shrink-0">
                 {currentProduct.name}
               </span>
             </nav>

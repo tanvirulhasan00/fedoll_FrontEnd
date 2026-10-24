@@ -8,6 +8,7 @@ import {
   LockClosedIcon,
   ShieldCheckIcon,
   ArrowPathRoundedSquareIcon,
+  FolderPlusIcon,
 } from "@heroicons/react/24/outline";
 import { Dialog, DialogPanel, DialogTitle, Transition, TransitionChild } from "@headlessui/react";
 import { toast } from "sonner";
@@ -16,6 +17,13 @@ import {
   deleteCategoryFromFirestore,
   DEFAULT_CATEGORY_NAME,
   DEFAULT_CATEGORY_ID,
+  formatCategoryHierarchy,
+  isCategoryDescendantOf,
+  getCategoryAncestors,
+  getCategoryChildren,
+  normalizeGoogleDriveImageUrl,
+  extractGoogleDriveFileId,
+  getGoogleDriveThumbnailUrl,
   type ProductCategoryItem,
   type ProductItem,
 } from "~/firebase";
@@ -52,6 +60,7 @@ export const AdminCategoriesTab: React.FC<AdminCategoriesTabProps> = ({
   const [tagline, setTagline] = useState("");
   const [image, setImage] = useState("");
   const [itemCount, setItemCount] = useState(15);
+  const [parentId, setParentId] = useState<string | null>(null);
 
   // Synchronize localCategories with incoming props
   useEffect(() => {
@@ -67,13 +76,14 @@ export const AdminCategoriesTab: React.FC<AdminCategoriesTabProps> = ({
     }
   }, [isAddModalOpen]);
 
-  const handleOpenCreate = () => {
+  const handleOpenCreate = (initialParentId: string | null = null) => {
     setEditingCategory(null);
     setName("");
     setSlug("");
     setTagline("");
     setImage("https://images.unsplash.com/photo-1544441893-675973e31985?auto=format&fit=crop&w=800&q=80");
     setItemCount(20);
+    setParentId(initialParentId);
     setModalOpen(true);
   };
 
@@ -84,6 +94,7 @@ export const AdminCategoriesTab: React.FC<AdminCategoriesTabProps> = ({
     setTagline(category.tagline);
     setImage(category.image);
     setItemCount(category.itemCount || 10);
+    setParentId(category.parentId || null);
     setModalOpen(true);
   };
 
@@ -99,6 +110,19 @@ export const AdminCategoriesTab: React.FC<AdminCategoriesTabProps> = ({
     }
   };
 
+  const handleImageChange = (val: string) => {
+    const trimmed = val.trim();
+    const fileId = extractGoogleDriveFileId(trimmed);
+    // If a Google Drive share or open URL was pasted, convert directly to Google CDN URL
+    if (fileId && (trimmed.includes("drive.google.com") || trimmed.includes("docs.google.com"))) {
+      const directUrl = `https://lh3.googleusercontent.com/d/${fileId}`;
+      setImage(directUrl);
+      toast.success("Google Drive share link converted to direct image URL!");
+      return;
+    }
+    setImage(val);
+  };
+
   const handleSaveCategory = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!name.trim()) {
@@ -109,13 +133,23 @@ export const AdminCategoriesTab: React.FC<AdminCategoriesTabProps> = ({
     setIsSubmitting(true);
     const categoryId = editingCategory ? editingCategory.id : `cat-${Date.now()}`;
 
+    // Determine level based on parent category
+    const parentCat = parentId ? localCategories.find((c) => c.id === parentId) : null;
+    const computedLevel = parentCat ? (parentCat.level !== undefined ? parentCat.level + 1 : 1) : 0;
+
+    const normalizedImage =
+      normalizeGoogleDriveImageUrl(image.trim()) ||
+      "https://images.unsplash.com/photo-1544441893-675973e31985?auto=format&fit=crop&w=800&q=80";
+
     const newCategory: ProductCategoryItem = {
       id: categoryId,
       name: name.trim(),
       slug: slug.trim() || name.toLowerCase().replace(/\s+/g, "-"),
       tagline: tagline.trim(),
-      image: image.trim() || "https://images.unsplash.com/photo-1544441893-675973e31985?auto=format&fit=crop&w=800&q=80",
+      image: normalizedImage,
       itemCount: Number(itemCount) || 0,
+      parentId: parentId || null,
+      level: computedLevel,
     };
 
     try {
@@ -219,7 +253,7 @@ export const AdminCategoriesTab: React.FC<AdminCategoriesTabProps> = ({
 
         <button
           type="button"
-          onClick={handleOpenCreate}
+          onClick={() => handleOpenCreate()}
           className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl bg-orange-600 hover:bg-orange-700 text-white font-bold text-xs shadow-md transition cursor-pointer"
         >
           <PlusIcon className="size-4" />
@@ -229,7 +263,7 @@ export const AdminCategoriesTab: React.FC<AdminCategoriesTabProps> = ({
 
       {/* Categories Grid */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
-        {localCategories.map((cat) => {
+        {formatCategoryHierarchy(localCategories).map(({ category: cat, depth, fullPath }) => {
           const isDefault =
             cat.id === DEFAULT_CATEGORY_ID ||
             cat.name.trim().toLowerCase() === DEFAULT_CATEGORY_NAME.toLowerCase();
@@ -238,37 +272,67 @@ export const AdminCategoriesTab: React.FC<AdminCategoriesTabProps> = ({
             (p) => p.category?.trim().toLowerCase() === cat.name.trim().toLowerCase()
           ).length;
 
+          const ancestors = getCategoryAncestors(cat.id, localCategories);
+          const directChildren = getCategoryChildren(cat.id, localCategories);
+
           return (
             <div
               key={cat.id}
               className={`group rounded-3xl bg-white dark:bg-neutral-900 border overflow-hidden shadow-xs hover:shadow-md transition flex flex-col justify-between ${
                 isDefault
                   ? "border-amber-300 dark:border-amber-700/60 ring-1 ring-amber-400/20"
+                  : depth > 0
+                  ? "border-orange-200/70 dark:border-orange-950/40 ring-1 ring-orange-500/10"
                   : "border-stone-200/80 dark:border-neutral-800"
               }`}
             >
               <div>
-                <div className="relative h-44 overflow-hidden bg-stone-100">
+                <div className="relative h-44 overflow-hidden bg-stone-100 dark:bg-neutral-800">
                   <img
-                    src={cat.image}
+                    src={normalizeGoogleDriveImageUrl(cat.image)}
                     alt={cat.name}
                     className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
+                    onError={(e) => {
+                      const target = e.currentTarget;
+                      const fileId = extractGoogleDriveFileId(cat.image);
+                      if (fileId && !target.dataset.triedThumbnail) {
+                        target.dataset.triedThumbnail = "true";
+                        target.src = getGoogleDriveThumbnailUrl(cat.image, 1000);
+                        return;
+                      }
+                      target.src =
+                        "https://images.unsplash.com/photo-1544441893-675973e31985?auto=format&fit=crop&w=800&q=80";
+                    }}
                   />
-                  <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/20 to-transparent" />
+                  <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/30 to-transparent" />
 
                   {/* Badges on Cover Image */}
-                  <div className="absolute top-3 right-3 flex items-center gap-1.5">
+                  <div className="absolute top-3 right-3 flex items-center gap-1.5 flex-wrap justify-end">
                     {isDefault && (
                       <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full bg-amber-500/90 text-white font-bold text-[10px] backdrop-blur-xs shadow-xs">
                         <ShieldCheckIcon className="size-3.5" />
                         <span>Default Fallback</span>
                       </span>
                     )}
+                    {depth > 0 && (
+                      <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-orange-600/90 text-white font-bold text-[10px] backdrop-blur-xs shadow-xs">
+                        Level {depth} Child
+                      </span>
+                    )}
                   </div>
 
                   <div className="absolute bottom-3 left-4 right-4">
-                    <h3 className="text-lg font-black text-white">{cat.name}</h3>
-                    <span className="text-[11px] font-mono text-orange-300">
+                    {ancestors.length > 1 && (
+                      <div className="text-[11px] font-semibold text-orange-300 truncate mb-0.5 flex items-center gap-1">
+                        <span>{ancestors.slice(0, -1).map((a) => a.name).join(" › ")}</span>
+                        <span>›</span>
+                      </div>
+                    )}
+                    <h3 className="text-lg font-black text-white flex items-center gap-1.5">
+                      {depth > 0 && <span className="text-orange-400 text-sm">↳</span>}
+                      <span>{cat.name}</span>
+                    </h3>
+                    <span className="text-[11px] font-mono text-orange-200/90">
                       /{cat.slug}
                     </span>
                   </div>
@@ -278,6 +342,21 @@ export const AdminCategoriesTab: React.FC<AdminCategoriesTabProps> = ({
                   <p className="text-gray-600 dark:text-neutral-400 leading-relaxed text-[11px]">
                     {cat.tagline || "High-quality collection curated for everyday elegance."}
                   </p>
+
+                  {/* Hierarchy Path & Child Badges */}
+                  <div className="flex flex-wrap items-center gap-1.5 pt-1">
+                    {ancestors.length > 1 && (
+                      <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md bg-stone-100 dark:bg-neutral-800 text-stone-600 dark:text-neutral-300 text-[10px] font-medium">
+                        Path: {fullPath}
+                      </span>
+                    )}
+                    {directChildren.length > 0 && (
+                      <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md bg-emerald-50 dark:bg-emerald-950/40 text-emerald-700 dark:text-emerald-300 text-[10px] font-medium">
+                        {directChildren.length} subcategory{directChildren.length === 1 ? "" : "s"}
+                      </span>
+                    )}
+                  </div>
+
                   <div className="flex items-center justify-between text-[11px] text-gray-500 dark:text-neutral-400 pt-2 border-t border-gray-100 dark:border-neutral-800">
                     <span>Assigned Garments:</span>
                     <strong className="text-gray-900 dark:text-white font-mono">
@@ -292,11 +371,22 @@ export const AdminCategoriesTab: React.FC<AdminCategoriesTabProps> = ({
                   {isDefault ? "Permanent" : `#${cat.id.slice(-6)}`}
                 </div>
 
-                <div className="flex items-center gap-2">
+                <div className="flex items-center gap-1.5 flex-wrap justify-end">
+                  {/* + Child Subcategory Quick Button */}
+                  <button
+                    type="button"
+                    onClick={() => handleOpenCreate(cat.id)}
+                    title={`Create child category under "${cat.name}"`}
+                    className="px-2.5 py-1.5 rounded-xl border border-orange-200 dark:border-orange-900/60 text-orange-700 dark:text-orange-300 hover:bg-orange-50 dark:hover:bg-orange-950/40 text-xs font-semibold transition flex items-center gap-1 cursor-pointer"
+                  >
+                    <FolderPlusIcon className="size-3.5" />
+                    <span>+ Child</span>
+                  </button>
+
                   <button
                     type="button"
                     onClick={() => handleOpenEdit(cat)}
-                    className="px-3 py-1.5 rounded-xl border border-gray-200 dark:border-neutral-700 hover:bg-stone-100 dark:hover:bg-neutral-800 text-gray-700 dark:text-neutral-300 text-xs font-semibold transition flex items-center gap-1 cursor-pointer"
+                    className="px-2.5 py-1.5 rounded-xl border border-gray-200 dark:border-neutral-700 hover:bg-stone-100 dark:hover:bg-neutral-800 text-gray-700 dark:text-neutral-300 text-xs font-semibold transition flex items-center gap-1 cursor-pointer"
                   >
                     <PencilSquareIcon className="size-3.5" />
                     <span>Edit</span>
@@ -307,7 +397,7 @@ export const AdminCategoriesTab: React.FC<AdminCategoriesTabProps> = ({
                       type="button"
                       disabled
                       title={`The "${DEFAULT_CATEGORY_NAME}" category is required as the default fallback and cannot be deleted.`}
-                      className="px-3 py-1.5 rounded-xl border border-stone-200 dark:border-neutral-800 text-stone-400 dark:text-neutral-600 text-xs font-semibold flex items-center gap-1 cursor-not-allowed opacity-60"
+                      className="px-2.5 py-1.5 rounded-xl border border-stone-200 dark:border-neutral-800 text-stone-400 dark:text-neutral-600 text-xs font-semibold flex items-center gap-1 cursor-not-allowed opacity-60"
                     >
                       <LockClosedIcon className="size-3.5" />
                       <span>Protected</span>
@@ -316,7 +406,7 @@ export const AdminCategoriesTab: React.FC<AdminCategoriesTabProps> = ({
                     <button
                       type="button"
                       onClick={() => handleOpenDeleteConfirm(cat)}
-                      className="px-3 py-1.5 rounded-xl border border-rose-200 dark:border-rose-900/60 text-rose-600 dark:text-rose-400 hover:bg-rose-50 dark:hover:bg-rose-950/40 text-xs font-semibold transition flex items-center gap-1 cursor-pointer"
+                      className="px-2.5 py-1.5 rounded-xl border border-rose-200 dark:border-rose-900/60 text-rose-600 dark:text-rose-400 hover:bg-rose-50 dark:hover:bg-rose-950/40 text-xs font-semibold transition flex items-center gap-1 cursor-pointer"
                     >
                       <TrashIcon className="size-3.5" />
                       <span>Delete</span>
@@ -372,6 +462,36 @@ export const AdminCategoriesTab: React.FC<AdminCategoriesTabProps> = ({
                   <form onSubmit={handleSaveCategory} className="mt-4 space-y-4 text-xs">
                     <div>
                       <label className="block font-semibold text-gray-700 dark:text-neutral-300 mb-1">
+                        Parent Category (Hierarchical Nesting)
+                      </label>
+                      <select
+                        value={parentId || ""}
+                        onChange={(e) => setParentId(e.target.value ? e.target.value : null)}
+                        className="w-full px-3 py-2 bg-stone-50 dark:bg-neutral-800 border border-gray-200 dark:border-neutral-700 rounded-xl text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-orange-600 cursor-pointer font-sans"
+                      >
+                        <option value="">(None - Top-Level Root Category)</option>
+                        {formatCategoryHierarchy(localCategories)
+                          .filter(({ category }) => {
+                            if (!editingCategory) return true;
+                            // Cannot select itself as parent
+                            if (category.id === editingCategory.id) return false;
+                            // Cannot select any of its own descendants as parent
+                            if (isCategoryDescendantOf(category.id, editingCategory.id, localCategories)) return false;
+                            return true;
+                          })
+                          .map(({ category, label }) => (
+                            <option key={category.id} value={category.id}>
+                              {label}
+                            </option>
+                          ))}
+                      </select>
+                      <p className="text-[11px] text-gray-500 dark:text-neutral-400 mt-1">
+                        Nest under another category to create parent &rarr; child hierarchies (e.g. Winter &rarr; Mens &rarr; Hoodie).
+                      </p>
+                    </div>
+
+                    <div>
+                      <label className="block font-semibold text-gray-700 dark:text-neutral-300 mb-1">
                         Category Name *
                       </label>
                       <input
@@ -413,17 +533,62 @@ export const AdminCategoriesTab: React.FC<AdminCategoriesTabProps> = ({
                     </div>
 
                     <div>
-                      <label className="block font-semibold text-gray-700 dark:text-neutral-300 mb-1">
-                        Showcase Cover Image URL *
-                      </label>
+                      <div className="flex items-center justify-between mb-1">
+                        <label className="block font-semibold text-gray-700 dark:text-neutral-300">
+                          Showcase Cover Image URL *
+                        </label>
+                        <span className="text-[10px] text-gray-400 dark:text-neutral-500">
+                          Google Drive &amp; Web URLs supported
+                        </span>
+                      </div>
                       <input
                         type="url"
                         required
                         value={image}
-                        onChange={(e) => setImage(e.target.value)}
-                        placeholder="https://images.unsplash.com/..."
-                        className="w-full px-3 py-2 bg-stone-50 dark:bg-neutral-800 border border-gray-200 dark:border-neutral-700 rounded-xl text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-orange-600"
+                        onChange={(e) => handleImageChange(e.target.value)}
+                        placeholder="https://images.unsplash.com/... or Google Drive share link"
+                        className="w-full px-3 py-2 bg-stone-50 dark:bg-neutral-800 border border-gray-200 dark:border-neutral-700 rounded-xl text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-orange-600 font-mono text-[11px]"
                       />
+
+                      {/* Google Drive Status Notification */}
+                      {extractGoogleDriveFileId(image) && (
+                        <div className="mt-1.5 flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-emerald-50 dark:bg-emerald-950/40 border border-emerald-200 dark:border-emerald-800/60 text-emerald-800 dark:text-emerald-300 text-[11px]">
+                          <span className="size-2 rounded-full bg-emerald-500 shrink-0" />
+                          <span>
+                            <strong>Google Drive image active:</strong> direct high-speed CDN enabled. (Ensure file is set to "Anyone with the link can view").
+                          </span>
+                        </div>
+                      )}
+
+                      {/* Live Image Preview */}
+                      {image.trim() && (
+                        <div className="mt-2.5 flex items-center gap-3 p-2.5 rounded-2xl bg-stone-50 dark:bg-neutral-800/60 border border-stone-200/80 dark:border-neutral-700">
+                          <div className="relative size-16 rounded-xl overflow-hidden bg-stone-200 dark:bg-neutral-700 shrink-0 border border-stone-300 dark:border-neutral-600">
+                            <img
+                              src={normalizeGoogleDriveImageUrl(image)}
+                              alt="Cover preview"
+                              className="w-full h-full object-cover"
+                              onError={(e) => {
+                                const target = e.currentTarget;
+                                const fileId = extractGoogleDriveFileId(image);
+                                if (fileId && !target.dataset.triedThumbnail) {
+                                  target.dataset.triedThumbnail = "true";
+                                  target.src = getGoogleDriveThumbnailUrl(image, 400);
+                                  return;
+                                }
+                                target.src =
+                                  "https://images.unsplash.com/photo-1544441893-675973e31985?auto=format&fit=crop&w=800&q=80";
+                              }}
+                            />
+                          </div>
+                          <div className="text-[11px] text-gray-500 dark:text-neutral-400 leading-tight overflow-hidden">
+                            <p className="font-semibold text-gray-900 dark:text-white">Live Cover Preview</p>
+                            <p className="text-[10px] text-gray-400 dark:text-neutral-500 mt-0.5 truncate font-mono">
+                              {normalizeGoogleDriveImageUrl(image)}
+                            </p>
+                          </div>
+                        </div>
+                      )}
                     </div>
 
                     <div>

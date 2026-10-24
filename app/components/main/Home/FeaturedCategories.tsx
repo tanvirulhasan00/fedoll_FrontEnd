@@ -2,6 +2,11 @@ import React from "react";
 import { Link } from "react-router";
 import { useAppSelector } from "~/redux/hooks/hook";
 import { ArrowUpRightIcon } from "@heroicons/react/24/outline";
+import {
+  normalizeGoogleDriveImageUrl,
+  extractGoogleDriveFileId,
+  getGoogleDriveThumbnailUrl,
+} from "~/firebase";
 
 export default function FeaturedCategories() {
   const { featuredCategories } = useAppSelector((state) => state.home);
@@ -12,14 +17,7 @@ export default function FeaturedCategories() {
     if (cat.link && !cat.link.startsWith("/blogs")) {
       return cat.link;
     }
-    const map: Record<string, string> = {
-      "cat-outerwear": "/products?category=Outerwear",
-      "cat-workwear": "/products?category=Workwear",
-      "cat-denim": "/products?category=Denim",
-      "cat-knitwear": "/products?category=Knitwear",
-      "cat-essentials": "/products?category=Essentials",
-    };
-    return map[cat.id] || `/products?category=${encodeURIComponent(cat.name)}`;
+    return `/products?category=${encodeURIComponent(cat.name)}`;
   };
 
   return (
@@ -48,9 +46,20 @@ export default function FeaturedCategories() {
           >
             {/* Background Image with Zoom */}
             <img
-              src={cat.image}
+              src={normalizeGoogleDriveImageUrl(cat.image)}
               alt={cat.name}
               className="absolute inset-0 w-full h-full object-cover group-hover:scale-108 transition-transform duration-700 ease-out"
+              onError={(e) => {
+                const target = e.currentTarget;
+                const fileId = extractGoogleDriveFileId(cat.image);
+                if (fileId && !target.dataset.triedThumbnail) {
+                  target.dataset.triedThumbnail = "true";
+                  target.src = getGoogleDriveThumbnailUrl(cat.image, 1000);
+                  return;
+                }
+                target.src =
+                  "https://images.unsplash.com/photo-1544441893-675973e31985?auto=format&fit=crop&w=800&q=80";
+              }}
             />
 
             {/* Gradient Overlays */}
