@@ -159,6 +159,25 @@ export default function ProductDetailPage() {
     }
   }, [availableStock, quantity]);
 
+  // Related products in the same hierarchy branch or category (called unconditionally before early returns)
+  const relatedProducts = useMemo(() => {
+    if (!currentProduct) return [];
+    const rootOrParent = categoryAncestors[0]?.name || currentProduct.category;
+    const branchNames = new Set(
+      getCategoryDescendantNames(rootOrParent, categories).map((n) => n.trim().toLowerCase())
+    );
+    const candidates = allProducts.filter((p) => p.id !== currentProduct.id);
+    const sameCat = candidates.filter(
+      (p) => p.category?.trim().toLowerCase() === currentProduct.category?.trim().toLowerCase()
+    );
+    const sameBranch = candidates.filter(
+      (p) =>
+        p.category?.trim().toLowerCase() !== currentProduct.category?.trim().toLowerCase() &&
+        branchNames.has((p.category || "").trim().toLowerCase())
+    );
+    return [...sameCat, ...sameBranch].slice(0, 4);
+  }, [allProducts, currentProduct, categoryAncestors, categories]);
+
   if (loadingProduct || (!currentProduct && !productError)) {
     return (
       <div className="min-h-screen bg-white dark:bg-neutral-950 text-gray-900 dark:text-white flex flex-col font-sans transition-colors">
@@ -315,25 +334,6 @@ export default function ProductDetailPage() {
       toast.success("Saved to your wishlist!");
     }
   };
-
-  // Related products in the same hierarchy branch or category
-  const relatedProducts = useMemo(() => {
-    if (!currentProduct) return [];
-    const rootOrParent = categoryAncestors[0]?.name || currentProduct.category;
-    const branchNames = new Set(
-      getCategoryDescendantNames(rootOrParent, categories).map((n) => n.trim().toLowerCase())
-    );
-    const candidates = allProducts.filter((p) => p.id !== currentProduct.id);
-    const sameCat = candidates.filter(
-      (p) => p.category?.trim().toLowerCase() === currentProduct.category?.trim().toLowerCase()
-    );
-    const sameBranch = candidates.filter(
-      (p) =>
-        p.category?.trim().toLowerCase() !== currentProduct.category?.trim().toLowerCase() &&
-        branchNames.has((p.category || "").trim().toLowerCase())
-    );
-    return [...sameCat, ...sameBranch].slice(0, 4);
-  }, [allProducts, currentProduct, categoryAncestors, categories]);
 
   return (
     <div className="min-h-screen bg-white dark:bg-neutral-950 text-gray-900 dark:text-neutral-100 flex flex-col font-sans selection:bg-orange-500 selection:text-white transition-colors">

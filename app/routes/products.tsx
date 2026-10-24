@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useState } from "react";
+import React, { useEffect, useMemo, useRef, useState } from "react";
 import { Link, useSearchParams } from "react-router";
 import type { Route } from "./+types/products";
 import Topbar from "~/components/main/Home/Topbar";
@@ -31,6 +31,8 @@ import {
   ShieldCheckIcon,
   TruckIcon,
   ArrowRightIcon,
+  ChevronDownIcon,
+  CheckIcon,
 } from "@heroicons/react/24/outline";
 import {
   StarIcon as StarSolidIcon,
@@ -65,6 +67,18 @@ export function meta({}: Route.MetaArgs) {
         "Fedoll products, Bangladesh clothing shop, selvedge denim, wool coats Dhaka, workwear blazers, casual shirts Bangladesh",
     },
   ];
+}
+
+export interface CategoryTreeNode {
+  id: string;
+  name: string;
+  slug?: string;
+  tagline?: string;
+  itemCount?: number;
+  count: number;
+  level: number;
+  order?: number;
+  children: CategoryTreeNode[];
 }
 
 interface CatalogProductCardProps {
@@ -334,6 +348,51 @@ export default function ProductsPage() {
   const [localSearch, setLocalSearch] = useState(searchQuery);
   const [maxPrice, setMaxPrice] = useState<number>(10000);
   const [showFiltersMobile, setShowFiltersMobile] = useState(false);
+  const [openDropdownId, setOpenDropdownId] = useState<string | null>(null);
+  const dropdownBarRef = useRef<HTMLDivElement>(null);
+  const closeTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+
+  const handleMouseEnterDropdown = (id: string) => {
+    if (closeTimeoutRef.current) {
+      clearTimeout(closeTimeoutRef.current);
+      closeTimeoutRef.current = null;
+    }
+    setOpenDropdownId(id);
+  };
+
+  const handleMouseLeaveDropdown = () => {
+    if (closeTimeoutRef.current) {
+      clearTimeout(closeTimeoutRef.current);
+    }
+    closeTimeoutRef.current = setTimeout(() => {
+      setOpenDropdownId(null);
+    }, 250);
+  };
+
+  useEffect(() => {
+    const handleClickOutside = (e: MouseEvent) => {
+      if (dropdownBarRef.current && !dropdownBarRef.current.contains(e.target as Node)) {
+        setOpenDropdownId(null);
+      }
+    };
+
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === "Escape") {
+        setOpenDropdownId(null);
+      }
+    };
+
+    document.addEventListener("mousedown", handleClickOutside);
+    document.addEventListener("keydown", handleKeyDown);
+
+    return () => {
+      document.removeEventListener("mousedown", handleClickOutside);
+      document.removeEventListener("keydown", handleKeyDown);
+      if (closeTimeoutRef.current) {
+        clearTimeout(closeTimeoutRef.current);
+      }
+    };
+  }, []);
 
   // Sync category param from URL on initial load and URL changes
   useEffect(() => {
@@ -547,45 +606,13 @@ export default function ProductsPage() {
     return result;
   }, [products, selectedCategory, categories, searchQuery, onlyInStock, maxPrice, sortBy]);
 
-  // Compute dynamic top-level root category tabs
-  const categoryTabs = useMemo(() => {
-    const tabs: { id: string; name: string }[] = [{ id: "all", name: "All" }];
-    const seen = new Set<string>(["all"]);
-
-    const sourceCategories =
-      categories && categories.length > 0 ? categories : [];
-
-    // First list top-level root categories (parentId === null or empty)
-    for (const cat of sourceCategories) {
-      if (!cat.parentId) {
-        const name = cat.name?.trim();
-        if (name && !seen.has(name.toLowerCase())) {
-          if (name.toLowerCase() === DEFAULT_CATEGORY_NAME.toLowerCase()) {
-            const hasUncat = products.some(
-              (p) => p.category?.trim().toLowerCase() === DEFAULT_CATEGORY_NAME.toLowerCase()
-            );
-            if (!hasUncat) continue;
-          }
-          seen.add(name.toLowerCase());
-          tabs.push({ id: cat.id, name });
-        }
-      }
-    }
-
-    // Add any category from products that has no matching parent or is root
-    for (const p of products) {
-      const catName = p.category?.trim();
-      if (catName && !seen.has(catName.toLowerCase())) {
-        const match = findCategory(catName, sourceCategories);
-        if (!match || !match.parentId) {
-          seen.add(catName.toLowerCase());
-          tabs.push({ id: `cat-${catName.toLowerCase()}`, name: catName });
-        }
-      }
-    }
-
-    return tabs;
-  }, [categories, products]);
+  // Helper to determine if a node or any of its descendants is currently selected
+  const isNodeOrDescendantSelected = (node: CategoryTreeNode, targetName: string): boolean => {
+    if (!targetName || targetName === "All") return false;
+    const normalizedTarget = targetName.trim().toLowerCase();
+    if (node.name.trim().toLowerCase() === normalizedTarget) return true;
+    return node.children.some((child) => isNodeOrDescendantSelected(child, targetName));
+  };
 
   // Compute category counts dynamically including all descendant subcategories
   const categoryCounts = useMemo(() => {
@@ -601,9 +628,171 @@ export default function ProductsPage() {
         descendants.has((p.category || "").trim().toLowerCase())
       ).length;
       counts[cat.name.trim().toLowerCase()] = count;
+      counts[cat.id] = count;
     }
+
+    for (const p of products) {
+      const c = (p.category || "").trim().toLowerCase();
+      if (c && counts[c] === undefined) {
+        counts[c] = products.filter((prod) => (prod.category || "").trim().toLowerCase() === c).length;
+      }
+    }
+
     return counts;
   }, [products, categories]);
+
+  // Compute dynamic recursive category tree with parent-child relationships
+  const categoryTree = useMemo(() => {
+    const sourceCategories =
+      categories && categories.length > 0 ? categories : [];
+
+    const getChildrenFor = (parentId: string, parentName: string): ProductCategoryItem[] => {
+      return sourceCategories.filter(
+        (c) =>
+          c.id !== parentId &&
+          (c.parentId === parentId ||
+            (c.parentId && c.parentId.trim().toLowerCase() === parentName.trim().toLowerCase()))
+      );
+    };
+
+    const visitedIds = new Set<string>();
+
+    const buildTreeNode = (cat: ProductCategoryItem): CategoryTreeNode => {
+      visitedIds.add(cat.id);
+      const rawChildren = getChildrenFor(cat.id, cat.name).filter(
+        (c) => !visitedIds.has(c.id)
+      );
+
+      rawChildren.sort(
+        (a, b) => (a.order ?? 0) - (b.order ?? 0) || a.name.localeCompare(b.name)
+      );
+
+      const childrenNodes = rawChildren.map(buildTreeNode);
+      const count = categoryCounts[cat.name.trim().toLowerCase()] ?? 0;
+
+      return {
+        id: cat.id,
+        name: cat.name,
+        slug: cat.slug,
+        tagline: cat.tagline,
+        itemCount: cat.itemCount,
+        count,
+        level: cat.level ?? 0,
+        order: cat.order,
+        children: childrenNodes,
+      };
+    };
+
+    // Root categories: no parentId, or parentId doesn't match any known category
+    const rootCategories = sourceCategories.filter((cat) => {
+      if (!cat.parentId) return true;
+      const parentExists = sourceCategories.some(
+        (c) => c.id === cat.parentId || c.name.trim().toLowerCase() === cat.parentId?.trim().toLowerCase()
+      );
+      return !parentExists;
+    });
+
+    rootCategories.sort(
+      (a, b) => (a.order ?? 0) - (b.order ?? 0) || a.name.localeCompare(b.name)
+    );
+
+    const filteredRoots = rootCategories.filter((cat) => {
+      if (cat.name.trim().toLowerCase() === DEFAULT_CATEGORY_NAME.toLowerCase()) {
+        const hasUncat = products.some(
+          (p) => p.category?.trim().toLowerCase() === DEFAULT_CATEGORY_NAME.toLowerCase()
+        );
+        if (!hasUncat) return false;
+      }
+      return true;
+    });
+
+    const roots: CategoryTreeNode[] = filteredRoots.map(buildTreeNode);
+
+    // Also include any standalone product categories not present in categories collection
+    for (const p of products) {
+      const catName = p.category?.trim();
+      if (catName && !visitedIds.has(catName.toLowerCase())) {
+        const existsInTree = (nodes: CategoryTreeNode[]): boolean =>
+          nodes.some(
+            (n) => n.name.trim().toLowerCase() === catName.toLowerCase() || existsInTree(n.children)
+          );
+
+        if (!existsInTree(roots)) {
+          visitedIds.add(catName.toLowerCase());
+          roots.push({
+            id: `cat-${catName.toLowerCase()}`,
+            name: catName,
+            count: categoryCounts[catName.toLowerCase()] ?? 0,
+            level: 0,
+            children: [],
+          });
+        }
+      }
+    }
+
+    return roots;
+  }, [categories, products, categoryCounts]);
+
+  // Recursive renderer for child categories inside dropdown menus
+  const renderChildDropdownItems = (
+    nodes: CategoryTreeNode[],
+    depth = 0
+  ): React.ReactNode => {
+    return nodes.map((child) => {
+      const isSelected =
+        selectedCategory.trim().toLowerCase() === child.name.trim().toLowerCase();
+      const hasSubChildren = child.children.length > 0;
+      const isDescendantSelected = isNodeOrDescendantSelected(child, selectedCategory);
+
+      return (
+        <div key={child.id} className="flex flex-col">
+          <button
+            type="button"
+            onClick={() => {
+              handleCategoryChange(child.name);
+              setOpenDropdownId(null);
+            }}
+            className={`w-full flex items-center justify-between text-left py-2 px-3 text-xs rounded-xl transition cursor-pointer ${
+              isSelected
+                ? "bg-orange-600 text-white font-bold shadow-xs"
+                : isDescendantSelected
+                ? "bg-orange-50 dark:bg-orange-950/50 text-orange-700 dark:text-orange-300 font-semibold"
+                : "text-gray-700 dark:text-neutral-300 hover:bg-stone-100 dark:hover:bg-neutral-800 hover:text-orange-600 dark:hover:text-orange-400 font-medium"
+            }`}
+            style={{ paddingLeft: `${12 + depth * 14}px` }}
+          >
+            <div className="flex items-center gap-1.5 truncate">
+              {depth > 0 && (
+                <span className="text-gray-400 dark:text-neutral-500 font-mono text-[11px] select-none">
+                  ↳
+                </span>
+              )}
+              <span className="truncate">{child.name}</span>
+            </div>
+
+            <div className="flex items-center gap-1.5 shrink-0 ml-2">
+              <span
+                className={`text-[10px] px-1.5 py-0.5 rounded-full font-mono font-bold ${
+                  isSelected
+                    ? "bg-white/20 text-white"
+                    : "bg-stone-100 dark:bg-neutral-800 text-gray-500 dark:text-neutral-400"
+                }`}
+              >
+                {child.count}
+              </span>
+              {isSelected && <CheckIcon className="size-3.5 text-white stroke-[2.5]" />}
+            </div>
+          </button>
+
+          {hasSubChildren && (
+            <div className="space-y-0.5 mt-0.5">
+              {renderChildDropdownItems(child.children, depth + 1)}
+            </div>
+          )}
+        </div>
+      );
+    });
+  };
 
   return (
     <div className="min-h-screen bg-white dark:bg-neutral-950 text-gray-900 dark:text-neutral-100 flex flex-col font-sans selection:bg-orange-500 selection:text-white transition-colors">
@@ -662,7 +851,7 @@ export default function ProductsPage() {
         </div>
 
         {/* Page Hero Header */}
-        <section className="relative overflow-hidden bg-gradient-to-b from-stone-50 dark:from-neutral-900/50 via-orange-50/15 dark:via-neutral-950 to-white dark:to-neutral-950 border-b border-stone-200/60 dark:border-neutral-800 py-12 sm:py-16 transition-colors">
+        <section className="relative overflow-visible bg-gradient-to-b from-stone-50 dark:from-neutral-900/50 via-orange-50/15 dark:via-neutral-950 to-white dark:to-neutral-950 border-b border-stone-200/60 dark:border-neutral-800 py-12 sm:py-16 transition-colors z-20">
           <div className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
             <div className="flex flex-col md:flex-row md:items-end md:justify-between gap-6">
               <div>
@@ -714,44 +903,191 @@ export default function ProductsPage() {
               </div>
             </div>
 
-            {/* Dynamic Category Filter Pills */}
-            <div className="mt-10 flex items-center gap-2 overflow-x-auto pb-2 scrollbar-none">
-              {categoryTabs.map((tab) => {
-                const isAll = tab.name === "All";
-                const isDirectMatch = isAll
-                  ? !selectedCategory || selectedCategory === "All"
-                  : selectedCategory.trim().toLowerCase() === tab.name.trim().toLowerCase();
-                const isAncestorMatch =
-                  !isAll &&
-                  categoryAncestors.some(
-                    (anc) => anc.name.trim().toLowerCase() === tab.name.trim().toLowerCase()
-                  );
-                const isActive = isDirectMatch || isAncestorMatch;
-                const count = isAll
-                  ? products.length
-                  : categoryCounts[tab.name.trim().toLowerCase()] || 0;
-                return (
-                  <button
-                    key={tab.id || tab.name}
-                    type="button"
-                    onClick={() => handleCategoryChange(tab.name)}
-                    className={`inline-flex items-center gap-2 whitespace-nowrap px-4 py-2.5 rounded-full text-xs font-semibold transition cursor-pointer ${
-                      isActive
-                        ? "bg-orange-600 dark:bg-orange-500 text-white shadow-md shadow-orange-600/20"
-                        : "bg-white dark:bg-neutral-900 text-gray-700 dark:text-neutral-300 border border-stone-200/80 dark:border-neutral-800 hover:bg-stone-50 dark:hover:bg-neutral-800 hover:text-orange-600 dark:hover:text-orange-400"
-                    }`}
-                  >
-                    <span>{tab.name}</span>
-                    <span
-                      className={`text-[10px] px-1.5 py-0.5 rounded-full font-bold ${
-                        isActive
-                          ? "bg-white/20 text-white"
-                          : "bg-stone-100 dark:bg-neutral-800 text-gray-500 dark:text-neutral-400"
+            {/* Dynamic Category Filter Bar with Dropdowns for Child Categories */}
+            <div
+              ref={dropdownBarRef}
+              className="mt-10 flex flex-wrap items-center gap-2.5 relative z-30"
+            >
+              {/* All Products Tab */}
+              <button
+                type="button"
+                onClick={() => {
+                  handleCategoryChange("All");
+                  setOpenDropdownId(null);
+                }}
+                className={`inline-flex items-center gap-2 whitespace-nowrap px-4 py-2.5 rounded-full text-xs font-semibold transition cursor-pointer ${
+                  selectedCategory === "All"
+                    ? "bg-orange-600 dark:bg-orange-500 text-white shadow-md shadow-orange-600/20"
+                    : "bg-white dark:bg-neutral-900 text-gray-700 dark:text-neutral-300 border border-stone-200/80 dark:border-neutral-800 hover:bg-stone-50 dark:hover:bg-neutral-800 hover:text-orange-600 dark:hover:text-orange-400"
+                }`}
+              >
+                <span>All</span>
+                <span
+                  className={`text-[10px] px-1.5 py-0.5 rounded-full font-bold ${
+                    selectedCategory === "All"
+                      ? "bg-white/20 text-white"
+                      : "bg-stone-100 dark:bg-neutral-800 text-gray-500 dark:text-neutral-400"
+                  }`}
+                >
+                  {products.length}
+                </span>
+              </button>
+
+              {/* Dynamic Categories: Single pill if no children, Dropdown if child categories exist */}
+              {categoryTree.map((tab) => {
+                const hasChildren = tab.children.length > 0;
+                const isDirectActive =
+                  selectedCategory.trim().toLowerCase() === tab.name.trim().toLowerCase();
+                const isDescendantActive = isNodeOrDescendantSelected(tab, selectedCategory);
+                const isOpen = openDropdownId === tab.id;
+
+                if (!hasChildren) {
+                  return (
+                    <button
+                      key={tab.id || tab.name}
+                      type="button"
+                      onClick={() => {
+                        handleCategoryChange(tab.name);
+                        setOpenDropdownId(null);
+                      }}
+                      className={`inline-flex items-center gap-2 whitespace-nowrap px-4 py-2.5 rounded-full text-xs font-semibold transition cursor-pointer ${
+                        isDirectActive
+                          ? "bg-orange-600 dark:bg-orange-500 text-white shadow-md shadow-orange-600/20"
+                          : "bg-white dark:bg-neutral-900 text-gray-700 dark:text-neutral-300 border border-stone-200/80 dark:border-neutral-800 hover:bg-stone-50 dark:hover:bg-neutral-800 hover:text-orange-600 dark:hover:text-orange-400"
                       }`}
                     >
-                      {count}
-                    </span>
-                  </button>
+                      <span>{tab.name}</span>
+                      <span
+                        className={`text-[10px] px-1.5 py-0.5 rounded-full font-bold ${
+                          isDirectActive
+                            ? "bg-white/20 text-white"
+                            : "bg-stone-100 dark:bg-neutral-800 text-gray-500 dark:text-neutral-400"
+                        }`}
+                      >
+                        {tab.count}
+                      </span>
+                    </button>
+                  );
+                }
+
+                // Category HAS child categories: render interactive pill with dropdown menu
+                return (
+                  <div
+                    key={tab.id || tab.name}
+                    className="relative"
+                    onMouseEnter={() => handleMouseEnterDropdown(tab.id)}
+                    onMouseLeave={handleMouseLeaveDropdown}
+                  >
+                    {/* Category Pill with Dropdown Trigger */}
+                    <div
+                      className={`inline-flex items-center rounded-full transition shadow-xs ${
+                        isDirectActive
+                          ? "bg-orange-600 dark:bg-orange-500 text-white shadow-md shadow-orange-600/20"
+                          : isDescendantActive
+                          ? "bg-orange-50 dark:bg-orange-950/60 text-orange-900 dark:text-orange-200 border-2 border-orange-500/80 dark:border-orange-500"
+                          : "bg-white dark:bg-neutral-900 text-gray-700 dark:text-neutral-300 border border-stone-200/80 dark:border-neutral-800 hover:bg-stone-50 dark:hover:bg-neutral-800 hover:text-orange-600 dark:hover:text-orange-400"
+                      }`}
+                    >
+                      <button
+                        type="button"
+                        onClick={() => {
+                          handleCategoryChange(tab.name);
+                          setOpenDropdownId(isOpen ? null : tab.id);
+                        }}
+                        className="inline-flex items-center gap-2 pl-4 pr-1.5 py-2.5 text-xs font-semibold cursor-pointer"
+                      >
+                        <span>{tab.name}</span>
+                        {isDescendantActive && !isDirectActive && (
+                          <span className="text-[10px] font-bold px-1.5 py-0.2 rounded-full bg-orange-200 dark:bg-orange-900/80 text-orange-900 dark:text-orange-200 truncate max-w-[100px]">
+                            {selectedCategory}
+                          </span>
+                        )}
+                        <span
+                          className={`text-[10px] px-1.5 py-0.5 rounded-full font-bold ${
+                            isDirectActive
+                              ? "bg-white/20 text-white"
+                              : isDescendantActive
+                              ? "bg-orange-200/60 dark:bg-orange-900/40 text-orange-800 dark:text-orange-300"
+                              : "bg-stone-100 dark:bg-neutral-800 text-gray-500 dark:text-neutral-400"
+                          }`}
+                        >
+                          {tab.count}
+                        </span>
+                      </button>
+
+                      <button
+                        type="button"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          setOpenDropdownId(isOpen ? null : tab.id);
+                        }}
+                        aria-expanded={isOpen}
+                        aria-label={`Toggle ${tab.name} subcategories dropdown`}
+                        className={`pr-3 pl-1 py-2.5 flex items-center justify-center cursor-pointer transition ${
+                          isDirectActive
+                            ? "text-white/90 hover:text-white"
+                            : isDescendantActive
+                            ? "text-orange-700 dark:text-orange-300 hover:text-orange-900 dark:hover:text-white"
+                            : "text-gray-400 dark:text-neutral-500 hover:text-gray-600 dark:hover:text-neutral-300"
+                        }`}
+                      >
+                        <ChevronDownIcon
+                          className={`size-3.5 transition-transform duration-200 ${
+                            isOpen ? "rotate-180" : ""
+                          }`}
+                        />
+                      </button>
+                    </div>
+
+                    {/* Popover Dropdown Menu */}
+                    {isOpen && (
+                      <div
+                        className="absolute top-full left-0 mt-2 w-64 max-w-[calc(100vw-2rem)] bg-white dark:bg-neutral-900 border border-stone-200 dark:border-neutral-800 rounded-2xl p-2 shadow-2xl z-50 animate-in fade-in zoom-in-95 duration-150"
+                        role="menu"
+                      >
+                        {/* Parent Category "All [Name]" Action */}
+                        <button
+                          type="button"
+                          onClick={() => {
+                            handleCategoryChange(tab.name);
+                            setOpenDropdownId(null);
+                          }}
+                          className={`w-full flex items-center justify-between text-left px-3 py-2 text-xs font-bold rounded-xl transition cursor-pointer ${
+                            isDirectActive
+                              ? "bg-orange-600 text-white shadow-2xs"
+                              : "text-gray-900 dark:text-white hover:bg-stone-100 dark:hover:bg-neutral-800 hover:text-orange-600 dark:hover:text-orange-400"
+                          }`}
+                        >
+                          <div className="flex items-center gap-2">
+                            <SparklesIcon className="size-3.5 text-orange-500 shrink-0" />
+                            <span>All {tab.name}</span>
+                          </div>
+                          <div className="flex items-center gap-1.5 shrink-0">
+                            <span
+                              className={`text-[10px] px-1.5 py-0.5 rounded-full font-mono font-bold ${
+                                isDirectActive
+                                  ? "bg-white/20 text-white"
+                                  : "bg-stone-100 dark:bg-neutral-800 text-gray-500 dark:text-neutral-400"
+                              }`}
+                            >
+                              {tab.count}
+                            </span>
+                            {isDirectActive && <CheckIcon className="size-3.5 text-white stroke-[2.5]" />}
+                          </div>
+                        </button>
+
+                        <div className="my-1.5 border-t border-stone-100 dark:border-neutral-800" />
+
+                        <div className="px-3 py-1 text-[10px] font-bold uppercase tracking-wider text-stone-400 dark:text-neutral-500">
+                          Subcategories
+                        </div>
+
+                        <div className="space-y-0.5 max-h-64 overflow-y-auto scrollbar-thin">
+                          {renderChildDropdownItems(tab.children)}
+                        </div>
+                      </div>
+                    )}
+                  </div>
                 );
               })}
             </div>
