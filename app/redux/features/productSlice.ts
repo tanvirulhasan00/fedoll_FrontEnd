@@ -45,12 +45,27 @@ const loadInitialProducts = (): ProductItem[] => {
   return [];
 };
 
+const loadInitialCategories = (): ProductCategoryItem[] => {
+  if (typeof window === "undefined") return [];
+  try {
+    const raw = localStorage.getItem("fedoll_categories_v1");
+    if (raw) {
+      const parsed = JSON.parse(raw);
+      if (Array.isArray(parsed) && parsed.length > 0) return parsed;
+    }
+  } catch {
+    // ignore
+  }
+  return [];
+};
+
 const cachedCatalog = loadInitialProducts();
+const cachedCategories = loadInitialCategories();
 
 const initialState: ProductState = {
-  items: cachedCatalog.length > 0 ? cachedCatalog : [...initialProductsData],
+  items: cachedCatalog,
   currentProduct: null,
-  categories: [...initialProductCategories],
+  categories: cachedCategories,
   selectedCategory: "All",
   searchQuery: "",
   sortBy: "featured",
@@ -58,7 +73,7 @@ const initialState: ProductState = {
   onlyInStock: false,
   loading: cachedCatalog.length === 0,
   loadingProduct: false,
-  loadingCategories: false,
+  loadingCategories: cachedCategories.length === 0,
   error: null,
   productError: null,
   syncing: false,
@@ -172,6 +187,11 @@ export const productSlice = createSlice({
     setProductCategories: (state, action: PayloadAction<ProductCategoryItem[]>) => {
       state.categories = action.payload;
       state.loadingCategories = false;
+      if (typeof window !== "undefined" && action.payload && action.payload.length > 0) {
+        try {
+          localStorage.setItem("fedoll_categories_v1", JSON.stringify(action.payload));
+        } catch {}
+      }
     },
   },
   extraReducers: (builder) => {
@@ -186,6 +206,11 @@ export const productSlice = createSlice({
       .addCase(fetchProducts.fulfilled, (state, action) => {
         state.loading = false;
         state.items = action.payload;
+        if (typeof window !== "undefined" && action.payload && action.payload.length > 0) {
+          try {
+            localStorage.setItem("fedoll_products_v1", JSON.stringify(action.payload));
+          } catch {}
+        }
       })
       .addCase(fetchProducts.rejected, (state, action) => {
         state.loading = false;
@@ -206,11 +231,20 @@ export const productSlice = createSlice({
       })
       // fetchProductCategories
       .addCase(fetchProductCategories.pending, (state) => {
-        state.loadingCategories = true;
+        if (state.categories.length === 0) {
+          state.loadingCategories = true;
+        }
       })
       .addCase(fetchProductCategories.fulfilled, (state, action) => {
         state.loadingCategories = false;
-        state.categories = action.payload;
+        if (Array.isArray(action.payload) && action.payload.length > 0) {
+          state.categories = action.payload;
+          if (typeof window !== "undefined") {
+            try {
+              localStorage.setItem("fedoll_categories_v1", JSON.stringify(action.payload));
+            } catch {}
+          }
+        }
       })
       .addCase(fetchProductCategories.rejected, (state) => {
         state.loadingCategories = false;

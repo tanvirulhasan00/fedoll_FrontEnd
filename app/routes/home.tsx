@@ -13,7 +13,12 @@ import CommunityGallery from "~/components/main/Home/CommunityGallery";
 import { useAppDispatch, useAppSelector } from "~/redux/hooks/hook";
 import { fetchHomeData, seedHomeData } from "~/redux/features/homeSlice";
 import { fetchBlogs } from "~/redux/features/blogSlice";
-import { fetchProducts, fetchProductCategories } from "~/redux/features/productSlice";
+import {
+  fetchProducts,
+  fetchProductCategories,
+  setProductCategories,
+} from "~/redux/features/productSlice";
+import { subscribeToCategoriesFromFirestore } from "~/firebase";
 import { ArrowPathIcon, SparklesIcon } from "@heroicons/react/24/outline";
 import { toast } from "sonner";
 
@@ -27,6 +32,15 @@ const Home = () => {
     dispatch(fetchBlogs());
     dispatch(fetchProducts());
     dispatch(fetchProductCategories());
+
+    // Subscribe to realtime category updates
+    const unsubscribeCategories = subscribeToCategoriesFromFirestore((liveCats) => {
+      dispatch(setProductCategories(liveCats));
+    });
+
+    return () => {
+      unsubscribeCategories();
+    };
   }, [dispatch]);
 
   const handleSyncFirebase = async () => {

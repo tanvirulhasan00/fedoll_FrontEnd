@@ -553,7 +553,7 @@ export default function ProductsPage() {
     const seen = new Set<string>(["all"]);
 
     const sourceCategories =
-      categories && categories.length > 0 ? categories : initialProductCategories;
+      categories && categories.length > 0 ? categories : [];
 
     // First list top-level root categories (parentId === null or empty)
     for (const cat of sourceCategories) {
@@ -591,7 +591,7 @@ export default function ProductsPage() {
   const categoryCounts = useMemo(() => {
     const counts: Record<string, number> = { all: products.length };
     const sourceCategories =
-      categories && categories.length > 0 ? categories : initialProductCategories;
+      categories && categories.length > 0 ? categories : [];
 
     for (const cat of sourceCategories) {
       const descendants = new Set(

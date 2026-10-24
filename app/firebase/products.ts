@@ -888,6 +888,27 @@ export const saveAllLocalProducts = (products: ProductItem[]) => {
   }
 };
 
+const CATEGORIES_CACHE_KEY = "fedoll_categories_v1";
+
+export const getLocalCategories = (): ProductCategoryItem[] => {
+  if (typeof window === "undefined") return [];
+  try {
+    const raw = localStorage.getItem(CATEGORIES_CACHE_KEY);
+    return raw ? JSON.parse(raw) : [];
+  } catch {
+    return [];
+  }
+};
+
+export const saveAllLocalCategories = (cats: ProductCategoryItem[]) => {
+  if (typeof window === "undefined") return;
+  try {
+    localStorage.setItem(CATEGORIES_CACHE_KEY, JSON.stringify(cats));
+  } catch (err) {
+    console.warn("Could not cache categories to local storage:", err);
+  }
+};
+
 /**
  * Ensure every catalog garment has a concrete variant matrix for variant-level stock management
  */
@@ -1106,6 +1127,7 @@ export const fetchCategoriesFromFirestore = async (): Promise<ProductCategoryIte
         ).catch(() => {});
       }
 
+      saveAllLocalCategories(list);
       return list;
     }
 
@@ -1126,9 +1148,14 @@ export const fetchCategoriesFromFirestore = async (): Promise<ProductCategoryIte
       }
     }
 
+    saveAllLocalCategories(initialProductCategories);
     return initialProductCategories;
   } catch (error) {
     console.warn("Failed to fetch categories from Firestore:", error);
+    const local = getLocalCategories();
+    if (local && local.length > 0) {
+      return local;
+    }
     return initialProductCategories;
   }
 };
@@ -1170,6 +1197,7 @@ export const subscribeToCategoriesFromFirestore = (
             list.push(DEFAULT_CATEGORY_ITEM);
           }
 
+          saveAllLocalCategories(list);
           callback(list);
         } else {
           // If Firestore collection is empty, trigger fallback fetch
@@ -1324,6 +1352,19 @@ export const saveCategoryToFirestore = async (
     console.warn("Could not mutate in-memory initialProductCategories:", err);
   }
 
+  try {
+    const local = getLocalCategories();
+    const idx = local.findIndex((c) => c.id === normalizedCategory.id);
+    let updatedCats: ProductCategoryItem[];
+    if (idx >= 0) {
+      updatedCats = [...local];
+      updatedCats[idx] = normalizedCategory;
+    } else {
+      updatedCats = [...local, normalizedCategory];
+    }
+    saveAllLocalCategories(updatedCats);
+  } catch {}
+
   return normalizedCategory;
 };
 
@@ -1466,6 +1507,13 @@ export const deleteCategoryFromFirestore = async (
     });
   } catch (err) {
     console.warn("Could not mutate in-memory initialProductCategories on delete:", err);
+  }
+
+  try {
+    const updatedCats = getLocalCategories().filter((c) => c.id !== id);
+    saveAllLocalCategories(updatedCats);
+  } catch (err) {
+    console.warn("Could not mutate local categories on delete:", err);
   }
 
   return { success: true, reassignedCount };

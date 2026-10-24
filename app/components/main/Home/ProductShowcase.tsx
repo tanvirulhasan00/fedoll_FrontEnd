@@ -25,7 +25,6 @@ import StockAvailabilityBadge from "~/components/ui/StockAvailabilityBadge";
 import type { ProductItem } from "~/firebase";
 import {
   getVariantImages,
-  initialProductCategories,
   DEFAULT_CATEGORY_NAME,
 } from "~/firebase";
 
@@ -350,8 +349,9 @@ export default function ProductShowcase() {
     const list = ["All"];
     const seen = new Set<string>(["all"]);
 
+    // Only use real categories from Firestore/cache - no old dummy category fallbacks
     const sourceCategories =
-      categories && categories.length > 0 ? categories : initialProductCategories;
+      categories && categories.length > 0 ? categories : [];
 
     for (const cat of sourceCategories) {
       const name = cat.name?.trim();
@@ -415,28 +415,37 @@ export default function ProductShowcase() {
         </div>
 
         {/* Dynamic Category Tabs */}
-        <div className="flex items-center gap-2 overflow-x-auto pb-2 scrollbar-none">
-          {tabs.map((tab) => {
-            const isActive =
-              tab === "All"
-                ? !activeProductTab || activeProductTab === "All"
-                : activeProductTab.trim().toLowerCase() === tab.trim().toLowerCase();
-            return (
-              <button
-                key={tab}
-                type="button"
-                onClick={() => dispatch(setActiveProductTab(tab))}
-                className={`whitespace-nowrap px-4 py-2 rounded-full text-xs sm:text-sm font-semibold transition cursor-pointer ${
-                  isActive
-                    ? "bg-gray-900 dark:bg-orange-700 text-white shadow-sm"
-                    : "bg-stone-100 dark:bg-neutral-800 text-gray-600 dark:text-neutral-300 hover:bg-stone-200 dark:hover:bg-neutral-700 hover:text-gray-900 dark:hover:text-white"
-                }`}
-              >
-                {tab}
-              </button>
-            );
-          })}
-        </div>
+        {isDataLoading && tabs.length <= 1 ? (
+          <div className="flex items-center gap-2 overflow-x-auto pb-2 scrollbar-none animate-pulse">
+            <div className="w-16 h-8 rounded-full bg-stone-200 dark:bg-neutral-800" />
+            <div className="w-20 h-8 rounded-full bg-stone-100 dark:bg-neutral-800/60" />
+            <div className="w-24 h-8 rounded-full bg-stone-100 dark:bg-neutral-800/60" />
+            <div className="w-18 h-8 rounded-full bg-stone-100 dark:bg-neutral-800/60" />
+          </div>
+        ) : (
+          <div className="flex items-center gap-2 overflow-x-auto pb-2 scrollbar-none">
+            {tabs.map((tab) => {
+              const isActive =
+                tab === "All"
+                  ? !activeProductTab || activeProductTab === "All"
+                  : activeProductTab.trim().toLowerCase() === tab.trim().toLowerCase();
+              return (
+                <button
+                  key={tab}
+                  type="button"
+                  onClick={() => dispatch(setActiveProductTab(tab))}
+                  className={`whitespace-nowrap px-4 py-2 rounded-full text-xs sm:text-sm font-semibold transition cursor-pointer ${
+                    isActive
+                      ? "bg-gray-900 dark:bg-orange-700 text-white shadow-sm"
+                      : "bg-stone-100 dark:bg-neutral-800 text-gray-600 dark:text-neutral-300 hover:bg-stone-200 dark:hover:bg-neutral-700 hover:text-gray-900 dark:hover:text-white"
+                  }`}
+                >
+                  {tab}
+                </button>
+              );
+            })}
+          </div>
+        )}
       </div>
 
       {/* Products Grid */}
