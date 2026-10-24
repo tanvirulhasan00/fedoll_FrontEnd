@@ -12,6 +12,7 @@ import {
   initialTestimonials,
   initialValueProps,
   initialSpotlightBanner,
+  convertProductToHeroBanner,
   type HeroBanner,
   type FeaturedCategory,
   type ProductItem,
@@ -75,8 +76,20 @@ const loadInitialHomeProducts = (): ProductItem[] => {
 
 const cachedHomeProducts = loadInitialHomeProducts();
 
+const getInitialHeroBanners = (cached: ProductItem[]): HeroBanner[] => {
+  if (cached && cached.length > 0) {
+    const candidates = cached.filter((p) => p.images && p.images.length > 0);
+    const pool = candidates.length > 0 ? candidates : cached;
+    const shuffled = [...pool].sort(() => 0.5 - Math.random());
+    return shuffled.slice(0, Math.min(2, shuffled.length)).map((p, idx) =>
+      convertProductToHeroBanner(p, idx)
+    );
+  }
+  return initialHeroBanners;
+};
+
 const initialState: HomeState = {
-  heroBanners: initialHeroBanners,
+  heroBanners: getInitialHeroBanners(cachedHomeProducts),
   featuredCategories: initialFeaturedCategories,
   products: cachedHomeProducts,
   testimonials: initialTestimonials,
@@ -177,6 +190,22 @@ export const homeSlice = createSlice({
         } catch {
           // ignore
         }
+      }
+    },
+    setHeroBanners: (state, action: PayloadAction<HeroBanner[]>) => {
+      state.heroBanners = action.payload;
+    },
+    setHeroBannersFromProducts: (state, action: PayloadAction<ProductItem[]>) => {
+      const prods = action.payload;
+      if (prods && prods.length > 0) {
+        const candidates = prods.filter((p) => p.images && p.images.length > 0);
+        const pool = candidates.length > 0 ? candidates : prods;
+        const shuffled = [...pool].sort(() => 0.5 - Math.random());
+        state.heroBanners = shuffled.slice(0, Math.min(2, shuffled.length)).map((p, idx) =>
+          convertProductToHeroBanner(p, idx)
+        );
+      } else {
+        state.heroBanners = initialHeroBanners;
       }
     },
   },
@@ -282,6 +311,8 @@ export const {
   setQuickViewProduct,
   setWishlist,
   toggleWishlist,
+  setHeroBanners,
+  setHeroBannersFromProducts,
 } = homeSlice.actions;
 
 export default homeSlice.reducer;

@@ -37,7 +37,12 @@ export interface FeaturedCategory {
   link: string;
 }
 
-import { fetchProductsFromFirestore, type ProductItem } from "./products";
+import {
+  fetchProductsFromFirestore,
+  getLocalProducts,
+  normalizeGoogleDriveImageUrl,
+  type ProductItem,
+} from "./products";
 
 export interface TestimonialItem {
   id: string;
@@ -59,6 +64,63 @@ export interface SpotlightBanner {
   ctaLink: string;
   image: string;
   discountCode?: string;
+}
+
+/**
+ * Convert a database ProductItem into a HeroBanner slide for the hero slider section
+ */
+export function convertProductToHeroBanner(
+  product: ProductItem,
+  index: number = 0
+): HeroBanner {
+  let badgeText = "Featured Product • Bangladesh";
+  if (product.badge) {
+    badgeText = `${product.badge} • Bangladesh`;
+  } else if (product.isNewArrival) {
+    badgeText = `New Arrival • ${product.category || "Collection"}`;
+  } else if (product.isBestSeller) {
+    badgeText = `Best Seller • ${product.category || "Collection"}`;
+  } else if (product.category) {
+    badgeText = `${product.category} Collection • Bangladesh`;
+  }
+
+  const rawImage =
+    (product.images && product.images.length > 0 && product.images[0]) || "";
+  const primaryImage =
+    rawImage ||
+    (index % 2 === 0
+      ? "https://images.unsplash.com/photo-1490481651871-ab68de25d43d?auto=format&fit=crop&w=1600&q=85"
+      : "https://images.unsplash.com/photo-1544441893-675973e31985?auto=format&fit=crop&w=1600&q=85");
+
+  const formattedPrice =
+    typeof product.price === "number" && product.price > 0
+      ? ` • ৳${product.price.toLocaleString()}`
+      : "";
+
+  const ctaText = `Shop Now${formattedPrice}`;
+  const ctaLink = `/products/${product.id}`;
+
+  const secondaryCtaText = product.category
+    ? `Explore ${product.category}`
+    : "View All Products";
+  const secondaryCtaLink = product.category
+    ? `/products?category=${encodeURIComponent(product.category)}`
+    : "/products";
+
+  return {
+    id: `hero-prod-${product.id}`,
+    badge: badgeText,
+    title: product.name,
+    subtitle:
+      product.description ||
+      "Crafted for comfort, durability, and daily elegance. Fast delivery all across Bangladesh with Cash on Delivery and bKash.",
+    ctaText,
+    ctaLink,
+    secondaryCtaText,
+    secondaryCtaLink,
+    image: normalizeGoogleDriveImageUrl(primaryImage),
+    accent: index % 2 === 0 ? "orange" : "stone",
+  };
 }
 
 // Initial datasets in BDT (Bangladeshi Taka) and clear, easy English
@@ -410,11 +472,6 @@ export const initialSpotlightBanner: SpotlightBanner = {
  */
 export const fetchHomeDataFromFirestore = async () => {
   try {
-    const heroSnap = await getDocs(collection(db, "hero_banners"));
-    const heroBanners: HeroBanner[] = heroSnap.empty
-      ? initialHeroBanners
-      : heroSnap.docs.map((d) => ({ id: d.id, ...(d.data() as DocumentData) } as HeroBanner));
-
     const catSnap = await getDocs(collection(db, "featured_categories"));
     const featuredCategories: FeaturedCategory[] = catSnap.empty
       ? initialFeaturedCategories
@@ -440,6 +497,17 @@ export const fetchHomeDataFromFirestore = async () => {
       }
     }
 
+    // Build hero slider slideshow: fetch products from DB and show two products in random order.
+    // If there is no product in DB, keep the default static data (initialHeroBanners).
+    let heroBanners: HeroBanner[] = initialHeroBanners;
+    if (products && products.length > 0) {
+      const candidates = products.filter((p) => p.images && p.images.length > 0);
+      const pool = candidates.length > 0 ? candidates : products;
+      const shuffled = [...pool].sort(() => 0.5 - Math.random());
+      const selected = shuffled.slice(0, Math.min(2, shuffled.length));
+      heroBanners = selected.map((p, idx) => convertProductToHeroBanner(p, idx));
+    }
+
     const testSnap = await getDocs(collection(db, "testimonials"));
     const testimonials: TestimonialItem[] = testSnap.empty
       ? initialTestimonials
@@ -452,10 +520,6 @@ export const fetchHomeDataFromFirestore = async () => {
       ? initialValueProps
       : valSnap.docs.map((d) => ({ id: d.id, ...(d.data() as DocumentData) } as ValueProp));
 
-    if (heroSnap.empty) {
-      seedHomeDataToFirestore().catch(console.warn);
-    }
-
     return {
       heroBanners,
       featuredCategories,
@@ -466,10 +530,28 @@ export const fetchHomeDataFromFirestore = async () => {
     };
   } catch (error) {
     console.warn("Failed to fetch home data from Firestore, using initial fallback:", error);
+    let fallbackBanners = initialHeroBanners;
+    let fallbackProducts = initialProducts;
+    if (typeof window !== "undefined") {
+      try {
+        const local = getLocalProducts();
+        if (local && local.length > 0) {
+          fallbackProducts = local;
+          const candidates = local.filter((p) => p.images && p.images.length > 0);
+          const pool = candidates.length > 0 ? candidates : local;
+          const shuffled = [...pool].sort(() => 0.5 - Math.random());
+          fallbackBanners = shuffled.slice(0, Math.min(2, shuffled.length)).map((p, idx) =>
+            convertProductToHeroBanner(p, idx)
+          );
+        }
+      } catch {
+        // use initialHeroBanners
+      }
+    }
     return {
-      heroBanners: initialHeroBanners,
+      heroBanners: fallbackBanners,
       featuredCategories: initialFeaturedCategories,
-      products: initialProducts,
+      products: fallbackProducts,
       testimonials: initialTestimonials,
       valueProps: initialValueProps,
       spotlightBanner: initialSpotlightBanner,

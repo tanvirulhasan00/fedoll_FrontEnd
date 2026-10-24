@@ -5,6 +5,7 @@ import {
   nextHeroSlide,
   prevHeroSlide,
   setActiveHeroIndex,
+  setHeroBannersFromProducts,
 } from "~/redux/features/homeSlice";
 import {
   ChevronLeftIcon,
@@ -12,13 +13,48 @@ import {
   SparklesIcon,
   ArrowRightIcon,
 } from "@heroicons/react/24/outline";
+import {
+  normalizeGoogleDriveImageUrl,
+  extractGoogleDriveFileId,
+  getGoogleDriveThumbnailUrl,
+} from "~/firebase";
 
 export default function HeroSlider() {
   const dispatch = useAppDispatch();
-  const { heroBanners, activeHeroIndex } = useAppSelector(
+  const { heroBanners, activeHeroIndex, products: homeProducts } = useAppSelector(
     (state) => state.home
   );
+  const { items: catalogProducts } = useAppSelector(
+    (state) => state.products
+  );
 
+  // If heroBanners is currently using static defaults but DB products are available,
+  // pick 2 random products from DB and update heroBanners.
+  useEffect(() => {
+    const isUsingStaticDefault =
+      heroBanners.length === 2 &&
+      (heroBanners[0]?.id === "banner-1" || heroBanners[1]?.id === "banner-2");
+
+    const availableDbProducts =
+      homeProducts && homeProducts.length > 0
+        ? homeProducts
+        : catalogProducts && catalogProducts.length > 0
+        ? catalogProducts
+        : [];
+
+    if (isUsingStaticDefault && availableDbProducts.length > 0) {
+      dispatch(setHeroBannersFromProducts(availableDbProducts));
+    }
+  }, [dispatch, heroBanners, homeProducts, catalogProducts]);
+
+  // Ensure activeHeroIndex is within valid range
+  useEffect(() => {
+    if (activeHeroIndex >= heroBanners.length && heroBanners.length > 0) {
+      dispatch(setActiveHeroIndex(0));
+    }
+  }, [activeHeroIndex, heroBanners.length, dispatch]);
+
+  // Auto-slide every 6.5s if multiple banners exist
   useEffect(() => {
     if (heroBanners.length <= 1) return;
     const interval = setInterval(() => {
@@ -38,13 +74,26 @@ export default function HeroSlider() {
         <div
           key={banner.id || idx}
           className={`absolute inset-0 transition-opacity duration-1000 ease-in-out ${
-            idx === activeHeroIndex ? "opacity-100 scale-100" : "opacity-0 scale-105"
+            idx === activeHeroIndex ? "opacity-100 scale-100" : "opacity-0 scale-105 pointer-events-none"
           } transform transition-transform duration-7000`}
         >
           <img
-            src={banner.image}
+            src={normalizeGoogleDriveImageUrl(banner.image)}
             alt={banner.title}
             className="w-full h-full object-cover object-center"
+            onError={(e) => {
+              const target = e.currentTarget;
+              const fileId = extractGoogleDriveFileId(banner.image);
+              if (fileId && !target.dataset.triedThumbnail) {
+                target.dataset.triedThumbnail = "true";
+                target.src = getGoogleDriveThumbnailUrl(banner.image, 1600);
+                return;
+              }
+              target.src =
+                idx % 2 === 0
+                  ? "https://images.unsplash.com/photo-1490481651871-ab68de25d43d?auto=format&fit=crop&w=1600&q=85"
+                  : "https://images.unsplash.com/photo-1544441893-675973e31985?auto=format&fit=crop&w=1600&q=85";
+            }}
           />
           {/* Multi-layered luxury gradients for flawless text readability */}
           <div className="absolute inset-0 bg-gradient-to-r from-black/90 via-black/60 to-black/20" />
@@ -91,7 +140,7 @@ export default function HeroSlider() {
 
             {currentBanner.secondaryCtaText && (
               <Link
-                to={currentBanner.secondaryCtaLink || "/blogs"}
+                to={currentBanner.secondaryCtaLink || "/products"}
                 className="inline-flex items-center gap-2 px-6 py-3.5 rounded-full bg-white/10 hover:bg-white/20 backdrop-blur-sm border border-white/25 text-white font-semibold text-sm hover:border-white/50 transition cursor-pointer"
               >
                 <span>{currentBanner.secondaryCtaText}</span>
