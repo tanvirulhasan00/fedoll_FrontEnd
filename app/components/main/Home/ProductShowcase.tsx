@@ -275,15 +275,77 @@ const ShowcaseProductCard: React.FC<ShowcaseProductCardProps> = ({
   );
 };
 
+const ProductCardSkeleton: React.FC = () => {
+  return (
+    <div className="flex flex-col rounded-2xl bg-white dark:bg-neutral-900 border border-gray-200/80 dark:border-neutral-800 overflow-hidden shadow-xs animate-pulse">
+      {/* Product Card Image Container Skeleton */}
+      <div className="relative aspect-4/5 w-full bg-stone-100 dark:bg-neutral-800 flex items-center justify-center">
+        <div className="w-12 h-12 rounded-full bg-stone-200 dark:bg-neutral-700 opacity-60" />
+        {/* Top Badges Skeleton */}
+        <div className="absolute top-3 left-3 w-16 h-5 rounded-full bg-stone-200 dark:bg-neutral-700" />
+        <div className="absolute top-3 right-3 size-9 rounded-full bg-stone-200 dark:bg-neutral-700" />
+      </div>
+
+      {/* Details Container Skeleton */}
+      <div className="p-4 sm:p-5 flex flex-col flex-1 gap-3">
+        {/* Category & Rating Skeleton */}
+        <div className="flex items-center justify-between">
+          <div className="w-16 h-3 rounded-full bg-stone-200 dark:bg-neutral-800" />
+          <div className="w-12 h-3 rounded-full bg-stone-200 dark:bg-neutral-800" />
+        </div>
+
+        {/* Title Skeleton */}
+        <div className="space-y-1.5">
+          <div className="w-4/5 h-4 rounded-md bg-stone-200 dark:bg-neutral-800" />
+          <div className="w-1/2 h-4 rounded-md bg-stone-200 dark:bg-neutral-800" />
+        </div>
+
+        {/* Stock status skeleton */}
+        <div className="w-24 h-3.5 rounded-full bg-stone-100 dark:bg-neutral-800" />
+
+        {/* Price & Action Skeleton */}
+        <div className="pt-3 mt-auto border-t border-gray-100 dark:border-neutral-800 flex items-center justify-between">
+          <div className="space-y-1">
+            <div className="w-20 h-5 rounded-md bg-stone-200 dark:bg-neutral-800" />
+            <div className="w-14 h-3 rounded-md bg-stone-100 dark:bg-neutral-800" />
+          </div>
+          <div className="flex items-center gap-1.5">
+            <div className="size-3.5 rounded-full bg-stone-200 dark:bg-neutral-800" />
+            <div className="size-3.5 rounded-full bg-stone-200 dark:bg-neutral-800" />
+            <div className="size-3.5 rounded-full bg-stone-200 dark:bg-neutral-800" />
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+};
+
 export default function ProductShowcase() {
   const dispatch = useAppDispatch();
   const { user } = useAppSelector((state) => state.auth);
-  const { products, activeProductTab, wishlistIds } = useAppSelector(
-    (state) => state.home
-  );
-  const { categories } = useAppSelector((state) => state.products);
+  const {
+    products,
+    activeProductTab,
+    wishlistIds,
+    loading: homeLoading,
+  } = useAppSelector((state) => state.home);
+  const {
+    categories,
+    items: catalogProducts,
+    loading: catalogLoading,
+  } = useAppSelector((state) => state.products);
 
-  // Dynamically compute category tabs from database categories + home products
+  // Single source of truth: prefer home products if populated, fallback to catalog products
+  const displayProducts = useMemo(() => {
+    if (products && products.length > 0) return products;
+    if (catalogProducts && catalogProducts.length > 0) return catalogProducts;
+    return [];
+  }, [products, catalogProducts]);
+
+  const isDataLoading =
+    (homeLoading || catalogLoading) && displayProducts.length === 0;
+
+  // Dynamically compute category tabs from database categories + active products
   const tabs = useMemo(() => {
     const list = ["All"];
     const seen = new Set<string>(["all"]);
@@ -295,7 +357,7 @@ export default function ProductShowcase() {
       const name = cat.name?.trim();
       if (name && !seen.has(name.toLowerCase())) {
         if (name.toLowerCase() === DEFAULT_CATEGORY_NAME.toLowerCase()) {
-          const hasUncat = products.some(
+          const hasUncat = displayProducts.some(
             (p) => p.category?.trim().toLowerCase() === DEFAULT_CATEGORY_NAME.toLowerCase()
           );
           if (!hasUncat) continue;
@@ -305,7 +367,7 @@ export default function ProductShowcase() {
       }
     }
 
-    for (const p of products) {
+    for (const p of displayProducts) {
       const name = p.category?.trim();
       if (name && !seen.has(name.toLowerCase())) {
         seen.add(name.toLowerCase());
@@ -314,14 +376,14 @@ export default function ProductShowcase() {
     }
 
     return list;
-  }, [categories, products]);
+  }, [categories, displayProducts]);
 
   const filteredProducts = useMemo(() => {
-    if (activeProductTab === "All") return products;
-    return products.filter(
+    if (activeProductTab === "All") return displayProducts;
+    return displayProducts.filter(
       (p) => p.category?.trim().toLowerCase() === activeProductTab.trim().toLowerCase()
     );
-  }, [products, activeProductTab]);
+  }, [displayProducts, activeProductTab]);
 
   const handleWishlist = (e: React.MouseEvent, id: string) => {
     e.preventDefault();
@@ -378,17 +440,29 @@ export default function ProductShowcase() {
       </div>
 
       {/* Products Grid */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 lg:gap-8">
-        {filteredProducts.map((product) => (
-          <ShowcaseProductCard
-            key={product.id}
-            product={product}
-            isWishlisted={wishlistIds.includes(product.id)}
-            onWishlist={handleWishlist}
-            onQuickView={(p) => dispatch(setQuickViewProduct(p))}
-          />
-        ))}
-      </div>
+      {isDataLoading ? (
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 lg:gap-8">
+          {[1, 2, 3, 4].map((i) => (
+            <ProductCardSkeleton key={i} />
+          ))}
+        </div>
+      ) : filteredProducts.length === 0 ? (
+        <div className="py-16 text-center text-gray-500 dark:text-neutral-400">
+          No featured products found in this category.
+        </div>
+      ) : (
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 lg:gap-8">
+          {filteredProducts.map((product) => (
+            <ShowcaseProductCard
+              key={product.id}
+              product={product}
+              isWishlisted={wishlistIds.includes(product.id)}
+              onWishlist={handleWishlist}
+              onQuickView={(p) => dispatch(setQuickViewProduct(p))}
+            />
+          ))}
+        </div>
+      )}
 
       {/* View All Products CTA Button */}
       <div className="mt-12 text-center">

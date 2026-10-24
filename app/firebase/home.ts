@@ -37,7 +37,7 @@ export interface FeaturedCategory {
   link: string;
 }
 
-import type { ProductItem } from "./products";
+import { fetchProductsFromFirestore, type ProductItem } from "./products";
 
 export interface TestimonialItem {
   id: string;
@@ -422,12 +422,23 @@ export const fetchHomeDataFromFirestore = async () => {
           (d) => ({ id: d.id, ...(d.data() as DocumentData) } as FeaturedCategory)
         );
 
-    const prodSnap = await getDocs(collection(db, "products"));
-    const products: ProductItem[] = prodSnap.empty
-      ? initialProducts
-      : prodSnap.docs.map(
+    // Fetch products using the unified products fetcher (handles Firestore + cache + variants)
+    let products: ProductItem[] = [];
+    try {
+      products = await fetchProductsFromFirestore();
+    } catch (err) {
+      console.warn("fetchProductsFromFirestore failed inside fetchHomeDataFromFirestore:", err);
+    }
+
+    // Direct fallback if fetchProductsFromFirestore returned empty
+    if (!products || products.length === 0) {
+      const prodSnap = await getDocs(collection(db, "products"));
+      if (!prodSnap.empty) {
+        products = prodSnap.docs.map(
           (d) => ({ id: d.id, ...(d.data() as DocumentData) } as ProductItem)
         );
+      }
+    }
 
     const testSnap = await getDocs(collection(db, "testimonials"));
     const testimonials: TestimonialItem[] = testSnap.empty
@@ -441,23 +452,14 @@ export const fetchHomeDataFromFirestore = async () => {
       ? initialValueProps
       : valSnap.docs.map((d) => ({ id: d.id, ...(d.data() as DocumentData) } as ValueProp));
 
-    const hasOldUsdPricing = products.some((p) => p.price < 500);
-    if (prodSnap.empty || heroSnap.empty || hasOldUsdPricing) {
-      seedHomeDataToFirestore(true).catch(console.warn);
-      return {
-        heroBanners: initialHeroBanners,
-        featuredCategories: initialFeaturedCategories,
-        products: initialProducts,
-        testimonials: initialTestimonials,
-        valueProps: initialValueProps,
-        spotlightBanner: initialSpotlightBanner,
-      };
+    if (heroSnap.empty) {
+      seedHomeDataToFirestore().catch(console.warn);
     }
 
     return {
       heroBanners,
       featuredCategories,
-      products,
+      products: products && products.length > 0 ? products : initialProducts,
       testimonials,
       valueProps,
       spotlightBanner: initialSpotlightBanner,
@@ -503,12 +505,16 @@ export const seedHomeDataToFirestore = async (force: boolean = false) => {
     );
   }
 
-  for (const item of initialProducts) {
-    await setDoc(
-      doc(db, "products", item.id),
-      { ...item, updatedAt: serverTimestamp() },
-      { merge: !force }
-    );
+  // Only seed dummy products if products collection is empty
+  const prodCheck = await getDocs(collection(db, "products"));
+  if (prodCheck.empty) {
+    for (const item of initialProducts) {
+      await setDoc(
+        doc(db, "products", item.id),
+        { ...item, updatedAt: serverTimestamp() },
+        { merge: !force }
+      );
+    }
   }
 
   for (const item of initialTestimonials) {

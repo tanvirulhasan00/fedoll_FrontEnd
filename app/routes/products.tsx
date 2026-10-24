@@ -917,7 +917,38 @@ export default function ProductsPage() {
             </div>
 
             {/* Products Grid */}
-            {filteredProducts.length === 0 ? (
+            {loading && filteredProducts.length === 0 ? (
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6 pt-4">
+                {[1, 2, 3, 4, 5, 6, 7, 8].map((i) => (
+                  <div
+                    key={i}
+                    className="flex flex-col rounded-2xl bg-white dark:bg-neutral-900 border border-gray-200/80 dark:border-neutral-800 overflow-hidden shadow-xs animate-pulse"
+                  >
+                    <div className="relative aspect-4/5 w-full bg-stone-100 dark:bg-neutral-800 flex items-center justify-center">
+                      <div className="w-12 h-12 rounded-full bg-stone-200 dark:bg-neutral-700 opacity-60" />
+                    </div>
+                    <div className="p-4 sm:p-5 flex flex-col flex-1 gap-3">
+                      <div className="flex items-center justify-between">
+                        <div className="w-16 h-3 rounded-full bg-stone-200 dark:bg-neutral-800" />
+                        <div className="w-12 h-3 rounded-full bg-stone-200 dark:bg-neutral-800" />
+                      </div>
+                      <div className="space-y-1.5">
+                        <div className="w-4/5 h-4 rounded-md bg-stone-200 dark:bg-neutral-800" />
+                        <div className="w-1/2 h-4 rounded-md bg-stone-200 dark:bg-neutral-800" />
+                      </div>
+                      <div className="w-24 h-3.5 rounded-full bg-stone-100 dark:bg-neutral-800" />
+                      <div className="pt-3 mt-auto border-t border-gray-100 dark:border-neutral-800 flex items-center justify-between">
+                        <div className="w-20 h-5 rounded-md bg-stone-200 dark:bg-neutral-800" />
+                        <div className="flex items-center gap-1.5">
+                          <div className="size-3.5 rounded-full bg-stone-200 dark:bg-neutral-800" />
+                          <div className="size-3.5 rounded-full bg-stone-200 dark:bg-neutral-800" />
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            ) : filteredProducts.length === 0 ? (
               /* Empty State */
               <div className="py-20 text-center space-y-4 max-w-md mx-auto">
                 <div className="size-16 mx-auto rounded-full bg-stone-100 dark:bg-neutral-800 flex items-center justify-center text-gray-400 dark:text-neutral-500">

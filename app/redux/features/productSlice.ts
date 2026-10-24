@@ -31,8 +31,24 @@ export interface ProductState {
   syncing: boolean;
 }
 
+const loadInitialProducts = (): ProductItem[] => {
+  if (typeof window === "undefined") return [];
+  try {
+    const raw = localStorage.getItem("fedoll_products_v1");
+    if (raw) {
+      const parsed = JSON.parse(raw);
+      if (Array.isArray(parsed) && parsed.length > 0) return parsed;
+    }
+  } catch {
+    // ignore
+  }
+  return [];
+};
+
+const cachedCatalog = loadInitialProducts();
+
 const initialState: ProductState = {
-  items: [...initialProductsData],
+  items: cachedCatalog.length > 0 ? cachedCatalog : [...initialProductsData],
   currentProduct: null,
   categories: [...initialProductCategories],
   selectedCategory: "All",
@@ -40,7 +56,7 @@ const initialState: ProductState = {
   sortBy: "featured",
   priceRange: [0, 10000],
   onlyInStock: false,
-  loading: false,
+  loading: cachedCatalog.length === 0,
   loadingProduct: false,
   loadingCategories: false,
   error: null,
@@ -162,7 +178,9 @@ export const productSlice = createSlice({
     builder
       // fetchProducts
       .addCase(fetchProducts.pending, (state) => {
-        state.loading = true;
+        if (state.items.length === 0) {
+          state.loading = true;
+        }
         state.error = null;
       })
       .addCase(fetchProducts.fulfilled, (state, action) => {

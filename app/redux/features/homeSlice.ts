@@ -50,10 +50,35 @@ const loadInitialWishlist = (): string[] => {
   }
 };
 
+const HOME_PRODUCTS_CACHE_KEY = "fedoll_home_products";
+
+const loadInitialHomeProducts = (): ProductItem[] => {
+  if (typeof window === "undefined") return [];
+  try {
+    // 1. Try home-specific cached products first
+    const rawHome = localStorage.getItem(HOME_PRODUCTS_CACHE_KEY);
+    if (rawHome) {
+      const parsed = JSON.parse(rawHome);
+      if (Array.isArray(parsed) && parsed.length > 0) return parsed;
+    }
+    // 2. Try global products catalog cache
+    const rawCatalog = localStorage.getItem("fedoll_products_v1");
+    if (rawCatalog) {
+      const parsed = JSON.parse(rawCatalog);
+      if (Array.isArray(parsed) && parsed.length > 0) return parsed;
+    }
+  } catch {
+    // fallback
+  }
+  return [];
+};
+
+const cachedHomeProducts = loadInitialHomeProducts();
+
 const initialState: HomeState = {
   heroBanners: initialHeroBanners,
   featuredCategories: initialFeaturedCategories,
-  products: initialProducts,
+  products: cachedHomeProducts,
   testimonials: initialTestimonials,
   valueProps: initialValueProps,
   spotlightBanner: initialSpotlightBanner,
@@ -61,7 +86,7 @@ const initialState: HomeState = {
   activeHeroIndex: 0,
   quickViewProduct: null,
   wishlistIds: loadInitialWishlist(),
-  loading: false,
+  loading: cachedHomeProducts.length === 0,
   error: null,
   syncing: false,
 };
@@ -158,7 +183,9 @@ export const homeSlice = createSlice({
   extraReducers: (builder) => {
     builder
       .addCase(fetchHomeData.pending, (state) => {
-        state.loading = true;
+        if (state.products.length === 0) {
+          state.loading = true;
+        }
         state.error = null;
       })
       .addCase(fetchHomeData.fulfilled, (state, action) => {
@@ -166,7 +193,16 @@ export const homeSlice = createSlice({
         if (action.payload) {
           state.heroBanners = action.payload.heroBanners;
           state.featuredCategories = action.payload.featuredCategories;
-          state.products = action.payload.products;
+          if (Array.isArray(action.payload.products) && action.payload.products.length > 0) {
+            state.products = action.payload.products;
+            if (typeof window !== "undefined") {
+              try {
+                localStorage.setItem(HOME_PRODUCTS_CACHE_KEY, JSON.stringify(action.payload.products));
+              } catch {
+                // ignore
+              }
+            }
+          }
           state.testimonials = action.payload.testimonials;
           state.valueProps = action.payload.valueProps;
           state.spotlightBanner = action.payload.spotlightBanner;
