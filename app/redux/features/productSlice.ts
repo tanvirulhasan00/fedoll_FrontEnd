@@ -151,6 +151,25 @@ export const seedProducts = createAsyncThunk(
   }
 );
 
+/**
+ * Synchronize products and categories from Cloud Firestore without re-seeding dummy data
+ */
+export const syncProductsFromFirestore = createAsyncThunk(
+  "products/syncProductsFromFirestore",
+  async (_params: void, { dispatch, rejectWithValue }) => {
+    try {
+      const [productsRes, categoriesRes] = await Promise.all([
+        dispatch(fetchProducts()).unwrap(),
+        dispatch(fetchProductCategories()).unwrap(),
+      ]);
+      return { products: productsRes, categories: categoriesRes };
+    } catch (err: unknown) {
+      const error = err as Error;
+      return rejectWithValue(error.message || "Failed to sync products from Firestore");
+    }
+  }
+);
+
 export const productSlice = createSlice({
   name: "products",
   initialState,
@@ -185,11 +204,11 @@ export const productSlice = createSlice({
       state.productError = null;
     },
     setProductCategories: (state, action: PayloadAction<ProductCategoryItem[]>) => {
-      state.categories = action.payload;
+      state.categories = action.payload || [];
       state.loadingCategories = false;
-      if (typeof window !== "undefined" && action.payload && action.payload.length > 0) {
+      if (typeof window !== "undefined") {
         try {
-          localStorage.setItem("fedoll_categories_v1", JSON.stringify(action.payload));
+          localStorage.setItem("fedoll_categories_v1", JSON.stringify(state.categories));
         } catch {}
       }
     },
@@ -205,10 +224,10 @@ export const productSlice = createSlice({
       })
       .addCase(fetchProducts.fulfilled, (state, action) => {
         state.loading = false;
-        state.items = action.payload;
-        if (typeof window !== "undefined" && action.payload && action.payload.length > 0) {
+        state.items = action.payload || [];
+        if (typeof window !== "undefined") {
           try {
-            localStorage.setItem("fedoll_products_v1", JSON.stringify(action.payload));
+            localStorage.setItem("fedoll_products_v1", JSON.stringify(state.items));
           } catch {}
         }
       })
@@ -237,17 +256,25 @@ export const productSlice = createSlice({
       })
       .addCase(fetchProductCategories.fulfilled, (state, action) => {
         state.loadingCategories = false;
-        if (Array.isArray(action.payload) && action.payload.length > 0) {
-          state.categories = action.payload;
-          if (typeof window !== "undefined") {
-            try {
-              localStorage.setItem("fedoll_categories_v1", JSON.stringify(action.payload));
-            } catch {}
-          }
+        state.categories = Array.isArray(action.payload) ? action.payload : [];
+        if (typeof window !== "undefined") {
+          try {
+            localStorage.setItem("fedoll_categories_v1", JSON.stringify(state.categories));
+          } catch {}
         }
       })
       .addCase(fetchProductCategories.rejected, (state) => {
         state.loadingCategories = false;
+      })
+      // syncProductsFromFirestore
+      .addCase(syncProductsFromFirestore.pending, (state) => {
+        state.syncing = true;
+      })
+      .addCase(syncProductsFromFirestore.fulfilled, (state) => {
+        state.syncing = false;
+      })
+      .addCase(syncProductsFromFirestore.rejected, (state) => {
+        state.syncing = false;
       })
       // seedProducts
       .addCase(seedProducts.pending, (state) => {

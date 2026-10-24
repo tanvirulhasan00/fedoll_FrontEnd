@@ -45,7 +45,12 @@ const Home = () => {
 
   const handleSyncFirebase = async () => {
     try {
-      await dispatch(seedHomeData(true)).unwrap();
+      await Promise.all([
+        dispatch(fetchHomeData()).unwrap(),
+        dispatch(fetchBlogs()).unwrap(),
+        dispatch(fetchProducts()).unwrap(),
+        dispatch(fetchProductCategories()).unwrap(),
+      ]);
       toast.success("Home page data synchronized with Cloud Firestore!");
     } catch (err: unknown) {
       const error = err as Error;

@@ -523,7 +523,7 @@ export const fetchHomeDataFromFirestore = async () => {
     return {
       heroBanners,
       featuredCategories,
-      products: products && products.length > 0 ? products : initialProducts,
+      products: products || [],
       testimonials,
       valueProps,
       spotlightBanner: initialSpotlightBanner,
@@ -531,7 +531,7 @@ export const fetchHomeDataFromFirestore = async () => {
   } catch (error) {
     console.warn("Failed to fetch home data from Firestore, using initial fallback:", error);
     let fallbackBanners = initialHeroBanners;
-    let fallbackProducts = initialProducts;
+    let fallbackProducts: ProductItem[] = [];
     if (typeof window !== "undefined") {
       try {
         const local = getLocalProducts();
@@ -585,18 +585,6 @@ export const seedHomeDataToFirestore = async (force: boolean = false) => {
       { ...item, updatedAt: serverTimestamp() },
       { merge: !force }
     );
-  }
-
-  // Only seed dummy products if products collection is empty
-  const prodCheck = await getDocs(collection(db, "products"));
-  if (prodCheck.empty) {
-    for (const item of initialProducts) {
-      await setDoc(
-        doc(db, "products", item.id),
-        { ...item, updatedAt: serverTimestamp() },
-        { merge: !force }
-      );
-    }
   }
 
   for (const item of initialTestimonials) {

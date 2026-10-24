@@ -222,14 +222,12 @@ export const homeSlice = createSlice({
         if (action.payload) {
           state.heroBanners = action.payload.heroBanners;
           state.featuredCategories = action.payload.featuredCategories;
-          if (Array.isArray(action.payload.products) && action.payload.products.length > 0) {
-            state.products = action.payload.products;
-            if (typeof window !== "undefined") {
-              try {
-                localStorage.setItem(HOME_PRODUCTS_CACHE_KEY, JSON.stringify(action.payload.products));
-              } catch {
-                // ignore
-              }
+          state.products = Array.isArray(action.payload.products) ? action.payload.products : [];
+          if (typeof window !== "undefined") {
+            try {
+              localStorage.setItem(HOME_PRODUCTS_CACHE_KEY, JSON.stringify(state.products));
+            } catch {
+              // ignore
             }
           }
           state.testimonials = action.payload.testimonials;

@@ -980,10 +980,12 @@ export const fetchProductsFromFirestore = async (params?: {
   sortBy?: string;
 }): Promise<ProductItem[]> => {
   let items: ProductItem[] = [];
+  let fetchedFromFirestore = false;
 
   try {
     const productsRef = collection(db, "products");
     const snap = await getDocs(productsRef);
+    fetchedFromFirestore = true;
 
     if (!snap.empty) {
       items = snap.docs.map((docSnap) => ({
@@ -996,18 +998,16 @@ export const fetchProductsFromFirestore = async (params?: {
   }
 
   // Check local cache
-  const localItems = getLocalProducts();
-
-  if (items.length > 0) {
+  if (fetchedFromFirestore) {
+    // Direct Firestore query succeeded. Its content is the source of truth!
     items = items.map(ensureProductHasVariants);
     saveAllLocalProducts(items);
-  } else if (localItems.length > 0) {
-    items = localItems.map(ensureProductHasVariants);
   } else {
-    // Initial bootstrap
-    items = initialProductsData.map(ensureProductHasVariants);
-    saveAllLocalProducts(items);
-    seedProductsToFirestore().catch(() => {});
+    // Only fall back to local storage if Firestore network call failed (offline)
+    const localItems = getLocalProducts();
+    if (localItems.length > 0) {
+      items = localItems.map(ensureProductHasVariants);
+    }
   }
 
   // Apply category filter if specified
@@ -1108,55 +1108,17 @@ export const fetchCategoriesFromFirestore = async (): Promise<ProductCategoryIte
         } as ProductCategoryItem;
       });
 
-      const hasDefault = list.some(
-        (c) =>
-          c.id === DEFAULT_CATEGORY_ID ||
-          c.name.trim().toLowerCase() === DEFAULT_CATEGORY_NAME.toLowerCase()
-      );
-
-      if (!hasDefault) {
-        list.push(DEFAULT_CATEGORY_ITEM);
-        setDoc(
-          doc(db, "product_categories", DEFAULT_CATEGORY_ID),
-          sanitizeForFirestore({
-            ...DEFAULT_CATEGORY_ITEM,
-            createdAt: serverTimestamp(),
-            updatedAt: serverTimestamp(),
-          }),
-          { merge: true }
-        ).catch(() => {});
-      }
-
       saveAllLocalCategories(list);
       return list;
     }
 
-    // Auto-seed initial categories to Firestore if empty
-    for (const cat of initialProductCategories) {
-      try {
-        await setDoc(
-          doc(db, "product_categories", cat.id),
-          sanitizeForFirestore({
-            ...cat,
-            createdAt: serverTimestamp(),
-            updatedAt: serverTimestamp(),
-          }),
-          { merge: true }
-        );
-      } catch (err) {
-        console.warn("Could not seed category:", err);
-      }
-    }
-
-    saveAllLocalCategories(initialProductCategories);
-    return initialProductCategories;
+    // If Firestore collection is empty, all categories were deleted - keep it empty
+    saveAllLocalCategories([]);
+    return [];
   } catch (error) {
     console.warn("Failed to fetch categories from Firestore:", error);
     const local = getLocalCategories();
-    if (local && local.length > 0) {
-      return local;
-    }
-    return initialProductCategories;
+    return local || [];
   }
 };
 
@@ -1187,21 +1149,12 @@ export const subscribeToCategoriesFromFirestore = (
             } as ProductCategoryItem;
           });
 
-          const hasDefault = list.some(
-            (c) =>
-              c.id === DEFAULT_CATEGORY_ID ||
-              c.name.trim().toLowerCase() === DEFAULT_CATEGORY_NAME.toLowerCase()
-          );
-
-          if (!hasDefault) {
-            list.push(DEFAULT_CATEGORY_ITEM);
-          }
-
           saveAllLocalCategories(list);
           callback(list);
         } else {
-          // If Firestore collection is empty, trigger fallback fetch
-          fetchCategoriesFromFirestore().then((cats) => callback(cats));
+          // If Firestore collection is empty, categories are deleted - notify subscribers with empty array
+          saveAllLocalCategories([]);
+          callback([]);
         }
       },
       (error) => {

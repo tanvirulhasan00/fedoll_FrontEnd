@@ -10,7 +10,7 @@ import { useAppDispatch, useAppSelector } from "~/redux/hooks/hook";
 import {
   fetchProducts,
   fetchProductCategories,
-  seedProducts,
+  syncProductsFromFirestore,
   setProductCategory,
   setProductSearchQuery,
   setSortBy,
@@ -406,8 +406,8 @@ export default function ProductsPage() {
 
   const handleSyncFirebase = async () => {
     try {
-      await dispatch(seedProducts(true)).unwrap();
-      toast.success("Products synchronized with Cloud Firestore!");
+      await dispatch(syncProductsFromFirestore()).unwrap();
+      toast.success("Products and categories synchronized from Cloud Firestore!");
     } catch (err: unknown) {
       const error = err as Error;
       toast.error(error.message || "Failed to sync products with Firebase");
