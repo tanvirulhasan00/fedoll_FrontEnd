@@ -58,7 +58,7 @@ export const AdminNewsletterTab: React.FC<AdminNewsletterTabProps> = ({
   const [campaignSubject, setCampaignSubject] = useState("Exclusive 10% Welcome Voucher & VIP Autumn Drop");
   const [campaignPromo, setCampaignPromo] = useState("WELCOME10");
   const [campaignBody, setCampaignBody] = useState(
-    "Dear VIP Member,\n\nWe are delighted to welcome you to the Fedoll Atelier VIP community. Explore our new season heavyweight denim and artisanal outerwear with your private discount code."
+    "Dear VIP Member,\n\nWe are delighted to welcome you to the SilkenDrift Atelier VIP community. Explore our new season heavyweight denim and artisanal outerwear with your private discount code."
   );
   const [isSendingCampaign, setIsSendingCampaign] = useState(false);
 
@@ -943,7 +943,7 @@ export const AdminNewsletterTab: React.FC<AdminNewsletterTabProps> = ({
                   required
                   value={campaignSubject}
                   onChange={(e) => setCampaignSubject(e.target.value)}
-                  placeholder="e.g., Seasonal Drop: Fedoll Artisan Winter Denim"
+                  placeholder="e.g., Seasonal Drop: SilkenDrift Artisan Winter Denim"
                   className="w-full px-3.5 py-2.5 rounded-xl border border-stone-200 dark:border-neutral-700 bg-stone-50 dark:bg-neutral-800 text-xs text-gray-900 dark:text-white outline-none focus:ring-2 focus:ring-orange-500/20 focus:border-orange-500"
                 />
               </div>
@@ -960,7 +960,7 @@ export const AdminNewsletterTab: React.FC<AdminNewsletterTabProps> = ({
                     className="flex-1 px-3 py-2 rounded-xl border border-stone-200 dark:border-neutral-700 bg-stone-50 dark:bg-neutral-800 text-xs text-gray-900 dark:text-white outline-none"
                   >
                     <option value="WELCOME10">WELCOME10 (10% Off Welcome Voucher)</option>
-                    <option value="FEDOLL2026">FEDOLL2026 (15% Off Outerwear &amp; Denim)</option>
+                    <option value="SILKENDRIFT2026">SILKENDRIFT2026 (15% Off Outerwear &amp; Denim)</option>
                     <option value="VIP20">VIP20 (20% Off Orders over ৳5,000)</option>
                     <option value="NONE">No Promo Code Attached</option>
                   </select>
@@ -986,7 +986,7 @@ export const AdminNewsletterTab: React.FC<AdminNewsletterTabProps> = ({
                 </div>
                 <div className="flex justify-between font-medium">
                   <span className="text-gray-500">Sender:</span>
-                  <span className="text-gray-900 dark:text-white">newsletter@fedoll.com (Fedoll Atelier)</span>
+                  <span className="text-gray-900 dark:text-white">newsletter@silkendrift.com (SilkenDrift Atelier)</span>
                 </div>
               </div>
 

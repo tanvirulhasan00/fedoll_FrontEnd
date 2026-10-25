@@ -55,16 +55,16 @@ import {
 
 export function meta({}: Route.MetaArgs) {
   return [
-    { title: "Products & Collections | Fedoll Bangladesh" },
+    { title: "Products & Collections | SilkenDrift Bangladesh" },
     {
       name: "description",
       content:
-        "Explore Fedoll's complete collection of export-quality garments: selvedge denim jackets, double-layer wool coats, stretch workwear, and heavy combed cotton essentials in Bangladesh.",
+        "Explore SilkenDrift's complete collection of export-quality garments: selvedge denim jackets, double-layer wool coats, stretch workwear, and heavy combed cotton essentials in Bangladesh.",
     },
     {
       name: "keywords",
       content:
-        "Fedoll products, Bangladesh clothing shop, selvedge denim, wool coats Dhaka, workwear blazers, casual shirts Bangladesh",
+        "SilkenDrift products, Bangladesh clothing shop, selvedge denim, wool coats Dhaka, workwear blazers, casual shirts Bangladesh",
     },
   ];
 }
@@ -1324,7 +1324,7 @@ export default function ProductsPage() {
           </div>
         </section>
 
-        {/* Fedoll Customer Guarantees Strip */}
+        {/* SilkenDrift Customer Guarantees Strip */}
         <section className="py-12 bg-stone-50 dark:bg-neutral-900 border-t border-stone-200/60 dark:border-neutral-800 transition-colors">
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-8 text-center sm:text-left">

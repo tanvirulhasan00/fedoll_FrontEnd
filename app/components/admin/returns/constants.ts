@@ -109,10 +109,10 @@ export interface DropOffHubOption {
   isMain?: boolean;
 }
 
-export const FEDOLL_DROP_OFF_HUBS: DropOffHubOption[] = [
+export const SILKENDRIFT_DROP_OFF_HUBS: DropOffHubOption[] = [
   {
     id: "uttara_flagship",
-    name: "Fedoll Flagship Atelier Hub (Uttara)",
+    name: "SilkenDrift Flagship Atelier Hub (Uttara)",
     address: "House 14, Road 7, Sector 3, Uttara Model Town, Dhaka 1230, Bangladesh",
     phone: "+880 1712-345678",
     hours: "Saturday – Thursday, 10:00 AM – 08:30 PM (Friday Closed)",
@@ -122,7 +122,7 @@ export const FEDOLL_DROP_OFF_HUBS: DropOffHubOption[] = [
   },
   {
     id: "banani_concierge",
-    name: "Fedoll Concierge Desk (Banani)",
+    name: "SilkenDrift Concierge Desk (Banani)",
     address: "House 48, Road 11, Block D, Banani, Dhaka 1213, Bangladesh",
     phone: "+880 1812-345679",
     hours: "Saturday – Thursday, 11:00 AM – 08:00 PM",
@@ -131,7 +131,7 @@ export const FEDOLL_DROP_OFF_HUBS: DropOffHubOption[] = [
   },
   {
     id: "dhanmondi_point",
-    name: "Fedoll Collection Point (Dhanmondi)",
+    name: "SilkenDrift Collection Point (Dhanmondi)",
     address: "House 27, Road 9/A, Satmasjid Road, Dhanmondi, Dhaka 1209, Bangladesh",
     phone: "+880 1912-345670",
     hours: "Saturday – Thursday, 11:00 AM – 08:00 PM",
@@ -149,6 +149,8 @@ export const FEDOLL_DROP_OFF_HUBS: DropOffHubOption[] = [
   },
 ];
 
+export const FEDOLL_DROP_OFF_HUBS = SILKENDRIFT_DROP_OFF_HUBS;
+
 /**
  * Generate a smart WhatsApp customer service URL with courteous Bangladesh e-commerce phrasing
  */
@@ -163,24 +165,24 @@ export function getReturnWhatsAppUrl(
   switch (ticket.status) {
     case "pending":
     case "approved":
-      message = `Hello ${ticket.customerName}, this is Fedoll Apparel Atelier. Regarding your Return/Exchange Ticket #${ticket.ticketNumber} for Order #${ticket.orderNumber}: Your request has been approved! We are now finalizing your package return handover details.`;
+      message = `Hello ${ticket.customerName}, this is SilkenDrift Apparel Atelier. Regarding your Return/Exchange Ticket #${ticket.ticketNumber} for Order #${ticket.orderNumber}: Your request has been approved! We are now finalizing your package return handover details.`;
       break;
 
     case "pickup_scheduled":
-      message = `Hello ${ticket.customerName}, your Fedoll Return/Exchange Ticket #${ticket.ticketNumber} is approved!\n\n` +
+      message = `Hello ${ticket.customerName}, your SilkenDrift Return/Exchange Ticket #${ticket.ticketNumber} is approved!\n\n` +
         `📦 *Doorstep Reverse Pickup Scheduled*\n` +
         `• Courier Partner: ${ticket.reverseCourier || "Steadfast Courier Reverse"}\n` +
         `• Consignment ID: ${ticket.reverseTrackingNumber || "REV-FED-1001"}\n` +
         `• Scheduled Date: ${ticket.pickupDate || "Tomorrow"}\n` +
         `• Time Window: ${ticket.pickupTimeSlot || "Morning (10:00 AM - 02:00 PM)"}\n` +
         `• Pickup Charge: ${ticket.pickupFee ? `৳${ticket.pickupFee} (${ticket.pickupFeeStatus === "paid_bkash" ? "Paid" : "Pay to rider"})` : "Free (Warranty)"}\n\n` +
-        `📌 *Instructions:* Please keep your garment securely packed in the original Fedoll parcel bag with all woven tags intact and hand it over to the rider when they arrive. Thank you!`;
+        `📌 *Instructions:* Please keep your garment securely packed in the original SilkenDrift parcel bag with all woven tags intact and hand it over to the rider when they arrive. Thank you!`;
       break;
 
     case "dropoff_pending":
-      message = `Hello ${ticket.customerName}, your Fedoll Return/Exchange Ticket #${ticket.ticketNumber} is approved!\n\n` +
+      message = `Hello ${ticket.customerName}, your SilkenDrift Return/Exchange Ticket #${ticket.ticketNumber} is approved!\n\n` +
         `📍 *Customer Drop-Off Details*\n` +
-        `• Hub Location: ${ticket.dropoffHubName || "Fedoll Flagship Atelier Hub (Uttara)"}\n` +
+        `• Hub Location: ${ticket.dropoffHubName || "SilkenDrift Flagship Atelier Hub (Uttara)"}\n` +
         `• Address: ${ticket.dropoffHubAddress || "House 14, Road 7, Sector 3, Uttara Model Town, Dhaka 1230"}\n` +
         `• Visiting Hours: ${ticket.dropoffHubHours || "Saturday – Thursday, 10:00 AM – 08:30 PM"}\n` +
         `• Drop-Off Deadline: ${ticket.dropoffDeadline || "Within 5 calendar days"}\n` +
@@ -196,13 +198,13 @@ export function getReturnWhatsAppUrl(
 
     case "resolved":
       if (ticket.type === "refund") {
-        message = `Hello ${ticket.customerName}, your refund for Fedoll Return Ticket #${ticket.ticketNumber} (Order #${ticket.orderNumber}) has been successfully settled!\n\n` +
+        message = `Hello ${ticket.customerName}, your refund for SilkenDrift Return Ticket #${ticket.ticketNumber} (Order #${ticket.orderNumber}) has been successfully settled!\n\n` +
           `💰 *Refund Settlement Confirmation*\n` +
           `• Disbursed Amount: ৳${ticket.refundAmount || 0}\n` +
           `• Gateway: ${ticket.refundMethod || "bKash"}\n` +
           `• Account: ${ticket.refundAccountDetails || "Verified account"}\n` +
           `• Transaction ID (TrxID): ${ticket.refundTransactionId || "N/A"}\n\n` +
-          `Thank you for shopping with Fedoll Apparel Atelier Bangladesh!`;
+          `Thank you for shopping with SilkenDrift Apparel Atelier Bangladesh!`;
       } else {
         message = `Hello ${ticket.customerName}, exciting news! Your fresh replacement garment has been dispatched!\n\n` +
           `🚚 *Outbound Replacement Tracking*\n` +
@@ -210,7 +212,7 @@ export function getReturnWhatsAppUrl(
           `• Courier Partner: ${ticket.replacementCourier || "Steadfast Courier"}\n` +
           `• Tracking Number: ${ticket.replacementTrackingNumber || "N/A"}\n` +
           `• Estimated Delivery: ${ticket.replacementEstimatedDelivery || "24–48 hours"}\n\n` +
-          `Track live here: https://fedoll.com/track-order?tracking=${ticket.replacementTrackingNumber || ""}\n` +
+          `Track live here: https://silkendrift.com/track-order?tracking=${ticket.replacementTrackingNumber || ""}\n` +
           `Thank you for your patronage!`;
       }
       break;
@@ -222,7 +224,7 @@ export function getReturnWhatsAppUrl(
       break;
 
     default:
-      message = `Hello ${ticket.customerName}, this is Fedoll Apparel regarding your Ticket #${ticket.ticketNumber}.`;
+      message = `Hello ${ticket.customerName}, this is SilkenDrift Apparel regarding your Ticket #${ticket.ticketNumber}.`;
   }
 
   return `https://wa.me/${cleanPhone}?text=${encodeURIComponent(message)}`;

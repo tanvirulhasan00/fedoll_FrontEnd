@@ -52,6 +52,7 @@ import AdminMessagesTab from "~/components/admin/AdminMessagesTab";
 import AdminNewsletterTab from "~/components/admin/AdminNewsletterTab";
 import AdminLegalTab from "~/components/admin/AdminLegalTab";
 import AdminSettingsTab from "~/components/admin/AdminSettingsTab";
+import { setStoreSettings as setReduxStoreSettings } from "~/redux/features/storeSettingsSlice";
 import {
   Bars3Icon,
   XMarkIcon,
@@ -69,11 +70,11 @@ import { AuthModal } from "~/components/main/Auth/AuthModal";
 
 export function meta() {
   return [
-    { title: "Admin Atelier Dashboard | Fedoll eCommerce" },
+    { title: "Admin Atelier Dashboard | SilkenDrift eCommerce" },
     {
       name: "description",
       content:
-        "Full controlled admin dashboard for Fedoll: products, categories, orders, shipping providers, customer roles, legal policies, and store settings.",
+        "Full controlled admin dashboard for SilkenDrift: products, categories, orders, shipping providers, customer roles, legal policies, and store settings.",
     },
   ];
 }
@@ -193,6 +194,7 @@ export default function AdminDashboardPage() {
       setShippingSettings(fetchedShipSettings);
       setCoupons(fetchedCoupons);
       setStoreSettings(fetchedStoreSettings);
+      dispatch(setReduxStoreSettings(fetchedStoreSettings));
       setMessages(fetchedMessages);
       setSubscribers(fetchedSubscribers);
       setReturnRequests(fetchedReturnRequests);
@@ -338,7 +340,7 @@ export default function AdminDashboardPage() {
                     to="/"
                     className="block text-xs font-semibold text-gray-500 dark:text-neutral-400 hover:text-orange-600 dark:hover:text-orange-400 transition pt-1"
                   >
-                    &larr; Return to Fedoll Storefront
+                    &larr; Return to SilkenDrift Storefront
                   </Link>
                 </div>
               </>
@@ -449,7 +451,7 @@ export default function AdminDashboardPage() {
                 <div className="py-32 text-center space-y-3">
                   <Spinner className="size-8 text-orange-600 mx-auto" />
                   <p className="text-xs text-gray-500 font-medium">
-                    Loading Fedoll Atelier management records...
+                    Loading SilkenDrift Atelier management records...
                   </p>
                 </div>
               ) : (

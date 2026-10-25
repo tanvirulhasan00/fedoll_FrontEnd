@@ -49,7 +49,7 @@ export const SchedulePickupModal: React.FC<SchedulePickupModalProps> = ({
   const [fee, setFee] = useState<number>(60);
   const [feeStatus, setFeeStatus] = useState<"pending_cod" | "paid_bkash" | "waived_defect">("pending_cod");
   const [instructions, setInstructions] = useState(
-    "Customer phone verified. Collect 1 sealed Fedoll parcel with tags intact."
+    "Customer phone verified. Collect 1 sealed SilkenDrift parcel with tags intact."
   );
   const [submitting, setSubmitting] = useState(false);
 
@@ -81,7 +81,7 @@ export const SchedulePickupModal: React.FC<SchedulePickupModalProps> = ({
       );
       setInstructions(
         ticket.pickupInstructions ||
-          "Customer phone verified. Hand over 1 sealed Fedoll garment parcel with barcode tags intact."
+          "Customer phone verified. Hand over 1 sealed SilkenDrift garment parcel with barcode tags intact."
       );
     }
   }, [ticket, policy]);
@@ -317,7 +317,7 @@ export const SchedulePickupModal: React.FC<SchedulePickupModalProps> = ({
                       rows={2}
                       value={instructions}
                       onChange={(e) => setInstructions(e.target.value)}
-                      placeholder="e.g. Call customer before arrival. Check 1 polybag with original Fedoll barcode."
+                      placeholder="e.g. Call customer before arrival. Check 1 polybag with original SilkenDrift barcode."
                       className="w-full p-2.5 rounded-xl bg-stone-50 dark:bg-neutral-800 border border-stone-200 dark:border-neutral-700"
                     />
                   </div>

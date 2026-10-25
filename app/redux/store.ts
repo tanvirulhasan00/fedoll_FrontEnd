@@ -9,12 +9,14 @@ import homeReducer from "./features/homeSlice";
 import aboutReducer from "./features/aboutSlice";
 import contactReducer from "./features/contactSlice";
 import productReducer from "./features/productSlice";
+import storeSettingsReducer from "./features/storeSettingsSlice";
 
 export const store = configureStore({
   reducer: {
     auth: authReducer,
     cart: cartReducer,
     companyInfo: companyInfoReducer,
+    storeSettings: storeSettingsReducer,
     category: categoryReducer,
     newsletter: newsletterReducer,
     blogs: blogReducer,

@@ -50,7 +50,7 @@ import { Spinner } from "~/components/ui/spinner";
 
 export function meta({}: Route.MetaArgs) {
   return [
-    { title: "Secure Checkout & Courier Dispatch | Fedoll Atelier" },
+    { title: "Secure Checkout & Courier Dispatch | SilkenDrift Atelier" },
     {
       name: "description",
       content:
@@ -228,10 +228,10 @@ export default function CheckoutPage() {
       }
 
       // 2. Predefined fallback codes
-      if (cleanCode === "FEDOLL2026") {
+      if (cleanCode === "SILKENDRIFT2026") {
         setAppliedCoupon({
           id: "fedoll-2026",
-          code: "FEDOLL2026",
+          code: "SILKENDRIFT2026",
           discountPercent: 15,
           minSpend: 1500,
           description: "15% off seasonal discount",
@@ -239,7 +239,7 @@ export default function CheckoutPage() {
           usedCount: 0,
           expiresAt: "2026-12-31",
         });
-        toast.success("🎉 FEDOLL2026 applied! 15% discount activated.");
+        toast.success("🎉 SILKENDRIFT2026 applied! 15% discount activated.");
         setPromoCodeInput("");
       } else if (cleanCode === "WELCOME10") {
         setAppliedCoupon({
@@ -255,7 +255,7 @@ export default function CheckoutPage() {
         toast.success("🎉 WELCOME10 applied! 10% discount activated.");
         setPromoCodeInput("");
       } else {
-        toast.error(`Invalid promo code "${cleanCode}". Try FEDOLL2026 or WELCOME10.`);
+        toast.error(`Invalid promo code "${cleanCode}". Try SILKENDRIFT2026 or WELCOME10.`);
       }
       setApplyingCoupon(false);
     }, 300);
@@ -478,7 +478,7 @@ export default function CheckoutPage() {
             <div>
               <div className="inline-flex items-center gap-2 text-xs font-bold uppercase tracking-wider text-orange-600 dark:text-orange-400 mb-1">
                 <TruckIcon className="size-4" />
-                <span>Fedoll Nationwide Atelier Logistics</span>
+                <span>SilkenDrift Nationwide Atelier Logistics</span>
               </div>
               <h1 className="text-2xl sm:text-3xl font-black text-gray-900 dark:text-white tracking-tight">
                 {completedOrder ? "Order Receipt & Doorstep Dispatch" : "Dedicated Express Checkout"}
@@ -785,7 +785,7 @@ export default function CheckoutPage() {
                           Registered Customer Account Required
                         </h2>
                         <p className="text-xs text-gray-500 dark:text-neutral-400 mt-0.5 leading-relaxed">
-                          Fedoll operates a role-based shopping system. Only verified customer accounts can
+                          SilkenDrift operates a role-based shopping system. Only verified customer accounts can
                           place orders and receive express courier dispatch with doorstep tracking.
                         </p>
                       </div>
@@ -948,7 +948,7 @@ export default function CheckoutPage() {
                       <div>
                         <div className="flex items-center gap-2">
                           <h4 className="text-xs font-bold text-emerald-950 dark:text-emerald-200">
-                            {user.displayName || "Fedoll Customer"}
+                            {user.displayName || "SilkenDrift Customer"}
                           </h4>
                           <span className="px-2 py-0.5 rounded-full bg-emerald-200/60 dark:bg-emerald-900/60 text-[10px] font-bold text-emerald-800 dark:text-emerald-300 uppercase">
                             Verified Customer
@@ -1087,7 +1087,7 @@ export default function CheckoutPage() {
                         onChange={(e) => setSaveAsDefault(e.target.checked)}
                         className="size-4 rounded text-orange-600 focus:ring-orange-500 cursor-pointer"
                       />
-                      <span>Save as default delivery address in my Fedoll profile</span>
+                      <span>Save as default delivery address in my SilkenDrift profile</span>
                     </label>
                   </div>
 
@@ -1221,7 +1221,7 @@ export default function CheckoutPage() {
                           <span>bKash Merchant Payment Details:</span>
                         </div>
                         <p className="text-[11px] text-pink-900/80 dark:text-pink-300/80 leading-relaxed">
-                          Merchant Account: <strong className="font-mono">01712-345678</strong> (Fedoll Apparel).
+                          Merchant Account: <strong className="font-mono">01712-345678</strong> (SilkenDrift Apparel).
                           You can also choose to pay with bKash directly to the courier rider upon delivery.
                         </p>
                       </div>
@@ -1324,7 +1324,7 @@ export default function CheckoutPage() {
                           type="text"
                           value={promoCodeInput}
                           onChange={(e) => setPromoCodeInput(e.target.value)}
-                          placeholder="Promo code (e.g. FEDOLL2026)"
+                          placeholder="Promo code (e.g. SILKENDRIFT2026)"
                           className="flex-1 px-3 py-2 text-xs rounded-xl border border-stone-300 dark:border-neutral-700 bg-stone-50 dark:bg-neutral-800 text-gray-900 dark:text-white uppercase font-mono font-semibold focus:outline-none focus:ring-1 focus:ring-orange-600"
                         />
                         <button

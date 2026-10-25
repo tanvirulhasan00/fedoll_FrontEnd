@@ -28,11 +28,11 @@ import { toast } from "sonner";
 
 export function meta({ params }: Route.MetaArgs) {
   return [
-    { title: "Style Guide | Fedoll Bangladesh" },
+    { title: "Style Guide | SilkenDrift Bangladesh" },
     {
       name: "description",
       content:
-        "Practical clothing styling tips and garment care advice from Fedoll Bangladesh.",
+        "Practical clothing styling tips and garment care advice from SilkenDrift Bangladesh.",
     },
   ];
 }
@@ -356,7 +356,7 @@ export default function BlogDetailPage() {
                 />
               </div>
               <p className="mt-2 text-center text-xs text-gray-400 dark:text-neutral-500 italic">
-                Fedoll Atelier Sartorial Archive • Photograph & Documentation
+                SilkenDrift Atelier Sartorial Archive • Photograph & Documentation
               </p>
             </div>
 
@@ -412,7 +412,7 @@ export default function BlogDetailPage() {
 
                 <div className="text-xs text-gray-500 dark:text-neutral-400 flex items-center gap-1.5">
                   <BookmarkIcon className="size-4 text-orange-600 dark:text-orange-500" />
-                  Saved in Fedoll Architecture Archive
+                  Saved in SilkenDrift Architecture Archive
                 </div>
               </div>
 
@@ -433,7 +433,7 @@ export default function BlogDetailPage() {
                     </span>
                   </div>
                   <p className="text-xs text-orange-700 dark:text-orange-400 font-medium mt-0.5">
-                    {selectedBlog.author.role} at Fedoll
+                    {selectedBlog.author.role} at SilkenDrift
                   </p>
                   <p className="mt-3 text-sm text-gray-600 dark:text-neutral-400 leading-relaxed">
                     Dedicated to dissecting the nuances of technical textile
@@ -454,7 +454,7 @@ export default function BlogDetailPage() {
                         Continue Reading
                       </h2>
                       <p className="text-sm text-gray-500 dark:text-neutral-400 mt-1">
-                        More helpful styling and care guides from Fedoll
+                        More helpful styling and care guides from SilkenDrift
                       </p>
                     </div>
 

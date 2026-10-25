@@ -13,8 +13,10 @@ import { ThemeProvider } from "next-themes";
 import ErrorPage from "./components/main/Utilities/ErrorPage";
 import { ReduxProvider } from "~/redux/ReduxProvider";
 import { Toaster } from "~/components/ui/sonner";
+import StoreSettingsSync from "~/components/main/Utilities/StoreSettingsSync";
 
 export const links: Route.LinksFunction = () => [
+  { rel: "icon", href: "/favicon.ico" },
   { rel: "preconnect", href: "https://fonts.googleapis.com" },
   {
     rel: "preconnect",
@@ -41,7 +43,7 @@ export function Layout({ children }: { children: React.ReactNode }) {
           attribute="class"
           defaultTheme="light"
           enableSystem={false}
-          storageKey="fedoll-theme"
+          storageKey="silkendrift-theme"
         >
           {children}
         </ThemeProvider>
@@ -55,6 +57,7 @@ export function Layout({ children }: { children: React.ReactNode }) {
 export default function App() {
   return (
     <ReduxProvider>
+      <StoreSettingsSync />
       <Outlet />
       <Toaster position="top-right" richColors />
     </ReduxProvider>

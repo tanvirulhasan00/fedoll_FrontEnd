@@ -44,11 +44,11 @@ import OrderCancelRequestModal from "~/components/main/Profile/OrderCancelReques
 
 export function meta() {
   return [
-    { title: "Customer Profile & Orders | Fedoll" },
+    { title: "Customer Profile & Orders | SilkenDrift" },
     {
       name: "description",
       content:
-        "Manage your Fedoll customer profile, view past orders, and track active courier shipments across Bangladesh.",
+        "Manage your SilkenDrift customer profile, view past orders, and track active courier shipments across Bangladesh.",
     },
   ];
 }
@@ -336,7 +336,7 @@ export default function ProfilePage() {
                     Sign In to Your Customer Account
                   </h1>
                   <p className="text-xs sm:text-sm text-gray-600 dark:text-neutral-400 leading-relaxed">
-                    At Fedoll, only registered customers can place orders and track
+                    At SilkenDrift, only registered customers can place orders and track
                     real-time courier delivery across all 64 districts in Bangladesh.
                   </p>
                 </div>
@@ -816,7 +816,7 @@ export default function ProfilePage() {
                                     <BuildingStorefrontIcon className="size-4 text-blue-600 shrink-0 mt-0.5" />
                                     <div>
                                       <span className="font-bold text-gray-900 dark:text-white">
-                                        Self Drop-Off Hub: {order.returnRequest.dropoffHubName || "Fedoll Flagship Atelier"}
+                                        Self Drop-Off Hub: {order.returnRequest.dropoffHubName || "SilkenDrift Flagship Atelier"}
                                       </span>
                                       {order.returnRequest.dropoffDeadline && (
                                         <span className="text-rose-600 font-semibold ml-1.5">
@@ -975,7 +975,7 @@ export default function ProfilePage() {
                         <span>Track Any Package by Order or Tracking ID</span>
                       </h3>
                       <p className="text-xs text-gray-500 dark:text-neutral-400">
-                        Enter your Fedoll Order ID (e.g. FED-839201) or Courier
+                        Enter your SilkenDrift Order ID (e.g. FED-839201) or Courier
                         Tracking Code (e.g. TRK-BD82941092).
                       </p>
                     </div>

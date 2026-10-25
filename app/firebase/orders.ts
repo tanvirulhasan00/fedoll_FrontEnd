@@ -194,7 +194,7 @@ export const buildInitialTrackingTimeline = (
       status: "placed",
       title: "Order Received",
       description: "Order placed online by verified customer.",
-      location: "Fedoll Online System",
+      location: "SilkenDrift Online System",
       timestamp: formatStepDate(0),
       completed: true,
       isCurrent: false,

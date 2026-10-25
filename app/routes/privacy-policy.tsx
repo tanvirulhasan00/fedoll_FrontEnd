@@ -29,11 +29,11 @@ import { toast } from "sonner";
 
 export function meta() {
   return [
-    { title: "Privacy Policy | Fedoll Apparel Atelier Bangladesh" },
+    { title: "Privacy Policy | SilkenDrift Apparel Atelier Bangladesh" },
     {
       name: "description",
       content:
-        "Understand how Fedoll collects, protects, and handles your personal information for nationwide courier delivery across Bangladesh.",
+        "Understand how SilkenDrift collects, protects, and handles your personal information for nationwide courier delivery across Bangladesh.",
     },
   ];
 }
@@ -96,7 +96,7 @@ export default function PrivacyPolicyPage() {
             </h1>
 
             <p className="max-w-2xl mx-auto text-sm sm:text-base text-stone-300 leading-relaxed font-light">
-              Your trust is our cornerstone. Learn how Fedoll safeguards your personal identity,
+              Your trust is our cornerstone. Learn how SilkenDrift safeguards your personal identity,
               delivery address, and transaction records throughout our garment atelier and nationwide courier operations.
             </p>
 
@@ -221,7 +221,7 @@ export default function PrivacyPolicyPage() {
                 <span>Authorized Courier &amp; Processing Partners</span>
               </h3>
               <p className="text-sm text-gray-600 dark:text-neutral-300 leading-relaxed">
-                To guarantee secure nationwide delivery and seamless checkout, Fedoll connects directly with the following certified partners:
+                To guarantee secure nationwide delivery and seamless checkout, SilkenDrift connects directly with the following certified partners:
               </p>
 
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-2">
@@ -310,7 +310,7 @@ export default function PrivacyPolicyPage() {
               </div>
 
               <div className="pt-2 border-t border-stone-800 flex items-center justify-between text-xs text-stone-400">
-                <span>Fedoll International Ltd. | Dhaka Atelier</span>
+                <span>SilkenDrift International Ltd. | Dhaka Atelier</span>
                 <Link
                   to="/terms-of-service"
                   className="text-orange-400 hover:underline flex items-center gap-1 font-semibold"

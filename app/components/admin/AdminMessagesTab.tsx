@@ -536,7 +536,7 @@ export const AdminMessagesTab: React.FC<AdminMessagesTabProps> = ({
                     selectedMessage.subject
                   )}&body=Dear ${encodeURIComponent(
                     selectedMessage.name
-                  )},%0D%0A%0D%0AThank you for reaching out to Fedoll Luxury Apparel.`}
+                  )},%0D%0A%0D%0AThank you for reaching out to SilkenDrift Luxury Apparel.`}
                   className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-orange-700 text-white text-xs font-semibold hover:bg-orange-800 transition shadow-xs"
                 >
                   <EnvelopeIcon className="size-3.5" />

@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useState } from "react";
 import { Link } from "react-router";
 import {
   ChartBarIcon,
@@ -20,6 +20,8 @@ import {
   ArchiveBoxIcon,
 } from "@heroicons/react/24/outline";
 import type { AuthUser } from "~/redux/features/auth/authSlice";
+import { useAppSelector } from "~/redux/hooks/hook";
+import { normalizeGoogleDriveImageUrl } from "~/firebase";
 
 export type AdminTab =
   | "overview"
@@ -111,6 +113,11 @@ export const AdminSidebar: React.FC<AdminSidebarProps> = ({
     { id: "settings", label: "Store Settings", icon: Cog6ToothIcon },
   ];
 
+  const { settings } = useAppSelector((state) => state.storeSettings);
+  const [logoLoadError, setLogoLoadError] = useState(false);
+  const customLogoUrl = normalizeGoogleDriveImageUrl(settings?.logoUrl);
+  const hasCustomLogo = !logoLoadError && !!customLogoUrl;
+
   const handleTabClick = (tab: AdminTab) => {
     onSelectTab(tab);
     if (onCloseMobileMenu) onCloseMobileMenu();
@@ -125,12 +132,21 @@ export const AdminSidebar: React.FC<AdminSidebarProps> = ({
       {/* Brand Header */}
       <div className="p-5 border-b border-stone-800/80 flex items-center justify-between">
         <Link to="/" className="flex items-center gap-2.5">
-          <div className="size-9 rounded-xl bg-orange-600 flex items-center justify-center font-black text-white text-lg shadow-md">
-            F
-          </div>
+          {hasCustomLogo ? (
+            <img
+              src={customLogoUrl}
+              alt={settings?.storeName || "SilkenDrift"}
+              className="size-9 rounded-xl object-contain bg-white/10 p-1 border border-stone-700 shadow-md"
+              onError={() => setLogoLoadError(true)}
+            />
+          ) : (
+            <div className="size-9 rounded-xl bg-orange-600 flex items-center justify-center font-black text-white text-lg shadow-md">
+              F
+            </div>
+          )}
           <div>
             <span className="font-bold text-base text-white tracking-wide">
-              Fedoll
+              {settings?.storeName || "SilkenDrift"}
             </span>
             <span className="block text-[10px] text-orange-400 font-semibold uppercase tracking-wider">
               Admin Atelier

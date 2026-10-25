@@ -169,7 +169,7 @@ export const defaultPrivacyPolicy: PrivacyPolicyData = {
   effectiveDate: "January 1, 2026",
   noticeBanner:
     "We have updated our Data Protection & Courier Privacy Standards to comply with the 2026 Bangladesh Digital Commerce Guidelines.",
-  contactEmail: "privacy@fedoll.com",
+  contactEmail: "privacy@silkendrift.com",
   dpoName: "Tanvir Hasan (Data Protection Officer)",
   dpoContact: "+880 1712-345678 (Ext. 402)",
   officeAddress: "House 14, Road 7, Sector 3, Uttara Model Town, Dhaka 1230, Bangladesh",
@@ -201,7 +201,7 @@ export const defaultPrivacyPolicy: PrivacyPolicyData = {
       id: "usage",
       title: "2. How We Utilize Your Personal Information",
       content:
-        "Fedoll adheres to a strict non-disclosure policy. Your private data is utilized exclusively for garment dispatch, logistics verification, and customer satisfaction.",
+        "SilkenDrift adheres to a strict non-disclosure policy. Your private data is utilized exclusively for garment dispatch, logistics verification, and customer satisfaction.",
       bulletPoints: [
         "Printing tamper-evident courier shipping labels with recipient contact and parcel contents.",
         "Sending real-time SMS and email milestone notifications regarding delivery status.",
@@ -216,7 +216,7 @@ export const defaultPrivacyPolicy: PrivacyPolicyData = {
         "We never sell, rent, or monetize your customer records. Data is transferred strictly through encrypted API tunnels to authorized courier and financial partners.",
       bulletPoints: [
         "Authorized Courier Partners: We share recipient name, phone, address, and parcel value only with Steadfast and Pathao express courier services.",
-        "Financial Gateways: For online payments (bKash, Nagad, Visa, Mastercard), payment credentials are processed directly by certified payment processors under PCI-DSS protocols. Fedoll never stores your PIN or CVV.",
+        "Financial Gateways: For online payments (bKash, Nagad, Visa, Mastercard), payment credentials are processed directly by certified payment processors under PCI-DSS protocols. SilkenDrift never stores your PIN or CVV.",
         "Legal Authorities: Information may be disclosed solely when compelled by applicable laws or court orders of the People's Republic of Bangladesh.",
       ],
     },
@@ -224,10 +224,10 @@ export const defaultPrivacyPolicy: PrivacyPolicyData = {
       id: "rights",
       title: "4. Your Consumer Privacy Rights",
       content:
-        "Every registered Fedoll customer retains full sovereignty over their personal data in accordance with modern digital privacy conventions.",
+        "Every registered SilkenDrift customer retains full sovereignty over their personal data in accordance with modern digital privacy conventions.",
       bulletPoints: [
         "Access & Rectification: You may inspect and update your shipping address and personal details at any time in your Customer Profile.",
-        "Account Deletion: You have the right to request permanent deletion of your profile and order history by writing to privacy@fedoll.com.",
+        "Account Deletion: You have the right to request permanent deletion of your profile and order history by writing to privacy@silkendrift.com.",
         "Marketing Opt-Out: You may unsubscribe from our seasonal drop newsletters with one click via the unsubscribe link in our emails.",
       ],
     },
@@ -239,7 +239,7 @@ export const defaultTermsOfService: TermsOfServiceData = {
   effectiveDate: "January 1, 2026",
   noticeBanner:
     "Cash on Delivery is available across all 64 districts in Bangladesh with 7-day doorstep size exchange guarantee.",
-  contactEmail: "legal@fedoll.com",
+  contactEmail: "legal@silkendrift.com",
   supportPhone: "+880 1712-345678",
   returnWindowDays: 7,
   orderCancellationHours: 12,
@@ -252,10 +252,10 @@ export const defaultTermsOfService: TermsOfServiceData = {
       id: "acceptance",
       title: "1. Acceptance of Terms & Digital Contract",
       content:
-        "By accessing the Fedoll storefront, placing an order, or interacting with our atelier services, you represent that you are at least 18 years of age or acting under the supervision of a legal guardian, and agree to be bound by these Terms of Service.",
+        "By accessing the SilkenDrift storefront, placing an order, or interacting with our atelier services, you represent that you are at least 18 years of age or acting under the supervision of a legal guardian, and agree to be bound by these Terms of Service.",
       bulletPoints: [
         "Orders placed constitute a legally valid purchase offer for the selected garments.",
-        "Fedoll reserves the right to accept or decline orders in cases of stock exhaustion or suspicious bulk ordering.",
+        "SilkenDrift reserves the right to accept or decline orders in cases of stock exhaustion or suspicious bulk ordering.",
       ],
     },
     {
@@ -287,15 +287,15 @@ export const defaultTermsOfService: TermsOfServiceData = {
         "We want every garment to fit you impeccably. If the fit, color, or cut does not meet your expectations, our easy exchange policy protects you.",
       bulletPoints: [
         "Exchange Period: You may request a size exchange or model swap within the eligible return window from the delivery date.",
-        "Condition: Garments must remain unwashed, unworn, and retain all original Fedoll woven tags and barcode labels.",
-        "Defect Guarantee: If a manufacturing stitch defect or fabric flaw is found, exchange delivery fees are 100% covered by Fedoll.",
+        "Condition: Garments must remain unwashed, unworn, and retain all original SilkenDrift woven tags and barcode labels.",
+        "Defect Guarantee: If a manufacturing stitch defect or fabric flaw is found, exchange delivery fees are 100% covered by SilkenDrift.",
       ],
     },
     {
       id: "intellectual-property",
       title: "5. Intellectual Property & Brand Assets",
       content:
-        "All visual photography, fabric cut specifications, lookbook imagery, product descriptions, and the Fedoll emblem are proprietary intellectual property of Fedoll International Ltd.",
+        "All visual photography, fabric cut specifications, lookbook imagery, product descriptions, and the SilkenDrift emblem are proprietary intellectual property of SilkenDrift International Ltd.",
       bulletPoints: [
         "Commercial duplication or reselling of our visual assets without written consent is strictly prohibited.",
       ],
@@ -307,14 +307,14 @@ export const defaultSecurityCompliance: SecurityComplianceData = {
   lastUpdated: "October 20, 2026",
   effectiveDate: "January 1, 2026",
   noticeBanner:
-    "Fedoll employs end-to-end 256-bit TLS encryption, role-based database authentication, and sealed tamper-evident parcels.",
+    "SilkenDrift employs end-to-end 256-bit TLS encryption, role-based database authentication, and sealed tamper-evident parcels.",
   sslGrade: "256-Bit TLS 1.3 End-to-End Encryption (A+ Rating)",
   pciDssCompliance: "PCI-DSS Level 1 Service Provider Gateway Integrations",
   firestoreSecurityNotice:
     "Firebase Firestore with strict Role-Based Access Control (RBAC) preventing unauthorized customer record traversal.",
   antiFraudLabeling:
     "Unique Code-128 barcode stickers, recipient identification, and courier consignment verification on every parcel.",
-  vulnerabilityReportingEmail: "security@fedoll.com",
+  vulnerabilityReportingEmail: "security@silkendrift.com",
   securityHotline: "+880 1712-345678 (24/7 Security Escalation)",
   complianceCertifications: [
     {
@@ -362,7 +362,7 @@ export const defaultSecurityCompliance: SecurityComplianceData = {
       id: "payment-security",
       title: "2. Payment Processing & Gateway Isolation",
       content:
-        "Customer financial data is never exposed to or stored on Fedoll servers. Transactions are delegated through tokenized, sandboxed payment gateways with multi-factor OTP verification.",
+        "Customer financial data is never exposed to or stored on SilkenDrift servers. Transactions are delegated through tokenized, sandboxed payment gateways with multi-factor OTP verification.",
       bulletPoints: [
         "Direct integration with bKash and Nagad official merchant APIs with two-factor OTP verification.",
         "Card payment transactions processed through SSLCommerz with 3D-Secure 2.0 protocol.",
@@ -386,7 +386,7 @@ export const defaultSecurityCompliance: SecurityComplianceData = {
       content:
         "Security extends beyond digital code to the physical packaging and handover of your export-grade apparel.",
       bulletPoints: [
-        "Every garment box is sealed with high-adhesion tamper-evident Fedoll tape.",
+        "Every garment box is sealed with high-adhesion tamper-evident SilkenDrift tape.",
         "Unique thermal stickers printed with Code-128 consignment barcodes and recipient verification numbers.",
         "Courier handovers recorded and cross-referenced with Steadfast and Pathao tracking nodes.",
       ],
@@ -397,9 +397,9 @@ export const defaultSecurityCompliance: SecurityComplianceData = {
       content:
         "We welcome ethical security researchers to identify potential weaknesses in our web infrastructure and report them constructively.",
       bulletPoints: [
-        "Send technical proof-of-concept reports directly to security@fedoll.com.",
+        "Send technical proof-of-concept reports directly to security@silkendrift.com.",
         "We pledge to acknowledge and investigate valid security reports within 24 business hours.",
-        "Responsible reporters are eligible for official acknowledgment and Fedoll merchandise rewards.",
+        "Responsible reporters are eligible for official acknowledgment and SilkenDrift merchandise rewards.",
       ],
     },
   ],
@@ -418,18 +418,18 @@ export const defaultReturnsExchanges: ReturnsExchangesData = {
   instantExchangeDispatched: true,
   supportHotline: "+880 1712-345678",
   supportWhatsApp: "+880 1712-345678",
-  supportEmail: "returns@fedoll.com",
+  supportEmail: "returns@silkendrift.com",
   hubAddress: "House 14, Road 7, Sector 3, Uttara Model Town, Dhaka 1230, Bangladesh",
   courierPartners: [
     "Steadfast Courier Reverse Logistics",
     "Pathao Express Doorstep Collection",
     "Paperfly Reverse Hub Network",
-    "Fedoll Atelier Uttara Walk-in Desk",
+    "SilkenDrift Atelier Uttara Walk-in Desk",
   ],
   nonReturnableItems: [
     "Custom bespoke garments with personalized atelier monogramming or custom alterations.",
     "Intimate innerwear, undergarments, and socks due to strict health and sanitary regulations.",
-    "Garments with removed, torn, or misplaced original Fedoll atelier tags and barcode seals.",
+    "Garments with removed, torn, or misplaced original SilkenDrift atelier tags and barcode seals.",
     "Items displaying noticeable perfume fragrance, body odor, washing powder scents, or wear marks.",
   ],
   clauses: [
@@ -437,11 +437,11 @@ export const defaultReturnsExchanges: ReturnsExchangesData = {
       id: "eligibility",
       title: "1. 7-Day Hassle-Free Exchange Eligibility",
       content:
-        "Every garment purchased from Fedoll is backed by our signature 7-day atelier satisfaction promise. If your shirt, jacket, raw selvedge denim, or panjabi does not fit with immaculate precision, you may request an immediate size or style replacement.",
+        "Every garment purchased from SilkenDrift is backed by our signature 7-day atelier satisfaction promise. If your shirt, jacket, raw selvedge denim, or panjabi does not fit with immaculate precision, you may request an immediate size or style replacement.",
       bulletPoints: [
         "The exchange request must be initiated within 7 calendar days of the courier parcel delivery timestamp.",
         "Garments must remain in unworn, unwashed, brand-new condition with all fabric care and barcode tags attached.",
-        "Original bespoke Fedoll garment bag and thermal packaging should be provided during courier handover.",
+        "Original bespoke SilkenDrift garment bag and thermal packaging should be provided during courier handover.",
         "First size exchange is 100% free of service fees; only standard courier transportation applies.",
       ],
     },
@@ -461,7 +461,7 @@ export const defaultReturnsExchanges: ReturnsExchangesData = {
       id: "defective-wrong",
       title: "3. 100% Free Replacements for Defective or Wrong Items",
       content:
-        "If you receive an item with a manufacturing fabric flaw, seam irregularity, or incorrect size/color dispatched through logistical error, Fedoll covers 100% of all reverse pickup and re-delivery charges.",
+        "If you receive an item with a manufacturing fabric flaw, seam irregularity, or incorrect size/color dispatched through logistical error, SilkenDrift covers 100% of all reverse pickup and re-delivery charges.",
       bulletPoints: [
         "Please photograph the defect or mismatch and upload it when initiating the request or share on WhatsApp.",
         "Upon instantaneous verification, our dispatch team ships out the replacement immediately.",

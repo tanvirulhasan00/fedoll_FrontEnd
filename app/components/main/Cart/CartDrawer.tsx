@@ -53,14 +53,14 @@ export default function CartDrawer() {
 
   const handleApplyPromo = (e: React.FormEvent) => {
     e.preventDefault();
-    if (promoCode.trim().toUpperCase() === "FEDOLL2026") {
+    if (promoCode.trim().toUpperCase() === "SILKENDRIFT2026") {
       setDiscountPercent(15);
       toast.success("Promo code applied! 15% discount activated.");
     } else if (promoCode.trim().toUpperCase() === "WELCOME10") {
       setDiscountPercent(10);
       toast.success("Welcome discount applied! 10% off.");
     } else {
-      toast.error("Invalid discount code. Try FEDOLL2026");
+      toast.error("Invalid discount code. Try SILKENDRIFT2026");
     }
   };
 
@@ -303,7 +303,7 @@ export default function CartDrawer() {
                             type="text"
                             value={promoCode}
                             onChange={(e) => setPromoCode(e.target.value)}
-                            placeholder="Discount code (FEDOLL2026)"
+                            placeholder="Discount code (SILKENDRIFT2026)"
                             className="w-full pl-9 pr-3 py-1.5 text-xs bg-white dark:bg-neutral-900 border border-gray-200 dark:border-neutral-700 text-gray-900 dark:text-white rounded-lg uppercase tracking-wider focus:outline-none focus:ring-1 focus:ring-orange-600"
                           />
                         </div>

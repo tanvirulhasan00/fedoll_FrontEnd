@@ -232,7 +232,7 @@ export const WishlistView: React.FC = () => {
               </span>
             </div>
             <p className="text-xs text-gray-500 dark:text-neutral-400">
-              Your saved styles &amp; favorite apparel hand-picked from the Fedoll collection.
+              Your saved styles &amp; favorite apparel hand-picked from the SilkenDrift collection.
             </p>
           </div>
 

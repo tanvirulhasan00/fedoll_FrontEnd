@@ -15,6 +15,7 @@ import { Skeleton } from "~/components/ui/skeleton";
 const Topbar = () => {
   const dispatch = useAppDispatch();
   const { loading, data } = useAppSelector((state) => state.companyInfo);
+  const { settings } = useAppSelector((state) => state.storeSettings);
   const token = "";
   const id = 1;
 
@@ -22,25 +23,24 @@ const Topbar = () => {
     dispatch(getCompanyInfo({ token, id }));
   }, [dispatch]);
 
+  const storeEmail = settings?.contactEmail || data?.result?.email || "support@silkendrift.com";
+  const storeName = settings?.storeName || data?.result?.name || "SilkenDrift";
+
   return (
     <div className="w-full bg-orange-700 dark:bg-neutral-950 dark:border-b dark:border-neutral-800 text-gray-100 dark:text-neutral-300 text-xs sm:text-sm transition-colors duration-200">
       <div className="max-w-7xl mx-auto flex flex-col sm:flex-row items-center justify-between px-4 py-2 gap-2 text-center sm:text-left">
         {/* Contact Info */}
         <div className="sm:h-[1rem] flex flex-wrap items-center justify-center sm:justify-start gap-3">
           <span className="font-semibold">
-            {data?.result?.name ?? "Fedoll"}
+            {storeName}
           </span>
           <Separator orientation="vertical" className="hidden sm:block" />
           <Link
-            to={`mailto:${data?.result?.email}`}
+            to={`mailto:${storeEmail}`}
             className="group flex items-center gap-1 hover:underline transition"
           >
             <EnvelopeIcon className="h-4 w-4 text-gray-100 transition group-hover:text-red-500" />
-            {!data?.result?.email ? (
-              <Skeleton className="h-4 w-32 bg-orange-600/50" />
-            ) : (
-              data?.result?.email
-            )}
+            <span>{storeEmail}</span>
           </Link>
           <Separator orientation="vertical" className="hidden sm:block" />
           <Link
@@ -51,6 +51,14 @@ const Topbar = () => {
             <span>Track Order</span>
           </Link>
         </div>
+
+        {/* Central Announcement Ribbon */}
+        {settings?.announcementActive && settings?.announcementNotice && (
+          <div className="hidden lg:flex items-center gap-1 text-xs font-medium text-amber-200 dark:text-orange-400">
+            <span>📢</span>
+            <span>{settings.announcementNotice}</span>
+          </div>
+        )}
 
         {/* Social Media Links */}
         <div className="sm:h-[1rem] flex items-center justify-center gap-4 mt-2 sm:mt-0">

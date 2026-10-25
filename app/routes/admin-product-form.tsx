@@ -55,7 +55,7 @@ const COLOR_PRESETS = [
 
 export function meta() {
   return [
-    { title: "Garment Editor | Admin Atelier | Fedoll eCommerce" },
+    { title: "Garment Editor | Admin Atelier | SilkenDrift eCommerce" },
     { name: "description", content: "Dedicated garment editor: manage variants, sizes, colors, and variant-wise photography." },
   ];
 }
@@ -766,7 +766,7 @@ export default function AdminProductFormPage() {
                     <span>Garment Photography &amp; Card Hover View</span>
                   </h3>
                   <p className="text-xs text-gray-500 dark:text-neutral-400 mt-0.5">
-                    Fedoll storefront product cards show Photo 2 on mouse hover, and all photos appear in the product gallery.
+                    SilkenDrift storefront product cards show Photo 2 on mouse hover, and all photos appear in the product gallery.
                   </p>
                 </div>
 

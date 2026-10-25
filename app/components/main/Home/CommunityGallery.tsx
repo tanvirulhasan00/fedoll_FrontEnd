@@ -36,13 +36,13 @@ export default function CommunityGallery() {
           <div>
             <div className="inline-flex items-center gap-1.5 text-xs font-bold uppercase tracking-widest text-orange-600 dark:text-orange-400 mb-2">
               <FaInstagram className="size-4" />
-              #FedollStyle
+              #SilkenDriftStyle
             </div>
             <h2 className="text-2xl sm:text-3xl font-bold tracking-tight text-gray-900 dark:text-white">
-              Fedoll Community Style
+              SilkenDrift Community Style
             </h2>
             <p className="mt-1 text-xs sm:text-sm text-gray-500 dark:text-neutral-400">
-              Tag @fedoll on Instagram or Facebook to get featured on our website.
+              Tag @silkendrift on Instagram or Facebook to get featured on our website.
             </p>
           </div>
 
@@ -52,7 +52,7 @@ export default function CommunityGallery() {
             rel="noopener noreferrer"
             className="text-xs font-semibold text-orange-600 dark:text-orange-400 hover:text-orange-700 dark:hover:text-orange-300 transition"
           >
-            Follow @fedoll on Instagram &rarr;
+            Follow @silkendrift on Instagram &rarr;
           </a>
         </div>
 

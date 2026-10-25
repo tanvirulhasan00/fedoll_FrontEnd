@@ -28,11 +28,11 @@ import { toast } from "sonner";
 
 export function meta({}: Route.MetaArgs) {
   return [
-    { title: "Style & Care Guides | Fedoll Bangladesh" },
+    { title: "Style & Care Guides | SilkenDrift Bangladesh" },
     {
       name: "description",
       content:
-        "Read helpful fashion advice, clothing care tips for Bangladeshi weather, and everyday style guides by Fedoll.",
+        "Read helpful fashion advice, clothing care tips for Bangladeshi weather, and everyday style guides by SilkenDrift.",
     },
   ];
 }
@@ -123,7 +123,7 @@ export default function BlogsPage() {
               <div className="max-w-2xl">
                 <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-orange-100 dark:bg-orange-950/60 text-orange-800 dark:text-orange-300 text-xs font-semibold uppercase tracking-wider mb-4">
                   <SparklesIcon className="size-4 text-orange-600 dark:text-orange-400" />
-                  Fedoll Fashion Journal
+                  SilkenDrift Fashion Journal
                 </div>
                 <h1 className="text-4xl sm:text-5xl lg:text-6xl font-bold tracking-tight text-gray-900 dark:text-white">
                   Everyday Style <br />

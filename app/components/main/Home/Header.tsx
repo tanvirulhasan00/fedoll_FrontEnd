@@ -12,7 +12,7 @@ import clsx from "clsx";
 import { toast } from "sonner";
 import { useAppDispatch, useAppSelector } from "~/redux/hooks/hook";
 import { logoutUser } from "~/redux/features/auth/authSlice";
-import { logout } from "~/firebase";
+import { logout, normalizeGoogleDriveImageUrl } from "~/firebase";
 import { AuthModal } from "../Auth/AuthModal";
 import { UserMenu } from "../Auth/UserMenu";
 import { openCart } from "~/redux/features/cart/cartSlice";
@@ -43,6 +43,11 @@ export default function Header() {
   );
   const { totalQuantity } = useAppSelector((state) => state.cart);
   const { wishlistIds } = useAppSelector((state) => state.home);
+  const { settings } = useAppSelector((state) => state.storeSettings);
+  const [logoLoadError, setLogoLoadError] = useState(false);
+
+  const customLogoUrl = normalizeGoogleDriveImageUrl(settings?.logoUrl);
+  const hasCustomLogo = !logoLoadError && !!customLogoUrl;
 
   useEffect(() => {
     setIsMounted(true);
@@ -106,14 +111,25 @@ export default function Header() {
         className="mx-auto flex max-w-7xl items-center justify-between p-6 lg:px-8"
       >
         <div className="flex lg:flex-1">
-          <Link to="/" className="-m-1.5 p-1.5">
-            <span className="sr-only">Fedoll</span>
-            <img alt="Fedoll" src="/fedoll-logo.svg" className="h-8 w-auto dark:hidden" />
-            <img
-              alt="Fedoll"
-              src="/fedoll-logo-dark.svg"
-              className="h-8 w-auto hidden dark:block rounded-md"
-            />
+          <Link to="/" className="-m-1.5 p-1.5 flex items-center">
+            <span className="sr-only">{settings?.storeName || "SilkenDrift"}</span>
+            {hasCustomLogo ? (
+              <img
+                alt={settings?.storeName || "SilkenDrift"}
+                src={customLogoUrl}
+                className="h-8 max-h-10 w-auto max-w-[190px] object-contain rounded-md"
+                onError={() => setLogoLoadError(true)}
+              />
+            ) : (
+              <>
+                <img alt="SilkenDrift" src="/silkendrift-logo.svg" className="h-8 w-auto dark:hidden" />
+                <img
+                  alt="SilkenDrift"
+                  src="/silkendrift-logo-dark.svg"
+                  className="h-8 w-auto hidden dark:block rounded-md"
+                />
+              </>
+            )}
           </Link>
         </div>
         <div className="flex items-center gap-2 lg:hidden">
@@ -235,16 +251,27 @@ export default function Header() {
           <div className="flex items-center justify-between px-4 md:px-10">
             <Link
               to="/"
-              className="-m-1.5 p-1.5"
+              className="-m-1.5 p-1.5 flex items-center"
               onClick={() => setMobileMenuOpen(false)}
             >
-              <span className="sr-only">Fedoll</span>
-              <img alt="Fedoll" src="/fedoll-logo.svg" className="h-8 w-auto dark:hidden" />
-              <img
-                alt="Fedoll"
-                src="/fedoll-logo-dark.svg"
-                className="h-8 w-auto hidden dark:block rounded-md"
-              />
+              <span className="sr-only">{settings?.storeName || "SilkenDrift"}</span>
+              {hasCustomLogo ? (
+                <img
+                  alt={settings?.storeName || "SilkenDrift"}
+                  src={customLogoUrl}
+                  className="h-8 max-h-10 w-auto max-w-[190px] object-contain rounded-md"
+                  onError={() => setLogoLoadError(true)}
+                />
+              ) : (
+                <>
+                  <img alt="SilkenDrift" src="/silkendrift-logo.svg" className="h-8 w-auto dark:hidden" />
+                  <img
+                    alt="SilkenDrift"
+                    src="/silkendrift-logo-dark.svg"
+                    className="h-8 w-auto hidden dark:block rounded-md"
+                  />
+                </>
+              )}
             </Link>
             <button
               type="button"

@@ -112,7 +112,7 @@ When heading out in the evening or attending winter weddings and rooftop dinners
 
 Most cheap jeans you find today are mixed with a lot of cheap plastic polyester and thin stretchy elastane. They lose their shape after a month and start tearing at the seams.
 
-At Fedoll, we use pure, heavyweight cotton denim woven on traditional shuttle looms. This creates clean, closed edges (known as 'selvedge') that will never unravel.
+At SilkenDrift, we use pure, heavyweight cotton denim woven on traditional shuttle looms. This creates clean, closed edges (known as 'selvedge') that will never unravel.
 
 ---
 
@@ -155,7 +155,7 @@ Modern workwear is all about combining formal neatness with real physical comfor
 ### 3 Rules for Everyday Office Comfort
 
 #### 1. Unpadded & Lightweight Blazers
-Choose blazers without stiff canvas chest padding. Fedoll's work blazers use a soft 4-way stretch blend that moves easily when you type on your laptop or drive.
+Choose blazers without stiff canvas chest padding. SilkenDrift's work blazers use a soft 4-way stretch blend that moves easily when you type on your laptop or drive.
 
 #### 2. Pleated Stretch Trousers
 Slim, tight formal pants are uncomfortable for long sitting hours. Front single pleats give your thighs extra breathing room while tapering neatly at the ankle.
@@ -174,7 +174,7 @@ Pairing a clean off-white or charcoal t-shirt under a dark navy blazer creates a
       "https://images.unsplash.com/photo-1558769132-cb1aea458c5e?auto=format&fit=crop&w=1200&q=80",
     author: {
       name: "Tanvirul Hasan",
-      role: "Founder, Fedoll",
+      role: "Founder, SilkenDrift",
       avatar:
         "https://images.unsplash.com/photo-1500648767791-00dcc994a43e?auto=format&fit=crop&w=200&q=80",
     },
@@ -292,7 +292,7 @@ export const fetchBlogsFromFirestore = async (): Promise<BlogItem[]> => {
         category: data.category || "Style",
         tags: Array.isArray(data.tags) ? data.tags : [],
         author: data.author || {
-          name: "Fedoll Editorial",
+          name: "SilkenDrift Editorial",
           role: "Staff Writer",
           avatar:
             "https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=200&q=80",
@@ -359,7 +359,7 @@ export const fetchBlogByIdOrSlugFromFirestore = async (
         category: data.category || "Style",
         tags: Array.isArray(data.tags) ? data.tags : [],
         author: data.author || {
-          name: "Fedoll Editorial",
+          name: "SilkenDrift Editorial",
           role: "Staff Writer",
           avatar:
             "https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=200&q=80",
@@ -389,7 +389,7 @@ export const fetchBlogByIdOrSlugFromFirestore = async (
         category: data.category || "Style",
         tags: Array.isArray(data.tags) ? data.tags : [],
         author: data.author || {
-          name: "Fedoll Editorial",
+          name: "SilkenDrift Editorial",
           role: "Staff Writer",
           avatar:
             "https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=200&q=80",
@@ -455,7 +455,7 @@ export const saveBlogToFirestore = async (
     likes: typeof blog.likes === "number" ? blog.likes : 0,
     tags: Array.isArray(blog.tags) ? blog.tags.map((t) => t.trim()).filter(Boolean) : [],
     author: {
-      name: blog.author?.name?.trim() || "Fedoll Editorial",
+      name: blog.author?.name?.trim() || "SilkenDrift Editorial",
       role: blog.author?.role?.trim() || "Staff Writer",
       avatar:
         blog.author?.avatar?.trim() ||

@@ -20,12 +20,14 @@ export interface StoreGeneralSettings {
   announcementActive: boolean;
   orderPrefix: string;
   supportHours: string;
+  logoUrl?: string;
+  faviconUrl?: string;
 }
 
 export const defaultStoreSettings: StoreGeneralSettings = {
-  storeName: "Fedoll Apparel Atelier",
+  storeName: "SilkenDrift Apparel Atelier",
   tagline: "Everyday High-Grade Export Quality Apparel",
-  contactEmail: "support@fedoll.com",
+  contactEmail: "support@silkendrift.com",
   contactPhone: "+880 1712-345678",
   headquartersAddress: "Sector 3, Uttara Model Town, Dhaka 1230, Bangladesh",
   currency: "BDT",
@@ -35,6 +37,8 @@ export const defaultStoreSettings: StoreGeneralSettings = {
   announcementActive: true,
   orderPrefix: "FED-",
   supportHours: "10:00 AM - 10:00 PM (Sat - Thu)",
+  logoUrl: "",
+  faviconUrl: "",
 };
 
 import { sanitizeForFirestore } from "./firestore";
@@ -46,7 +50,11 @@ export const fetchStoreSettings = async (): Promise<StoreGeneralSettings> => {
     const docRef = doc(db, "store_settings", "general");
     const snap = await getDoc(docRef);
     if (snap.exists()) {
-      return snap.data() as StoreGeneralSettings;
+      const data = snap.data() as Partial<StoreGeneralSettings>;
+      return {
+        ...defaultStoreSettings,
+        ...data,
+      };
     }
 
     // Auto-seed default store settings to Firestore
@@ -63,7 +71,7 @@ export const fetchStoreSettings = async (): Promise<StoreGeneralSettings> => {
   if (typeof window !== "undefined") {
     try {
       const raw = localStorage.getItem(LOCAL_STORAGE_STORE_KEY);
-      if (raw) return JSON.parse(raw);
+      if (raw) return { ...defaultStoreSettings, ...JSON.parse(raw) };
     } catch {}
   }
 

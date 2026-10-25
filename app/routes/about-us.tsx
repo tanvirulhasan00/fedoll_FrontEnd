@@ -24,11 +24,11 @@ import { toast } from "sonner";
 
 export function meta({}: Route.MetaArgs) {
   return [
-    { title: "About Us | Fedoll Bangladesh" },
+    { title: "About Us | SilkenDrift Bangladesh" },
     {
       name: "description",
       content:
-        "Learn about Fedoll Bangladesh, our export-quality clothing crafted in Dhaka, and our commitment to comfortable, long-lasting fashion.",
+        "Learn about SilkenDrift Bangladesh, our export-quality clothing crafted in Dhaka, and our commitment to comfortable, long-lasting fashion.",
     },
   ];
 }
@@ -118,12 +118,12 @@ export default function AboutUsPage() {
             <div className="mt-12 relative rounded-3xl overflow-hidden shadow-2xl border border-stone-200/80 dark:border-neutral-800 aspect-21/9 bg-stone-100 dark:bg-neutral-800">
               <img
                 src={data?.heroImage}
-                alt="Fedoll Atelier"
+                alt="SilkenDrift Atelier"
                 className="w-full h-full object-cover"
               />
               <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent" />
               <div className="absolute bottom-6 left-6 text-white text-xs sm:text-sm font-medium">
-                Fedoll Studio & Workshop, Dhaka, Bangladesh
+                SilkenDrift Studio & Workshop, Dhaka, Bangladesh
               </div>
             </div>
           </div>
@@ -248,7 +248,7 @@ export default function AboutUsPage() {
                 Our Journey
               </span>
               <h2 className="text-3xl sm:text-4xl font-bold tracking-tight text-gray-900 dark:text-white mt-2">
-                How Fedoll Grew in Bangladesh
+                How SilkenDrift Grew in Bangladesh
               </h2>
             </div>
 
@@ -281,7 +281,7 @@ export default function AboutUsPage() {
                 Our Team
               </span>
               <h2 className="text-3xl sm:text-4xl font-bold tracking-tight text-gray-900 dark:text-white mt-2">
-                The People Behind Fedoll
+                The People Behind SilkenDrift
               </h2>
             </div>
             <p className="text-sm text-gray-500 dark:text-neutral-400 max-w-md">

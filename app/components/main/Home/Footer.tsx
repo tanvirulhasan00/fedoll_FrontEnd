@@ -16,10 +16,11 @@ import {
   ChatBubbleBottomCenterTextIcon,
   CheckBadgeIcon,
 } from "@heroicons/react/24/outline";
-import React, { useMemo } from "react";
+import React, { useMemo, useState } from "react";
 import { useAppSelector } from "~/redux/hooks/hook";
 import { Link } from "react-router";
 import NewsLetter from "./Newsletter";
+import { normalizeGoogleDriveImageUrl } from "~/firebase";
 
 const TRUST_PILLARS = [
   {
@@ -59,7 +60,7 @@ const COMPANY_LINKS = [
   { name: "Fashion Journal & Blogs", href: "/blogs" },
   { name: "Sustainability & Ethics", href: "/about-us" },
   { name: "Wholesale & Bulk Orders", href: "/contact-us" },
-  { name: "Careers at Fedoll", href: "/about-us" },
+  { name: "Careers at SilkenDrift", href: "/about-us" },
 ];
 
 const SUPPORT_LINKS = [
@@ -107,6 +108,11 @@ const SOCIAL_LINKS = [
 
 const Footer = () => {
   const { categories } = useAppSelector((state) => state.products);
+  const { settings } = useAppSelector((state) => state.storeSettings);
+  const [logoError, setLogoError] = useState(false);
+
+  const customLogoUrl = normalizeGoogleDriveImageUrl(settings?.logoUrl);
+  const footerLogoSrc = !logoError && customLogoUrl ? customLogoUrl : "/silkendrift-logo-dark.svg";
 
   const dynamicShopLinks = useMemo(() => {
     const links = [{ name: "All Products", href: "/products" }];
@@ -175,44 +181,49 @@ const Footer = () => {
             <div>
               <Link to="/" className="inline-block group">
                 <img
-                  src="/fedoll-logo-dark.svg"
-                  alt="Fedoll - Export Quality Clothes"
-                  className="h-10 w-auto rounded-md shadow-xs transition-opacity group-hover:opacity-90"
+                  src={footerLogoSrc}
+                  alt={settings?.storeName ? `${settings.storeName} - Export Quality Clothes` : "SilkenDrift - Export Quality Clothes"}
+                  className="h-10 max-h-12 w-auto max-w-[220px] object-contain rounded-md shadow-xs transition-opacity group-hover:opacity-90"
+                  onError={() => setLogoError(true)}
                 />
               </Link>
               <p className="mt-4 text-sm text-neutral-400 leading-relaxed max-w-sm">
-                Export Quality Clothes. Crafted with Pride in Bangladesh. Empowering modern
-                wardrobes with certified sustainable cotton, precision tailoring, and timeless
-                silhouettes.
+                {settings?.tagline ||
+                  "Export Quality Clothes. Crafted with Pride in Bangladesh. Empowering modern wardrobes with certified sustainable cotton, precision tailoring, and timeless silhouettes."}
               </p>
 
               {/* Contact Snippets */}
               <div className="mt-6 space-y-3 text-xs text-neutral-400">
                 <div className="flex items-start gap-2.5">
                   <MapPinIcon className="size-4 shrink-0 text-orange-500 mt-0.5" />
-                  <span>House 42, Road 11, Block D, Banani, Dhaka-1213, Bangladesh</span>
+                  <span>
+                    {settings?.headquartersAddress ||
+                      "House 42, Road 11, Block D, Banani, Dhaka-1213, Bangladesh"}
+                  </span>
                 </div>
                 <div className="flex items-center gap-2.5">
                   <EnvelopeIcon className="size-4 shrink-0 text-orange-500" />
                   <a
-                    href="mailto:support@fedoll.com"
+                    href={`mailto:${settings?.contactEmail || "support@silkendrift.com"}`}
                     className="hover:text-orange-400 transition-colors"
                   >
-                    support@fedoll.com
+                    {settings?.contactEmail || "support@silkendrift.com"}
                   </a>
                 </div>
                 <div className="flex items-center gap-2.5">
                   <PhoneIcon className="size-4 shrink-0 text-orange-500" />
                   <a
-                    href="tel:+8801700000000"
+                    href={`tel:${settings?.contactPhone || "+8801700000000"}`}
                     className="hover:text-orange-400 transition-colors"
                   >
-                    +880 1700-000000 / +880 2-9876543
+                    {settings?.contactPhone || "+880 1700-000000 / +880 2-9876543"}
                   </a>
                 </div>
                 <div className="flex items-center gap-2.5">
                   <ClockIcon className="size-4 shrink-0 text-orange-500" />
-                  <span>Mon – Sat: 9:00 AM – 8:00 PM BST</span>
+                  <span>
+                    {settings?.supportHours || "Mon – Sat: 9:00 AM – 8:00 PM BST"}
+                  </span>
                 </div>
               </div>
             </div>
@@ -358,7 +369,7 @@ const Footer = () => {
         {/* Bottom Copyright */}
         <div className="mt-8 pt-6 border-t border-neutral-800/40 flex flex-col sm:flex-row items-center justify-between gap-4 text-xs text-neutral-400 text-center sm:text-left">
           <p>
-            &copy; {new Date().getFullYear()} <strong className="text-white">Fedoll International Ltd.</strong> All rights reserved.
+            &copy; {new Date().getFullYear()} <strong className="text-white">SilkenDrift International Ltd.</strong> All rights reserved.
           </p>
           <p className="flex items-center justify-center gap-1.5">
             <span>Crafted with pride in</span>

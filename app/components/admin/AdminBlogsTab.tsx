@@ -116,7 +116,7 @@ export const AdminBlogsTab: React.FC<AdminBlogsTabProps> = ({
   const [excerpt, setExcerpt] = useState("");
   const [content, setContent] = useState("");
   const [coverImage, setCoverImage] = useState("");
-  const [authorName, setAuthorName] = useState("Fedoll Editorial");
+  const [authorName, setAuthorName] = useState("SilkenDrift Editorial");
   const [authorRole, setAuthorRole] = useState("Lead Fashion Stylist");
   const [authorAvatar, setAuthorAvatar] = useState(
     "https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=200&q=80"
@@ -225,7 +225,7 @@ export const AdminBlogsTab: React.FC<AdminBlogsTabProps> = ({
     setExcerpt(blog.excerpt);
     setContent(blog.content);
     setCoverImage(blog.coverImage);
-    setAuthorName(blog.author?.name || "Fedoll Editorial");
+    setAuthorName(blog.author?.name || "SilkenDrift Editorial");
     setAuthorRole(blog.author?.role || "Staff Writer");
     setAuthorAvatar(
       blog.author?.avatar ||
@@ -340,7 +340,7 @@ export const AdminBlogsTab: React.FC<AdminBlogsTabProps> = ({
           coverImage.trim() ||
           "https://images.unsplash.com/photo-1544441893-675973e31985?auto=format&fit=crop&w=1200&q=80",
         author: {
-          name: authorName.trim() || "Fedoll Editorial",
+          name: authorName.trim() || "SilkenDrift Editorial",
           role: authorRole.trim() || "Staff Writer",
           avatar:
             authorAvatar.trim() ||

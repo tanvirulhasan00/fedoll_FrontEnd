@@ -30,11 +30,11 @@ import {
 
 export function meta() {
   return [
-    { title: "Size Guide & Fit Advice | Fedoll Apparel Atelier Bangladesh" },
+    { title: "Size Guide & Fit Advice | SilkenDrift Apparel Atelier Bangladesh" },
     {
       name: "description",
       content:
-        "Comprehensive sizing charts, how-to-measure guide, smart fit calculator, and garment care advice for Fedoll selvedge denim, outerwear, workwear, and tees.",
+        "Comprehensive sizing charts, how-to-measure guide, smart fit calculator, and garment care advice for SilkenDrift selvedge denim, outerwear, workwear, and tees.",
     },
   ];
 }
@@ -626,7 +626,7 @@ export default function SizeGuidePage() {
                   Smart Fit Recommender
                 </h2>
                 <p className="text-xs sm:text-sm text-stone-300 max-w-2xl font-light">
-                  Input your personal height, body weight, and desired silhouette drape. Our algorithm computes the ideal garment size for Fedoll cuts.
+                  Input your personal height, body weight, and desired silhouette drape. Our algorithm computes the ideal garment size for SilkenDrift cuts.
                 </p>
               </div>
 
@@ -920,7 +920,7 @@ export default function SizeGuidePage() {
                 Silhouettes &amp; Drape
               </span>
               <h2 className="text-2xl sm:text-3xl font-black text-gray-900 dark:text-white">
-                Understanding Fedoll Cut Profiles
+                Understanding SilkenDrift Cut Profiles
               </h2>
               <p className="text-xs sm:text-sm text-gray-500 dark:text-neutral-400">
                 Choose the fit profile that matches your styling aesthetic.
@@ -1101,7 +1101,7 @@ export default function SizeGuidePage() {
 
               <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3 shrink-0">
                 <a
-                  href="https://wa.me/8801712345678?text=Hello%20Fedoll%20Stylist,%20I%20need%20help%20choosing%20my%20size"
+                  href="https://wa.me/8801712345678?text=Hello%20SilkenDrift%20Stylist,%20I%20need%20help%20choosing%20my%20size"
                   target="_blank"
                   rel="noopener noreferrer"
                   className="px-6 py-3.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs shadow-md transition flex items-center justify-center gap-2 cursor-pointer"

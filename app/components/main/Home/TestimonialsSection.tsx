@@ -18,7 +18,7 @@ export default function TestimonialsSection() {
             Loved by Customers Across Bangladesh
           </h2>
           <p className="mt-2 text-sm text-gray-500 dark:text-neutral-400">
-            Real reviews from people wearing Fedoll clothes in Dhaka, Chittagong,
+            Real reviews from people wearing SilkenDrift clothes in Dhaka, Chittagong,
             Sylhet, and all across Bangladesh.
           </p>
         </div>

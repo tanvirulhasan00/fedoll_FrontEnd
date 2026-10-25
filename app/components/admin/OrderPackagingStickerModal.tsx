@@ -358,7 +358,7 @@ export const OrderPackagingStickerModal: React.FC<OrderPackagingStickerModalProp
     <table class="header-table">
       <tr>
         <td style="vertical-align: top;">
-          <h1 class="brand-title">${storeSettings.storeName || "FEDOLL ATELIER"}</h1>
+          <h1 class="brand-title">${storeSettings.storeName || "SILKENDRIFT ATELIER"}</h1>
           <p class="brand-sub">${storeSettings.tagline || "Luxury Modest & Contemporary Garments"}</p>
           <p class="brand-sub" style="font-weight: bold; margin-top: 1px;">Help: ${storeSettings.contactPhone || "+880 1712-345678"}</p>
         </td>
@@ -469,7 +469,7 @@ export const OrderPackagingStickerModal: React.FC<OrderPackagingStickerModalProp
       <div class="footer-badges">
         <span>FRAGILE / HANDLE WITH CARE</span>
         <span>KEEP DRY / NO MOISTURE</span>
-        <span>GENUINE FEDOLL</span>
+        <span>GENUINE SILKENDRIFT</span>
       </div>
     `
         : ""
@@ -740,7 +740,7 @@ export const OrderPackagingStickerModal: React.FC<OrderPackagingStickerModalProp
                       <div className="flex items-start justify-between pb-2 border-b-2 border-black">
                         <div>
                           <h2 className="text-base font-black tracking-wider uppercase text-black leading-tight">
-                            {storeSettings.storeName || "FEDOLL ATELIER"}
+                            {storeSettings.storeName || "SILKENDRIFT ATELIER"}
                           </h2>
                           <p className="text-[9px] text-gray-700 font-medium">
                             {storeSettings.tagline || "Luxury Modest & Contemporary Garments"}
@@ -912,7 +912,7 @@ export const OrderPackagingStickerModal: React.FC<OrderPackagingStickerModalProp
                         <div className="flex items-center justify-between text-[8px] font-black border-t-2 border-black pt-1 uppercase">
                           <span>FRAGILE / HANDLE WITH CARE</span>
                           <span>KEEP AWAY FROM RAIN</span>
-                          <span>GENUINE FEDOLL</span>
+                          <span>GENUINE SILKENDRIFT</span>
                         </div>
                       )}
 

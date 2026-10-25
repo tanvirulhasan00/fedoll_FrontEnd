@@ -25,11 +25,11 @@ import { toast } from "sonner";
 
 export function meta() {
   return [
-    { title: "Track Courier Order | Fedoll" },
+    { title: "Track Courier Order | SilkenDrift" },
     {
       name: "description",
       content:
-        "Track your Fedoll apparel parcel live with Steadfast and Pathao express courier across Bangladesh. Exclusively accessible for registered customers.",
+        "Track your SilkenDrift apparel parcel live with Steadfast and Pathao express courier across Bangladesh. Exclusively accessible for registered customers.",
     },
   ];
 }
@@ -180,7 +180,7 @@ export default function TrackOrderPage() {
                   Track Your Courier Order
                 </h1>
                 <p className="text-xs sm:text-sm text-gray-500 dark:text-neutral-400 max-w-lg mx-auto">
-                  At Fedoll, live package tracking is exclusively accessible to registered customers to protect personal delivery details and courier dispatch information across Bangladesh.
+                  At SilkenDrift, live package tracking is exclusively accessible to registered customers to protect personal delivery details and courier dispatch information across Bangladesh.
                 </p>
               </div>
 
@@ -198,7 +198,7 @@ export default function TrackOrderPage() {
                     Sign In to Track Packages
                   </h2>
                   <p className="text-xs sm:text-sm text-gray-600 dark:text-neutral-400 leading-relaxed">
-                    Please log in or register with your Fedoll customer account to access real-time Steadfast and Pathao express courier milestone updates.
+                    Please log in or register with your SilkenDrift customer account to access real-time Steadfast and Pathao express courier milestone updates.
                   </p>
                 </div>
 
@@ -269,7 +269,7 @@ export default function TrackOrderPage() {
               <div className="p-6 rounded-3xl bg-white dark:bg-neutral-900 border border-stone-200/80 dark:border-neutral-800 text-xs space-y-2">
                 <h4 className="font-bold text-gray-900 dark:text-white flex items-center gap-2">
                   <ShieldCheckIcon className="size-4 text-emerald-600" />
-                  <span>Fedoll Role-Based Shopping &amp; Dispatch Policy</span>
+                  <span>SilkenDrift Role-Based Shopping &amp; Dispatch Policy</span>
                 </h4>
                 <p className="text-gray-500 dark:text-neutral-400 leading-relaxed text-[11px]">
                   Orders across Dhaka metropolitan area are delivered within 24 to 48 hours. Orders across all other 63 districts arrive within 2 to 4 business days via Steadfast Courier and Pathao Express. Live tracking records are strictly restricted to authenticated accounts.
@@ -414,7 +414,7 @@ export default function TrackOrderPage() {
               <div className="p-6 rounded-3xl bg-white dark:bg-neutral-900 border border-stone-200/80 dark:border-neutral-800 text-xs space-y-3">
                 <h4 className="font-bold text-gray-900 dark:text-white flex items-center gap-2">
                   <ShieldCheckIcon className="size-4 text-emerald-600" />
-                  <span>Fedoll Courier &amp; Role-Based Shopping Policy</span>
+                  <span>SilkenDrift Courier &amp; Role-Based Shopping Policy</span>
                 </h4>
                 <p className="text-gray-500 dark:text-neutral-400 leading-relaxed text-[11px]">
                   Orders in Dhaka metropolitan area are delivered within 24 to 48 hours. Orders across

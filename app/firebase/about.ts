@@ -64,7 +64,7 @@ export const initialAboutData: AboutData = {
     "We make premium everyday clothing with simple designs, comfortable fabrics, and long-lasting quality right here in Bangladesh.",
   missionHeading: "Honest Quality Clothing Without the Luxury Markup",
   missionParagraph1:
-    "Fedoll was started in 2021 with a simple belief: you shouldn't have to pay high imported prices to get world-class clothing. Bangladesh already makes the best garments for the world's top brands—we wanted to bring that same export-standard quality directly to people living here.",
+    "SilkenDrift was started in 2021 with a simple belief: you shouldn't have to pay high imported prices to get world-class clothing. Bangladesh already makes the best garments for the world's top brands—we wanted to bring that same export-standard quality directly to people living here.",
   missionParagraph2:
     "We use pure cotton, strong selvedge denim, and warm wool fabrics. Every jacket, shirt, and pair of pants is carefully stitched, thoroughly quality-checked, and backed by a 7-day easy exchange guarantee.",
   heroImage:
@@ -87,7 +87,7 @@ export const initialAboutData: AboutData = {
     {
       value: "25,000+",
       label: "Happy Customers",
-      description: "Men and women wearing Fedoll clothing in Dhaka, Chittagong, and beyond.",
+      description: "Men and women wearing SilkenDrift clothing in Dhaka, Chittagong, and beyond.",
     },
     {
       value: "7 Days",
@@ -132,7 +132,7 @@ export const initialAboutData: AboutData = {
       role: "Founder & Lead Product Specialist",
       avatar:
         "https://images.unsplash.com/photo-1500648767791-00dcc994a43e?auto=format&fit=crop&w=400&q=80",
-      bio: "Born and raised in Bangladesh. Tanvir leads Fedoll's fabric sourcing, product quality checks, and customer experience.",
+      bio: "Born and raised in Bangladesh. Tanvir leads SilkenDrift's fabric sourcing, product quality checks, and customer experience.",
     },
     {
       id: "member-2",
@@ -162,7 +162,7 @@ export const initialAboutData: AboutData = {
   milestones: [
     {
       year: "2021",
-      title: "Fedoll Starts in Dhaka",
+      title: "SilkenDrift Starts in Dhaka",
       description:
         "We launched our first batch of handcrafted selvedge denim jeans and cotton chore jackets in Bangladesh.",
     },
@@ -186,8 +186,8 @@ export const initialAboutData: AboutData = {
     },
   ],
   contact: {
-    address: "Fedoll Studio, House 18, Road 11, Block D, Banani / Gulshan, Dhaka 1213, Bangladesh",
-    email: "support@fedoll.com",
+    address: "SilkenDrift Studio, House 18, Road 11, Block D, Banani / Gulshan, Dhaka 1213, Bangladesh",
+    email: "support@silkendrift.com",
     phone: "+880 1700-123456",
     hours: "Saturday – Thursday: 10:00 AM – 08:00 PM (BST)",
   },

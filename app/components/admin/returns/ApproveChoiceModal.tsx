@@ -86,7 +86,7 @@ export const ApproveChoiceModal: React.FC<ApproveChoiceModalProps> = ({
 
                 <div className="space-y-3">
                   <span className="text-xs font-bold text-gray-700 dark:text-neutral-300 block">
-                    Choose how the customer will return the garment to Fedoll:
+                    Choose how the customer will return the garment to SilkenDrift:
                   </span>
 
                   {/* Option 1: Doorstep Reverse Courier Pickup */}

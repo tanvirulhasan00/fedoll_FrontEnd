@@ -87,7 +87,7 @@ const Home = () => {
         {/* Latest Journal Stories Preview from Firebase blogs */}
         <JournalPreviewSection />
 
-        {/* Community #FedollStyle UGC Gallery */}
+        {/* Community #SilkenDriftStyle UGC Gallery */}
         <CommunityGallery />
 
         {/* Live Firebase Sync Floating Indicator / Utility Pill */}

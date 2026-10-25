@@ -39,16 +39,16 @@ import { toast } from "sonner";
 
 export function meta({}: Route.MetaArgs) {
   return [
-    { title: "Contact Us | Fedoll Bangladesh" },
+    { title: "Contact Us | SilkenDrift Bangladesh" },
     {
       name: "description",
       content:
-        "Get in touch with Fedoll Bangladesh. Visit our Dhaka studio in Banani, contact our customer support for sizing advice, or submit an inquiry.",
+        "Get in touch with SilkenDrift Bangladesh. Visit our Dhaka studio in Banani, contact our customer support for sizing advice, or submit an inquiry.",
     },
     {
       name: "keywords",
       content:
-        "Fedoll contact, Fedoll customer care, Dhaka clothing showroom, Banani studio, selvedge denim Bangladesh, fashion support Dhaka",
+        "SilkenDrift contact, SilkenDrift customer care, Dhaka clothing showroom, Banani studio, selvedge denim Bangladesh, fashion support Dhaka",
     },
   ];
 }
@@ -167,7 +167,7 @@ export default function ContactUsPage() {
       ).unwrap();
 
       setSubmittedName(formData.name);
-      toast.success(result.message || "Inquiry sent successfully to Fedoll!");
+      toast.success(result.message || "Inquiry sent successfully to SilkenDrift!");
 
       // Reset form fields
       setFormData({
@@ -615,7 +615,7 @@ export default function ContactUsPage() {
                         pageData?.heroImage ||
                         "https://images.unsplash.com/photo-1558769132-cb1aea458c5e?auto=format&fit=crop&w=1200&q=80"
                       }
-                      alt="Fedoll Studio in Banani Dhaka"
+                      alt="SilkenDrift Studio in Banani Dhaka"
                       className="w-full h-full object-cover hover:scale-105 transition-transform duration-700"
                     />
                     <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent" />
@@ -624,7 +624,7 @@ export default function ContactUsPage() {
                         Flagship Showroom
                       </span>
                       <h3 className="text-lg font-bold mt-1.5">
-                        {pageData?.office?.name || "Fedoll Design Studio"}
+                        {pageData?.office?.name || "SilkenDrift Design Studio"}
                       </h3>
                     </div>
                   </div>
@@ -681,10 +681,10 @@ export default function ContactUsPage() {
                       <div>
                         <span className="text-gray-400 dark:text-neutral-500 block">Support Email:</span>
                         <a
-                          href={`mailto:${pageData?.office?.email || "support@fedoll.com"}`}
+                          href={`mailto:${pageData?.office?.email || "support@silkendrift.com"}`}
                           className="font-bold text-gray-900 dark:text-white hover:text-orange-600 dark:hover:text-orange-400 transition"
                         >
-                          {pageData?.office?.email || "support@fedoll.com"}
+                          {pageData?.office?.email || "support@silkendrift.com"}
                         </a>
                       </div>
                     </div>
@@ -693,7 +693,7 @@ export default function ContactUsPage() {
                     <div className="pt-2">
                       <div className="rounded-2xl overflow-hidden border border-stone-200/80 dark:border-neutral-800 aspect-16/9 bg-stone-100 dark:bg-neutral-800">
                         <iframe
-                          title="Fedoll Studio Banani Dhaka Location"
+                          title="SilkenDrift Studio Banani Dhaka Location"
                           src={
                             pageData?.office?.googleMapsEmbedUrl ||
                             "https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d3651.0477174624403!2d90.4022839760237!3d23.781313087570414!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x3755c70b72a08271%3A0xb56306e00b730f81!2sRoad%2011%2C%20Dhaka%201213!5e0!3m2!1sen!2sbd!4v1700000000000!5m2!1sen!2sbd"
@@ -721,7 +721,7 @@ export default function ContactUsPage() {
                   </div>
                 </div>
 
-                {/* Fedoll Customer Promises Strip */}
+                {/* SilkenDrift Customer Promises Strip */}
                 <div className="p-6 rounded-3xl bg-orange-50/60 dark:bg-orange-950/20 border border-orange-200/60 dark:border-orange-900/40 space-y-3">
                   <h4 className="text-xs font-bold uppercase tracking-wider text-orange-900 dark:text-orange-300">
                     Our Customer Commitments
@@ -792,7 +792,7 @@ export default function ContactUsPage() {
               </p>
               <div className="mt-5 flex flex-wrap items-center justify-center gap-4">
                 <a
-                  href="https://wa.me/8801700123456?text=Hi%20Fedoll%2C%20I%20need%20assistance%20with%20my%20order."
+                  href="https://wa.me/8801700123456?text=Hi%20SilkenDrift%2C%20I%20need%20assistance%20with%20my%20order."
                   target="_blank"
                   rel="noopener noreferrer"
                   className="inline-flex items-center gap-2 px-5 py-2.5 rounded-full bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-semibold shadow-xs transition"

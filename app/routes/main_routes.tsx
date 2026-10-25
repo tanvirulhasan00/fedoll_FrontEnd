@@ -5,10 +5,10 @@ import Home from "./home";
 
 export function meta({}: Route.MetaArgs) {
   return [
-    { title: "Fedoll" },
+    { title: "SilkenDrift" },
     {
       name: "description",
-      content: "Fedoll - Premium E-Commerce Platform",
+      content: "SilkenDrift - Premium E-Commerce Platform",
     },
   ];
 }

@@ -437,7 +437,7 @@ export const initialTestimonials: TestimonialItem[] = [
       "https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=200&q=80",
     rating: 5,
     comment:
-      "Finding genuine, comfortable blazers in Bangladesh used to be tough. Fedoll's stretch blazer is super light and easy to wear all day during client meetings.",
+      "Finding genuine, comfortable blazers in Bangladesh used to be tough. SilkenDrift's stretch blazer is super light and easy to wear all day during client meetings.",
     productName: "Comfort Stretch Work Blazer",
   },
   {
@@ -464,7 +464,7 @@ export const initialSpotlightBanner: SpotlightBanner = {
   ctaLink: "/products?category=Denim",
   image:
     "https://images.unsplash.com/photo-1490481651871-ab68de25d43d?auto=format&fit=crop&w=1200&q=80",
-  discountCode: "FEDOLL2026",
+  discountCode: "SILKENDRIFT2026",
 };
 
 /**

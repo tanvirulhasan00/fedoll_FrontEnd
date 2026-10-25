@@ -50,11 +50,11 @@ import { Spinner } from "~/components/ui/spinner";
 
 export function meta({}: Route.MetaArgs) {
   return [
-    { title: "Product Details | Fedoll Bangladesh" },
+    { title: "Product Details | SilkenDrift Bangladesh" },
     {
       name: "description",
       content:
-        "Handcrafted export-quality apparel from Fedoll Bangladesh. Premium fabrics, comfortable modern fits, and 7-day size exchange.",
+        "Handcrafted export-quality apparel from SilkenDrift Bangladesh. Premium fabrics, comfortable modern fits, and 7-day size exchange.",
     },
   ];
 }
@@ -752,7 +752,7 @@ export default function ProductDetailPage() {
                   </div>
                 )}
 
-                {/* Fedoll Customer Guarantees List */}
+                {/* SilkenDrift Customer Guarantees List */}
                 <div className="border-t border-stone-200/80 dark:border-neutral-800 pt-4 space-y-2.5 text-xs text-gray-600 dark:text-neutral-400">
                   <div className="flex items-center gap-2.5">
                     <TruckIcon className="size-4 text-orange-600 dark:text-orange-400 shrink-0" />

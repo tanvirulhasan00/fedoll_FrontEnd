@@ -29,7 +29,7 @@ import { toast } from "sonner";
 
 export function meta() {
   return [
-    { title: "Terms of Service | Fedoll Apparel Atelier Bangladesh" },
+    { title: "Terms of Service | SilkenDrift Apparel Atelier Bangladesh" },
     {
       name: "description",
       content:
@@ -83,7 +83,7 @@ export default function TermsOfServicePage() {
 
             <p className="max-w-2xl mx-auto text-sm sm:text-base text-stone-300 leading-relaxed font-light">
               Clear, honest, and transparent guidelines governing apparel orders, nationwide courier handovers,
-              doorstep size exchanges, and consumer rights with Fedoll across all 64 districts in Bangladesh.
+              doorstep size exchanges, and consumer rights with SilkenDrift across all 64 districts in Bangladesh.
             </p>
 
             <div className="pt-2 flex flex-wrap items-center justify-center gap-4 text-xs text-stone-400">
@@ -270,7 +270,7 @@ export default function TermsOfServicePage() {
               </div>
 
               <div className="pt-2 border-t border-stone-800 flex items-center justify-between text-xs text-stone-400">
-                <span>Fedoll International Ltd. | Registered in Bangladesh</span>
+                <span>SilkenDrift International Ltd. | Registered in Bangladesh</span>
                 <Link
                   to="/security"
                   className="text-orange-400 hover:underline flex items-center gap-1 font-semibold"

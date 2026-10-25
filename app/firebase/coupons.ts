@@ -24,7 +24,7 @@ export interface CouponItem {
 export const initialCoupons: CouponItem[] = [
   {
     id: "coup-1",
-    code: "FEDOLL2026",
+    code: "SILKENDRIFT2026",
     discountPercent: 15,
     minSpend: 1500,
     description: "15% off on all outerwear and signature winter selvedge denim.",
@@ -37,7 +37,7 @@ export const initialCoupons: CouponItem[] = [
     code: "WELCOME10",
     discountPercent: 10,
     minSpend: 1000,
-    description: "Welcome discount for newly registered Fedoll customers.",
+    description: "Welcome discount for newly registered SilkenDrift customers.",
     active: true,
     usedCount: 289,
     expiresAt: "2026-12-31",

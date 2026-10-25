@@ -35,13 +35,13 @@ import {
   TagIcon,
   PhoneIcon,
 } from "@heroicons/react/24/outline";
-import { FEDOLL_DROP_OFF_HUBS } from "~/components/admin/returns";
+import { SILKENDRIFT_DROP_OFF_HUBS } from "~/components/admin/returns";
 import { toast } from "sonner";
 import { Spinner } from "~/components/ui/spinner";
 
 export function meta() {
   return [
-    { title: "Returns & Exchanges Policy | Fedoll Apparel Atelier Bangladesh" },
+    { title: "Returns & Exchanges Policy | SilkenDrift Apparel Atelier Bangladesh" },
     {
       name: "description",
       content:
@@ -172,7 +172,7 @@ export default function ReturnsAndExchangesPage() {
 
       const isDropoff = formData.returnMethod === "hub_dropoff";
       const selectedHub =
-        FEDOLL_DROP_OFF_HUBS.find((h) => h.id === formData.selectedHubId) || FEDOLL_DROP_OFF_HUBS[0];
+        SILKENDRIFT_DROP_OFF_HUBS.find((h) => h.id === formData.selectedHubId) || SILKENDRIFT_DROP_OFF_HUBS[0];
 
       // Drop-off deadline (7 calendar days)
       const targetDeadline = new Date();
@@ -269,7 +269,7 @@ export default function ReturnsAndExchangesPage() {
           <div className="relative max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 text-center space-y-6">
             <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-orange-600/20 border border-orange-500/40 text-orange-400 text-xs font-bold uppercase tracking-wider">
               <ArrowPathIcon className="size-4 animate-spin-slow" />
-              <span>Fedoll Atelier 7-Day Fit &amp; Quality Guarantee</span>
+              <span>SilkenDrift Atelier 7-Day Fit &amp; Quality Guarantee</span>
             </div>
 
             <h1 className="text-3xl sm:text-5xl font-black tracking-tight text-white">
@@ -528,7 +528,7 @@ export default function ReturnsAndExchangesPage() {
                     </li>
                     <li className="flex items-start gap-2">
                       <CheckBadgeIcon className="size-4 text-emerald-600 shrink-0 mt-0.5" />
-                      <span>Original Fedoll garment bag and thermal courier box provided during handover.</span>
+                      <span>Original SilkenDrift garment bag and thermal courier box provided during handover.</span>
                     </li>
                   </ul>
                 </div>
@@ -570,7 +570,7 @@ export default function ReturnsAndExchangesPage() {
 
                 <div className="flex flex-col sm:flex-row items-center gap-3 shrink-0">
                   <a
-                    href={`https://wa.me/${data.supportWhatsApp.replace(/[^0-9]/g, "")}?text=Hello%20Fedoll,%20I%20would%20like%20to%20visit%20your%20Uttara%20atelier%20for%20a%20size%20exchange.`}
+                    href={`https://wa.me/${data.supportWhatsApp.replace(/[^0-9]/g, "")}?text=Hello%20SilkenDrift,%20I%20would%20like%20to%20visit%20your%20Uttara%20atelier%20for%20a%20size%20exchange.`}
                     target="_blank"
                     rel="noopener noreferrer"
                     className="px-5 py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs transition flex items-center gap-2"
@@ -643,7 +643,7 @@ export default function ReturnsAndExchangesPage() {
                       <span className="text-gray-400">Handover:</span>
                       <span className="font-bold text-orange-600 dark:text-orange-400">
                         {submittedTicket.returnMethod === "hub_dropoff"
-                          ? `Drop-off at ${submittedTicket.dropoffHubName || "Fedoll Atelier"}`
+                          ? `Drop-off at ${submittedTicket.dropoffHubName || "SilkenDrift Atelier"}`
                           : "Doorstep Courier Pickup"}
                       </span>
                     </div>
@@ -670,7 +670,7 @@ export default function ReturnsAndExchangesPage() {
                       Track This Ticket Live &rarr;
                     </button>
                     <a
-                      href={`https://wa.me/${data.supportWhatsApp.replace(/[^0-9]/g, "")}?text=Hello%20Fedoll,%20I%20have%20submitted%20Return%20Ticket%20${submittedTicket.ticketNumber}%20for%20Order%20${submittedTicket.orderNumber}.`}
+                      href={`https://wa.me/${data.supportWhatsApp.replace(/[^0-9]/g, "")}?text=Hello%20SilkenDrift,%20I%20have%20submitted%20Return%20Ticket%20${submittedTicket.ticketNumber}%20for%20Order%20${submittedTicket.orderNumber}.`}
                       target="_blank"
                       rel="noopener noreferrer"
                       className="px-5 py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs transition flex items-center gap-1.5"
@@ -918,7 +918,7 @@ export default function ReturnsAndExchangesPage() {
                         </div>
                         <div>
                           <span className="block text-xs font-black text-gray-900 dark:text-white">
-                            Self Drop-Off at Fedoll Atelier Hub
+                            Self Drop-Off at SilkenDrift Atelier Hub
                           </span>
                           <span className="block text-[11px] text-gray-500 dark:text-neutral-400 mt-0.5 leading-relaxed">
                             Hand over parcel in person at Uttara Flagship, Banani Concierge, or Dhanmondi Point. 100% Free.
@@ -934,7 +934,7 @@ export default function ReturnsAndExchangesPage() {
                       <div className="flex items-center justify-between">
                         <label className="text-xs font-black text-blue-950 dark:text-blue-300 flex items-center gap-1.5">
                           <BuildingStorefrontIcon className="size-4 text-blue-600" />
-                          <span>Choose Convenient Fedoll Atelier Drop-Off Location</span>
+                          <span>Choose Convenient SilkenDrift Atelier Drop-Off Location</span>
                         </label>
                         <span className="text-[10px] font-bold text-emerald-600 bg-emerald-100 dark:bg-emerald-950/60 px-2 py-0.5 rounded-full">
                           0৳ Logistics Fee
@@ -942,7 +942,7 @@ export default function ReturnsAndExchangesPage() {
                       </div>
 
                       <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-                        {FEDOLL_DROP_OFF_HUBS.map((hub) => (
+                        {SILKENDRIFT_DROP_OFF_HUBS.map((hub) => (
                           <button
                             key={hub.id}
                             type="button"
@@ -1288,7 +1288,7 @@ export default function ReturnsAndExchangesPage() {
                               <div>
                                 <span className="text-gray-400 block text-[10px] uppercase font-bold">Hub Location</span>
                                 <p className="font-bold text-gray-900 dark:text-white mt-0.5">
-                                  {trackedRequest.dropoffHubName || "Fedoll Flagship Atelier"}
+                                  {trackedRequest.dropoffHubName || "SilkenDrift Flagship Atelier"}
                                 </p>
                                 <p className="text-gray-500 text-[11px] mt-0.5">
                                   {trackedRequest.dropoffHubAddress || data.hubAddress}
@@ -1357,7 +1357,7 @@ export default function ReturnsAndExchangesPage() {
                                 <span className="text-gray-400 block text-[10px] uppercase font-bold">Rider Handover Note</span>
                                 <p className="text-gray-600 dark:text-neutral-300 text-[11px] mt-0.5 leading-relaxed">
                                   {trackedRequest.pickupInstructions ||
-                                    "The courier rider will call your phone prior to arrival. Keep the garment folded inside the Fedoll protective flyer."}
+                                    "The courier rider will call your phone prior to arrival. Keep the garment folded inside the SilkenDrift protective flyer."}
                                 </p>
                               </div>
                             </div>
@@ -1487,7 +1487,7 @@ export default function ReturnsAndExchangesPage() {
                             <span className="text-gray-400 font-semibold block">Handover Mode &amp; Address</span>
                             <p className="text-gray-700 dark:text-neutral-300">
                               {trackedRequest.returnMethod === "hub_dropoff"
-                                ? `Drop-off at ${trackedRequest.dropoffHubName || "Fedoll Hub"}: ${trackedRequest.dropoffHubAddress || trackedRequest.pickupAddress}`
+                                ? `Drop-off at ${trackedRequest.dropoffHubName || "SilkenDrift Hub"}: ${trackedRequest.dropoffHubAddress || trackedRequest.pickupAddress}`
                                 : trackedRequest.pickupAddress}
                             </p>
                             <span className="inline-block mt-1 font-mono text-[11px] font-bold text-gray-500 uppercase">
@@ -1499,7 +1499,7 @@ export default function ReturnsAndExchangesPage() {
                         {/* WhatsApp Helpline Button */}
                         <div className="text-center pt-2">
                           <a
-                            href={`https://wa.me/${data.supportWhatsApp.replace(/[^0-9]/g, "")}?text=Hello%20Fedoll,%20I%20am%20tracking%20Return%20Ticket%20${trackedRequest.ticketNumber}.`}
+                            href={`https://wa.me/${data.supportWhatsApp.replace(/[^0-9]/g, "")}?text=Hello%20SilkenDrift,%20I%20am%20tracking%20Return%20Ticket%20${trackedRequest.ticketNumber}.`}
                             target="_blank"
                             rel="noopener noreferrer"
                             className="inline-flex items-center gap-2 px-6 py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs transition"

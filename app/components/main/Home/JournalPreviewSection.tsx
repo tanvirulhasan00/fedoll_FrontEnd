@@ -20,7 +20,7 @@ export default function JournalPreviewSection() {
             Style & Care Guides
           </div>
           <h2 className="text-3xl sm:text-4xl font-bold tracking-tight text-gray-900 dark:text-white">
-            Fedoll Style Journal
+            SilkenDrift Style Journal
           </h2>
           <p className="mt-2 text-sm text-gray-500 dark:text-neutral-400 max-w-md">
             Helpful tips on styling, caring for clothes in Bangladeshi weather,

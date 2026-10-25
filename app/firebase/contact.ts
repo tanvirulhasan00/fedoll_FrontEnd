@@ -79,20 +79,20 @@ export interface ContactPageData {
 
 export const initialContactData: ContactPageData = {
   tagline: "We're Here For You",
-  title: "Get in Touch with Fedoll",
+  title: "Get in Touch with SilkenDrift",
   subtitle:
     "Have questions about our garments, sizing, your existing order, or visiting our Dhaka studio? Our friendly support team is always ready to help.",
   heroImage:
     "https://images.unsplash.com/photo-1558769132-cb1aea458c5e?auto=format&fit=crop&w=1600&q=80",
   office: {
-    name: "Fedoll Design Studio & Flagship Showroom",
+    name: "SilkenDrift Design Studio & Flagship Showroom",
     tagline: "Banani, Dhaka",
     address: "House 18, Road 11, Block D, Banani",
     city: "Dhaka",
     country: "Bangladesh",
     postalCode: "1213",
     phone: "+880 1700-123456",
-    email: "support@fedoll.com",
+    email: "support@silkendrift.com",
     whatsapp: "+880 1700-123456",
     hoursWeekday: "Saturday – Thursday: 10:00 AM – 08:00 PM (BST)",
     hoursWeekend: "Friday: 02:30 PM – 08:30 PM (BST)",
@@ -117,7 +117,7 @@ export const initialContactData: ContactPageData = {
       description: "Quick chat for size recommendations, fabric advice, and delivery updates.",
       contact: "+880 1700-123456",
       actionText: "Message on WhatsApp",
-      actionUrl: "https://wa.me/8801700123456?text=Hi%20Fedoll%2C%20I%20have%20an%20inquiry%20regarding%20your%20products.",
+      actionUrl: "https://wa.me/8801700123456?text=Hi%20SilkenDrift%2C%20I%20have%20an%20inquiry%20regarding%20your%20products.",
       badge: "Instant messaging",
       iconName: "ChatBubbleBottomCenterTextIcon",
     },
@@ -125,9 +125,9 @@ export const initialContactData: ContactPageData = {
       id: "email-support",
       title: "Email Inquiries",
       description: "For detailed questions, bulk corporate gifts, and exchange requests.",
-      contact: "support@fedoll.com",
+      contact: "support@silkendrift.com",
       actionText: "Send an Email",
-      actionUrl: "mailto:support@fedoll.com?subject=Inquiry%20from%20Fedoll%20Website",
+      actionUrl: "mailto:support@silkendrift.com?subject=Inquiry%20from%20SilkenDrift%20Website",
       badge: "Within 2-4 hours",
       iconName: "EnvelopeIcon",
     },
@@ -176,7 +176,7 @@ export const initialContactData: ContactPageData = {
       category: "Wholesale & B2B",
       question: "Do you offer corporate gifting or wholesale orders?",
       answer:
-        "Yes, we collaborate with corporate teams, creative agencies, and boutiques for premium apparel, custom embroidery, and bulk uniforms. Select 'Wholesale & B2B' in the form or email wholesale@fedoll.com.",
+        "Yes, we collaborate with corporate teams, creative agencies, and boutiques for premium apparel, custom embroidery, and bulk uniforms. Select 'Wholesale & B2B' in the form or email wholesale@silkendrift.com.",
     },
   ],
 };
@@ -283,7 +283,7 @@ export const initialContactMessages: ContactMessageRecord[] = [
     category: "Bridal & Bespoke",
     orderNumber: "",
     subject: "Customizing Bridal Silk Saree for November Reception",
-    message: "Hello Fedoll atelier team, I am interested in customizing the Crimson Jamdani Bridal Saree with personalized zardozi embroidery on the pallu. Could you please advise if you can accommodate a fitting consultation at your Banani studio next week?",
+    message: "Hello SilkenDrift atelier team, I am interested in customizing the Crimson Jamdani Bridal Saree with personalized zardozi embroidery on the pallu. Could you please advise if you can accommodate a fitting consultation at your Banani studio next week?",
     status: "new",
     submittedAt: new Date(Date.now() - 3600000 * 2).toISOString(),
   },

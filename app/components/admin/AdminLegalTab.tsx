@@ -1770,7 +1770,7 @@ export const AdminLegalTab: React.FC = () => {
                           <a
                             href={`https://wa.me/${req.customerPhone.replace(/[^0-9]/g, "")}?text=Hello%20${encodeURIComponent(
                               req.customerName
-                            )},%20this%20is%20Fedoll%20Apparel%20regarding%20your%20Return%20Ticket%20${req.ticketNumber}.`}
+                            )},%20this%20is%20SilkenDrift%20Apparel%20regarding%20your%20Return%20Ticket%20${req.ticketNumber}.`}
                             target="_blank"
                             rel="noopener noreferrer"
                             className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs transition"

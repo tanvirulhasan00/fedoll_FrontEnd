@@ -57,7 +57,7 @@ export default function NewsLetter() {
           toast.success(payload?.message || "Thank you for subscribing! Check your inbox.");
           setStatus("success");
           setMessage(
-            payload?.message || "Welcome to Fedoll VIP club! Use code WELCOME10 for 10% off your order.",
+            payload?.message || "Welcome to SilkenDrift VIP club! Use code WELCOME10 for 10% off your order.",
           );
           setEmail("");
         }

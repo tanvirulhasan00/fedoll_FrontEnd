@@ -13,7 +13,7 @@ import {
 import { toast } from "sonner";
 import { Spinner } from "~/components/ui/spinner";
 import type { ReturnExchangeRequest, ReturnsExchangesData } from "~/firebase";
-import { FEDOLL_DROP_OFF_HUBS } from "./constants";
+import { SILKENDRIFT_DROP_OFF_HUBS } from "./constants";
 
 interface DesignateDropoffModalProps {
   ticket: ReturnExchangeRequest | null;
@@ -52,9 +52,9 @@ export const DesignateDropoffModal: React.FC<DesignateDropoffModalProps> = ({
 
   useEffect(() => {
     if (ticket) {
-      const defaultHub = FEDOLL_DROP_OFF_HUBS[0];
+      const defaultHub = SILKENDRIFT_DROP_OFF_HUBS[0];
       setSelectedHubId(
-        FEDOLL_DROP_OFF_HUBS.find((h) => h.name === ticket.dropoffHubName)?.id || "uttara_flagship"
+        SILKENDRIFT_DROP_OFF_HUBS.find((h) => h.name === ticket.dropoffHubName)?.id || "uttara_flagship"
       );
       setHubName(ticket.dropoffHubName || defaultHub.name);
       setHubAddress(ticket.dropoffHubAddress || defaultHub.address);
@@ -66,7 +66,7 @@ export const DesignateDropoffModal: React.FC<DesignateDropoffModalProps> = ({
       setDeadline(ticket.dropoffDeadline || fiveDaysLater);
       setInstructions(
         ticket.dropoffInstructions ||
-          `Please bring the item in the original Fedoll parcel bag with all woven tags attached. Present Return Ticket #${ticket.ticketNumber} at the concierge desk.`
+          `Please bring the item in the original SilkenDrift parcel bag with all woven tags attached. Present Return Ticket #${ticket.ticketNumber} at the concierge desk.`
       );
     }
   }, [ticket, policy]);
@@ -80,7 +80,7 @@ export const DesignateDropoffModal: React.FC<DesignateDropoffModalProps> = ({
       setHubHours("Saturday – Thursday, 10:00 AM – 06:00 PM");
       return;
     }
-    const found = FEDOLL_DROP_OFF_HUBS.find((h) => h.id === hubId);
+    const found = SILKENDRIFT_DROP_OFF_HUBS.find((h) => h.id === hubId);
     if (found) {
       setHubName(found.name);
       setHubAddress(found.address);
@@ -201,7 +201,7 @@ export const DesignateDropoffModal: React.FC<DesignateDropoffModalProps> = ({
                       onChange={(e) => handleSelectHubPreset(e.target.value)}
                       className="w-full p-3 rounded-xl bg-stone-50 dark:bg-neutral-800 border border-stone-200 dark:border-neutral-700 font-bold cursor-pointer"
                     >
-                      {FEDOLL_DROP_OFF_HUBS.map((hub) => (
+                      {SILKENDRIFT_DROP_OFF_HUBS.map((hub) => (
                         <option key={hub.id} value={hub.id}>
                           {hub.name} ({hub.city})
                         </option>

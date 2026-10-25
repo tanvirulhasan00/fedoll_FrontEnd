@@ -54,7 +54,7 @@ import {
   SettleRefundModal,
   RejectTicketModal,
   getReturnWhatsAppUrl,
-  FEDOLL_DROP_OFF_HUBS,
+  SILKENDRIFT_DROP_OFF_HUBS,
   BANGLADESH_REVERSE_COURIERS,
   BANGLADESH_DISPATCH_COURIERS,
 } from "./returns";
@@ -1860,7 +1860,7 @@ export const AdminReturnsTab: React.FC<AdminReturnsTabProps> = ({
                             <a
                               href={`https://wa.me/${selectedTicket.customerPhone.replace(/[^0-9]/g, "")}?text=Hello%20${encodeURIComponent(
                                 selectedTicket.customerName
-                              )},%20your%20Fedoll%20Return%20Ticket%20${selectedTicket.ticketNumber}%20has%20been%20APPROVED.%20Our%20reverse%20courier%20rider%20will%20collect%20the%20package%20from%20your%20doorstep.`}
+                              )},%20your%20SilkenDrift%20Return%20Ticket%20${selectedTicket.ticketNumber}%20has%20been%20APPROVED.%20Our%20reverse%20courier%20rider%20will%20collect%20the%20package%20from%20your%20doorstep.`}
                               target="_blank"
                               rel="noopener noreferrer"
                               className="px-2.5 py-1 rounded-md bg-emerald-600 text-white font-bold hover:bg-emerald-700 transition"
@@ -2245,7 +2245,7 @@ export const AdminReturnsTab: React.FC<AdminReturnsTabProps> = ({
                         {/* Sticker Header */}
                         <div className="flex items-center justify-between border-b-2 border-black pb-2">
                           <div>
-                            <span className="font-black text-lg tracking-wider block">FEDOLL</span>
+                            <span className="font-black text-lg tracking-wider block">SILKENDRIFT</span>
                             <span className="text-[10px] uppercase font-bold tracking-widest text-gray-700 block">
                               Reverse Logistics &amp; Atelier Hub
                             </span>
@@ -2312,7 +2312,7 @@ export const AdminReturnsTab: React.FC<AdminReturnsTabProps> = ({
                               <>
                                 <p className="font-bold text-xs">{stickerTicket.dropoffHubName}</p>
                                 <p className="text-[10px] mt-0.5 leading-tight">
-                                  {stickerTicket.dropoffHubAddress || "Fedoll Inspection Desk"}
+                                  {stickerTicket.dropoffHubAddress || "SilkenDrift Inspection Desk"}
                                 </p>
                                 <p className="font-mono text-[10px]">
                                   Hours: {stickerTicket.dropoffHubHours || "11:00 AM – 8:00 PM"}
@@ -2325,7 +2325,7 @@ export const AdminReturnsTab: React.FC<AdminReturnsTabProps> = ({
                               </>
                             ) : (
                               <>
-                                <p className="font-bold text-xs">Fedoll Inspection Desk</p>
+                                <p className="font-bold text-xs">SilkenDrift Inspection Desk</p>
                                 <p className="text-[10px] mt-0.5 leading-tight">
                                   House 14, Road 7, Sector 3, Uttara Model Town, Dhaka 1230
                                 </p>

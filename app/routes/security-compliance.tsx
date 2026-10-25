@@ -29,11 +29,11 @@ import { toast } from "sonner";
 
 export function meta() {
   return [
-    { title: "Security & Compliance | Fedoll Apparel Atelier Bangladesh" },
+    { title: "Security & Compliance | SilkenDrift Apparel Atelier Bangladesh" },
     {
       name: "description",
       content:
-        "Learn about Fedoll's 256-bit TLS encryption, PCI-DSS Level 1 payments, tamper-evident thermal parcels, and regulatory compliance across Bangladesh.",
+        "Learn about SilkenDrift's 256-bit TLS encryption, PCI-DSS Level 1 payments, tamper-evident thermal parcels, and regulatory compliance across Bangladesh.",
     },
   ];
 }
@@ -98,7 +98,7 @@ export default function SecurityCompliancePage() {
 
             <p className="max-w-2xl mx-auto text-sm sm:text-base text-stone-300 leading-relaxed font-light">
               From military-grade 256-bit TLS encryption and isolated cloud databases to physical tamper-evident parcel seals,
-              discover how Fedoll defends your transactions and confidentiality at every touchpoint.
+              discover how SilkenDrift defends your transactions and confidentiality at every touchpoint.
             </p>
 
             <div className="pt-2 flex flex-wrap items-center justify-center gap-4 text-xs text-stone-400">
@@ -204,7 +204,7 @@ export default function SecurityCompliancePage() {
               <span>Certified Compliance Standards &amp; Industry Baselines</span>
             </h3>
             <p className="text-sm text-gray-600 dark:text-neutral-300 leading-relaxed font-sans">
-              Fedoll operates in rigorous adherence to regional digital commerce regulations and global manufacturing standards:
+              SilkenDrift operates in rigorous adherence to regional digital commerce regulations and global manufacturing standards:
             </p>
 
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 pt-2">
@@ -309,7 +309,7 @@ export default function SecurityCompliancePage() {
               </div>
 
               <div className="pt-2 border-t border-stone-800 flex items-center justify-between text-xs text-stone-400">
-                <span>Fedoll International Ltd. | Dhaka Atelier Information Security</span>
+                <span>SilkenDrift International Ltd. | Dhaka Atelier Information Security</span>
                 <Link
                   to="/privacy-policy"
                   className="text-emerald-400 hover:underline flex items-center gap-1 font-semibold"

@@ -11,3 +11,4 @@ export * from "./features/homeSlice";
 export * from "./features/aboutSlice";
 export * from "./features/contactSlice";
 export * from "./features/productSlice";
+export * from "./features/storeSettingsSlice";

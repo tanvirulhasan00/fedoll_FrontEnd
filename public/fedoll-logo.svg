@@ -1,6 +1,6 @@
-<svg xmlns="http://www.w3.org/2000/svg" width="1040" height="260" viewBox="0 0 1040 260" role="img" aria-labelledby="title desc">
-  <title id="title">Fedoll logo</title>
-  <desc id="desc">A geometric coral F symbol paired with the Fedoll wordmark.</desc>
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="260" viewBox="0 0 1200 260" role="img" aria-labelledby="title desc">
+  <title id="title">SilkenDrift logo</title>
+  <desc id="desc">A geometric coral symbol paired with the SilkenDrift wordmark.</desc>
   <defs>
     <linearGradient id="coral" x1="20" y1="26" x2="160" y2="194" gradientUnits="userSpaceOnUse">
       <stop stop-color="#FF7B68"/>
@@ -13,5 +13,5 @@
     <circle cx="183" cy="163" r="27" fill="#10233E"/>
     <path fill="#FFF8F3" d="M178.5 151.5h9v7.5h7.5v9h-7.5v7.5h-9V168H171v-9h7.5v-7.5Z"/>
   </g>
-  <text x="280" y="167" fill="#10233E" font-family="Avenir Next, Avenir, Helvetica Neue, Arial, sans-serif" font-size="145" font-weight="700" letter-spacing="-7">Fedoll</text>
+  <text x="270" y="167" fill="#10233E" font-family="Avenir Next, Avenir, Helvetica Neue, Arial, sans-serif" font-size="120" font-weight="700" letter-spacing="-4">SilkenDrift</text>
 </svg>

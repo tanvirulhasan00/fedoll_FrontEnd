@@ -31,8 +31,8 @@ const initialState: CompanyInfoState = {
   data: {
     result: {
       id: 1,
-      name: "Fedoll",
-      email: "support@fedoll.com",
+      name: "SilkenDrift",
+      email: "support@silkendrift.com",
       phoneNumber: "+1 (800) 123-4567",
       address: "123 Fashion Street, New York, NY",
       facebookLink: "https://facebook.com",
@@ -56,8 +56,8 @@ export const getCompanyInfo = createAsyncThunk(
       return {
         result: {
           id: params.id || 1,
-          name: "Fedoll",
-          email: "support@fedoll.com",
+          name: "SilkenDrift",
+          email: "support@silkendrift.com",
           phoneNumber: "+1 (800) 123-4567",
           address: "123 Fashion Street, New York, NY",
         },
