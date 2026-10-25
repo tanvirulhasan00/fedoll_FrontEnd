@@ -23,6 +23,7 @@ import {
   normalizeGoogleDriveImageUrl,
 } from "~/firebase";
 import { useAppDispatch } from "~/redux/hooks/hook";
+import BrandLogo from "~/components/ui/BrandLogo";
 import { setStoreSettings } from "~/redux/features/storeSettingsSlice";
 import { Spinner } from "~/components/ui/spinner";
 
@@ -206,13 +207,22 @@ export const AdminSettingsTab: React.FC<AdminSettingsTabProps> = ({
                   <span className="text-[9px] uppercase font-bold text-gray-400 mb-2 tracking-wider">
                     Light Surface Preview
                   </span>
-                  <img
-                    src={normalizedLightLogo || "/silkendrift-logo.svg"}
-                    alt="Store logo preview (light)"
-                    className="h-12 sm:h-14 max-h-16 w-auto max-w-full object-contain"
-                    onLoad={() => setLogoLightLoadError(false)}
-                    onError={() => setLogoLightLoadError(true)}
-                  />
+                  {normalizedLightLogo ? (
+                    <img
+                      src={normalizedLightLogo}
+                      alt="Store logo preview (light)"
+                      className="h-12 sm:h-14 max-h-16 w-auto max-w-full object-contain"
+                      onLoad={() => setLogoLightLoadError(false)}
+                      onError={() => setLogoLightLoadError(true)}
+                    />
+                  ) : (
+                    <div className="flex flex-col items-center justify-center py-1">
+                      <BrandLogo variant="light" />
+                      <span className="text-[10px] text-stone-400 mt-2 font-medium">
+                        Default brand mark (active when no custom URL is entered)
+                      </span>
+                    </div>
+                  )}
                 </div>
 
                 {logoLightLoadError && (
@@ -296,13 +306,22 @@ export const AdminSettingsTab: React.FC<AdminSettingsTabProps> = ({
                   <span className="text-[9px] uppercase font-bold text-neutral-500 mb-2 tracking-wider">
                     Dark Surface &amp; Footer Preview
                   </span>
-                  <img
-                    src={normalizedDarkLogo || "/silkendrift-logo-dark.svg"}
-                    alt="Store logo preview (dark)"
-                    className="h-12 sm:h-14 max-h-16 w-auto max-w-full object-contain"
-                    onLoad={() => setLogoDarkLoadError(false)}
-                    onError={() => setLogoDarkLoadError(true)}
-                  />
+                  {normalizedDarkLogo ? (
+                    <img
+                      src={normalizedDarkLogo}
+                      alt="Store logo preview (dark)"
+                      className="h-12 sm:h-14 max-h-16 w-auto max-w-full object-contain"
+                      onLoad={() => setLogoDarkLoadError(false)}
+                      onError={() => setLogoDarkLoadError(true)}
+                    />
+                  ) : (
+                    <div className="flex flex-col items-center justify-center py-1">
+                      <BrandLogo variant="dark" />
+                      <span className="text-[10px] text-neutral-500 mt-2 font-medium">
+                        Default brand mark (active when no custom URL is entered)
+                      </span>
+                    </div>
+                  )}
                 </div>
 
                 {logoDarkLoadError && (
@@ -394,13 +413,19 @@ export const AdminSettingsTab: React.FC<AdminSettingsTabProps> = ({
                     <span className="size-2 rounded-full bg-emerald-400 inline-block" />
                   </div>
                   <div className="inline-flex items-center gap-2 px-3 py-1.5 bg-white dark:bg-neutral-850 rounded-t-lg border-t border-x border-stone-300 dark:border-neutral-700 max-w-xs shadow-xs">
-                    <img
-                      src={normalizedFavicon || "/favicon.ico"}
-                      alt="Favicon preview"
-                      className="size-4 rounded-xs object-contain shrink-0"
-                      onLoad={() => setFaviconLoadError(false)}
-                      onError={() => setFaviconLoadError(true)}
-                    />
+                    {normalizedFavicon ? (
+                      <img
+                        src={normalizedFavicon}
+                        alt="Favicon preview"
+                        className="size-4 rounded-xs object-contain shrink-0"
+                        onLoad={() => setFaviconLoadError(false)}
+                        onError={() => setFaviconLoadError(true)}
+                      />
+                    ) : (
+                      <span className="size-4 rounded-full bg-orange-600 text-[10px] font-bold text-white flex items-center justify-center shrink-0">
+                        S
+                      </span>
+                    )}
                     <span className="truncate text-[11px] font-medium text-gray-800 dark:text-neutral-200">
                       {form.storeName || "SilkenDrift"} | Official Store
                     </span>

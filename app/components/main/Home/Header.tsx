@@ -18,6 +18,7 @@ import { UserMenu } from "../Auth/UserMenu";
 import { openCart } from "~/redux/features/cart/cartSlice";
 import CartDrawer from "../Cart/CartDrawer";
 import ThemeToggle from "../Utilities/ThemeToggle";
+import BrandLogo from "~/components/ui/BrandLogo";
 
 const NAV_ITEMS = [
   { name: "Home", href: "/" },
@@ -54,10 +55,8 @@ export default function Header() {
     settings?.logoDarkUrl || settings?.logoUrl
   );
 
-  const lightLogoSrc =
-    !logoLightError && customLogoLight ? customLogoLight : "/silkendrift-logo.svg";
-  const darkLogoSrc =
-    !logoDarkError && customLogoDark ? customLogoDark : "/silkendrift-logo-dark.svg";
+  const hasCustomLightLogo = Boolean(customLogoLight && !logoLightError);
+  const hasCustomDarkLogo = Boolean(customLogoDark && !logoDarkError);
 
   useEffect(() => {
     setIsMounted(true);
@@ -123,18 +122,36 @@ export default function Header() {
         <div className="flex lg:flex-1">
           <Link to="/" className="-m-1.5 p-1.5 flex items-center">
             <span className="sr-only">{settings?.storeName || "SilkenDrift"}</span>
-            <img
-              alt={settings?.storeName || "SilkenDrift"}
-              src={lightLogoSrc}
-              className="h-11 sm:h-12 max-h-14 w-auto max-w-[240px] object-contain dark:hidden"
-              onError={() => setLogoLightError(true)}
-            />
-            <img
-              alt={settings?.storeName || "SilkenDrift"}
-              src={darkLogoSrc}
-              className="h-11 sm:h-12 max-h-14 w-auto max-w-[240px] object-contain hidden dark:block"
-              onError={() => setLogoDarkError(true)}
-            />
+            {hasCustomLightLogo || hasCustomDarkLogo ? (
+              <>
+                {hasCustomLightLogo ? (
+                  <img
+                    alt={settings?.storeName || "SilkenDrift"}
+                    src={customLogoLight!}
+                    className="h-11 sm:h-12 max-h-14 w-auto max-w-[240px] object-contain dark:hidden"
+                    onError={() => setLogoLightError(true)}
+                  />
+                ) : (
+                  <div className="dark:hidden">
+                    <BrandLogo variant="light" />
+                  </div>
+                )}
+                {hasCustomDarkLogo ? (
+                  <img
+                    alt={settings?.storeName || "SilkenDrift"}
+                    src={customLogoDark!}
+                    className="h-11 sm:h-12 max-h-14 w-auto max-w-[240px] object-contain hidden dark:block"
+                    onError={() => setLogoDarkError(true)}
+                  />
+                ) : (
+                  <div className="hidden dark:block">
+                    <BrandLogo variant="dark" />
+                  </div>
+                )}
+              </>
+            ) : (
+              <BrandLogo />
+            )}
           </Link>
         </div>
         <div className="flex items-center gap-2 lg:hidden">
@@ -260,18 +277,36 @@ export default function Header() {
               onClick={() => setMobileMenuOpen(false)}
             >
               <span className="sr-only">{settings?.storeName || "SilkenDrift"}</span>
-              <img
-                alt={settings?.storeName || "SilkenDrift"}
-                src={lightLogoSrc}
-                className="h-10 sm:h-11 max-h-12 w-auto max-w-[220px] object-contain dark:hidden"
-                onError={() => setLogoLightError(true)}
-              />
-              <img
-                alt={settings?.storeName || "SilkenDrift"}
-                src={darkLogoSrc}
-                className="h-10 sm:h-11 max-h-12 w-auto max-w-[220px] object-contain hidden dark:block"
-                onError={() => setLogoDarkError(true)}
-              />
+              {hasCustomLightLogo || hasCustomDarkLogo ? (
+                <>
+                  {hasCustomLightLogo ? (
+                    <img
+                      alt={settings?.storeName || "SilkenDrift"}
+                      src={customLogoLight!}
+                      className="h-10 sm:h-11 max-h-12 w-auto max-w-[220px] object-contain dark:hidden"
+                      onError={() => setLogoLightError(true)}
+                    />
+                  ) : (
+                    <div className="dark:hidden">
+                      <BrandLogo variant="light" />
+                    </div>
+                  )}
+                  {hasCustomDarkLogo ? (
+                    <img
+                      alt={settings?.storeName || "SilkenDrift"}
+                      src={customLogoDark!}
+                      className="h-10 sm:h-11 max-h-12 w-auto max-w-[220px] object-contain hidden dark:block"
+                      onError={() => setLogoDarkError(true)}
+                    />
+                  ) : (
+                    <div className="hidden dark:block">
+                      <BrandLogo variant="dark" />
+                    </div>
+                  )}
+                </>
+              ) : (
+                <BrandLogo />
+              )}
             </Link>
             <button
               type="button"

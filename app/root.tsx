@@ -14,9 +14,23 @@ import ErrorPage from "./components/main/Utilities/ErrorPage";
 import { ReduxProvider } from "~/redux/ReduxProvider";
 import { Toaster } from "~/components/ui/sonner";
 import StoreSettingsSync from "~/components/main/Utilities/StoreSettingsSync";
+import {
+  defaultStoreSettings,
+  fetchStoreSettings,
+  normalizeGoogleDriveImageUrl,
+} from "~/firebase";
+
+const DEFAULT_FAVICON =
+  normalizeGoogleDriveImageUrl(defaultStoreSettings.faviconUrl) ||
+  "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Ccircle cx='16' cy='16' r='14' fill='%23ea580c'/%3E%3Cpath d='M20 11c-1.5-1.5-6.5-1.5-7.5 1s9 3.5 8 7-7 3-9 1' stroke='%23ffffff' stroke-width='2.5' stroke-linecap='round' stroke-linejoin='round' fill='none'/%3E%3C/svg%3E";
+
+export async function loader() {
+  const settings = await fetchStoreSettings();
+  return { settings };
+}
 
 export const links: Route.LinksFunction = () => [
-  { rel: "icon", href: "/favicon.ico" },
+  { rel: "icon", href: DEFAULT_FAVICON },
   { rel: "preconnect", href: "https://fonts.googleapis.com" },
   {
     rel: "preconnect",
@@ -54,10 +68,10 @@ export function Layout({ children }: { children: React.ReactNode }) {
   );
 }
 
-export default function App() {
+export default function App({ loaderData }: Route.ComponentProps) {
   return (
     <ReduxProvider>
-      <StoreSettingsSync />
+      <StoreSettingsSync initialSettings={loaderData?.settings} />
       <Outlet />
       <Toaster position="top-right" richColors />
     </ReduxProvider>

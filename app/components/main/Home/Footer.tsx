@@ -21,6 +21,7 @@ import { useAppSelector } from "~/redux/hooks/hook";
 import { Link } from "react-router";
 import NewsLetter from "./Newsletter";
 import { normalizeGoogleDriveImageUrl } from "~/firebase";
+import BrandLogo from "~/components/ui/BrandLogo";
 
 const TRUST_PILLARS = [
   {
@@ -114,8 +115,7 @@ const Footer = () => {
   const customLogoDarkUrl = normalizeGoogleDriveImageUrl(
     settings?.logoDarkUrl || settings?.logoUrl
   );
-  const footerLogoSrc =
-    !logoError && customLogoDarkUrl ? customLogoDarkUrl : "/silkendrift-logo-dark.svg";
+  const hasCustomLogoDark = Boolean(customLogoDarkUrl && !logoError);
 
   const dynamicShopLinks = useMemo(() => {
     const links = [{ name: "All Products", href: "/products" }];
@@ -183,16 +183,20 @@ const Footer = () => {
           <div className="lg:col-span-4 flex flex-col justify-between">
             <div>
               <Link to="/" className="inline-block group">
-                <img
-                  src={footerLogoSrc}
-                  alt={
-                    settings?.storeName
-                      ? `${settings.storeName} - Export Quality Clothes`
-                      : "SilkenDrift - Export Quality Clothes"
-                  }
-                  className="h-12 sm:h-14 max-h-16 w-auto max-w-[280px] object-contain rounded-md shadow-xs transition-opacity group-hover:opacity-90"
-                  onError={() => setLogoError(true)}
-                />
+                {hasCustomLogoDark ? (
+                  <img
+                    src={customLogoDarkUrl!}
+                    alt={
+                      settings?.storeName
+                        ? `${settings.storeName} - Export Quality Clothes`
+                        : "SilkenDrift - Export Quality Clothes"
+                    }
+                    className="h-12 sm:h-14 max-h-16 w-auto max-w-[280px] object-contain rounded-md shadow-xs transition-opacity group-hover:opacity-90"
+                    onError={() => setLogoError(true)}
+                  />
+                ) : (
+                  <BrandLogo variant="dark" className="h-12 sm:h-14 w-auto" />
+                )}
               </Link>
               <p className="mt-4 text-sm text-neutral-400 leading-relaxed max-w-sm">
                 {settings?.tagline ||

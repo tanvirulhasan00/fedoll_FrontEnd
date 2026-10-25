@@ -39,26 +39,33 @@ export const defaultStoreSettings: StoreGeneralSettings = {
   announcementActive: true,
   orderPrefix: "FED-",
   supportHours: "10:00 AM - 10:00 PM (Sat - Thu)",
-  logoLightUrl: "",
-  logoDarkUrl: "",
-  logoUrl: "",
-  faviconUrl: "",
+  logoLightUrl: "https://drive.google.com/file/d/1D1j8ncE6keFEl-AB8g0T31JvXilGYCc3/view?usp=sharing",
+  logoDarkUrl: "https://drive.google.com/file/d/1udHKhJXp1azTsNpAN-In8-ZpSp8txAN8/view?usp=sharing",
+  logoUrl: "https://drive.google.com/file/d/1D1j8ncE6keFEl-AB8g0T31JvXilGYCc3/view?usp=sharing",
+  faviconUrl: "https://drive.google.com/file/d/1P0rXG90nds7lqELfcwuwpZy9RKJzJX-c/view?usp=drive_link",
 };
 
 import { sanitizeForFirestore } from "./firestore";
 
 const LOCAL_STORAGE_STORE_KEY = "fedoll_store_general_settings_v1";
+let memoryCachedSettings: StoreGeneralSettings | null = null;
 
 export const fetchStoreSettings = async (): Promise<StoreGeneralSettings> => {
+  if (memoryCachedSettings) {
+    return memoryCachedSettings;
+  }
+
   try {
     const docRef = doc(db, "store_settings", "general");
     const snap = await getDoc(docRef);
     if (snap.exists()) {
       const data = snap.data() as Partial<StoreGeneralSettings>;
-      return {
+      const merged: StoreGeneralSettings = {
         ...defaultStoreSettings,
         ...data,
       };
+      memoryCachedSettings = merged;
+      return merged;
     }
 
     // Auto-seed default store settings to Firestore
@@ -67,6 +74,7 @@ export const fetchStoreSettings = async (): Promise<StoreGeneralSettings> => {
       sanitizeForFirestore({ ...defaultStoreSettings, updatedAt: serverTimestamp() }),
       { merge: true }
     );
+    memoryCachedSettings = defaultStoreSettings;
     return defaultStoreSettings;
   } catch (err) {
     console.warn("Could not fetch store settings from Firestore:", err);
@@ -75,16 +83,22 @@ export const fetchStoreSettings = async (): Promise<StoreGeneralSettings> => {
   if (typeof window !== "undefined") {
     try {
       const raw = localStorage.getItem(LOCAL_STORAGE_STORE_KEY);
-      if (raw) return { ...defaultStoreSettings, ...JSON.parse(raw) };
+      if (raw) {
+        const merged = { ...defaultStoreSettings, ...JSON.parse(raw) };
+        memoryCachedSettings = merged;
+        return merged;
+      }
     } catch {}
   }
 
+  memoryCachedSettings = defaultStoreSettings;
   return defaultStoreSettings;
 };
 
 export const saveStoreSettings = async (
   settings: StoreGeneralSettings
 ): Promise<StoreGeneralSettings> => {
+  memoryCachedSettings = settings;
   try {
     const docRef = doc(db, "store_settings", "general");
     await setDoc(

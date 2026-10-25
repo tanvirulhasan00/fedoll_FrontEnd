@@ -118,8 +118,7 @@ export const AdminSidebar: React.FC<AdminSidebarProps> = ({
   const customLogoUrl = normalizeGoogleDriveImageUrl(
     settings?.logoDarkUrl || settings?.logoLightUrl || settings?.logoUrl
   );
-  const adminLogoSrc =
-    !logoLoadError && customLogoUrl ? customLogoUrl : "/silkendrift-logo-dark.svg";
+  const hasCustomLogo = Boolean(customLogoUrl && !logoLoadError);
 
   const handleTabClick = (tab: AdminTab) => {
     onSelectTab(tab);
@@ -135,12 +134,18 @@ export const AdminSidebar: React.FC<AdminSidebarProps> = ({
       {/* Brand Header */}
       <div className="p-5 border-b border-stone-800/80 flex items-center justify-between">
         <Link to="/" className="flex items-center gap-2.5">
-          <img
-            src={adminLogoSrc}
-            alt={settings?.storeName || "SilkenDrift"}
-            className="size-11 rounded-xl object-contain bg-white/10 p-1.5 border border-stone-700/80 shadow-md"
-            onError={() => setLogoLoadError(true)}
-          />
+          {hasCustomLogo ? (
+            <img
+              src={customLogoUrl!}
+              alt={settings?.storeName || "SilkenDrift"}
+              className="size-11 rounded-xl object-contain bg-white/10 p-1.5 border border-stone-700/80 shadow-md"
+              onError={() => setLogoLoadError(true)}
+            />
+          ) : (
+            <div className="size-11 rounded-xl flex items-center justify-center bg-gradient-to-tr from-orange-600 to-amber-500 text-white font-sans font-black text-lg shadow-md border border-stone-700/80 shrink-0">
+              S
+            </div>
+          )}
           <div>
             <span className="font-bold text-base text-white tracking-wide">
               {settings?.storeName || "SilkenDrift"}
