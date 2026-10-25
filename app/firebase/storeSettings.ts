@@ -20,6 +20,8 @@ export interface StoreGeneralSettings {
   announcementActive: boolean;
   orderPrefix: string;
   supportHours: string;
+  logoLightUrl?: string;
+  logoDarkUrl?: string;
   logoUrl?: string;
   faviconUrl?: string;
 }
@@ -37,6 +39,8 @@ export const defaultStoreSettings: StoreGeneralSettings = {
   announcementActive: true,
   orderPrefix: "FED-",
   supportHours: "10:00 AM - 10:00 PM (Sat - Thu)",
+  logoLightUrl: "",
+  logoDarkUrl: "",
   logoUrl: "",
   faviconUrl: "",
 };

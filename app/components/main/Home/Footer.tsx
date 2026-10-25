@@ -111,8 +111,11 @@ const Footer = () => {
   const { settings } = useAppSelector((state) => state.storeSettings);
   const [logoError, setLogoError] = useState(false);
 
-  const customLogoUrl = normalizeGoogleDriveImageUrl(settings?.logoUrl);
-  const footerLogoSrc = !logoError && customLogoUrl ? customLogoUrl : "/silkendrift-logo-dark.svg";
+  const customLogoDarkUrl = normalizeGoogleDriveImageUrl(
+    settings?.logoDarkUrl || settings?.logoUrl
+  );
+  const footerLogoSrc =
+    !logoError && customLogoDarkUrl ? customLogoDarkUrl : "/silkendrift-logo-dark.svg";
 
   const dynamicShopLinks = useMemo(() => {
     const links = [{ name: "All Products", href: "/products" }];
@@ -182,8 +185,12 @@ const Footer = () => {
               <Link to="/" className="inline-block group">
                 <img
                   src={footerLogoSrc}
-                  alt={settings?.storeName ? `${settings.storeName} - Export Quality Clothes` : "SilkenDrift - Export Quality Clothes"}
-                  className="h-10 max-h-12 w-auto max-w-[220px] object-contain rounded-md shadow-xs transition-opacity group-hover:opacity-90"
+                  alt={
+                    settings?.storeName
+                      ? `${settings.storeName} - Export Quality Clothes`
+                      : "SilkenDrift - Export Quality Clothes"
+                  }
+                  className="h-12 sm:h-14 max-h-16 w-auto max-w-[280px] object-contain rounded-md shadow-xs transition-opacity group-hover:opacity-90"
                   onError={() => setLogoError(true)}
                 />
               </Link>

@@ -38,7 +38,8 @@ export const AdminSettingsTab: React.FC<AdminSettingsTabProps> = ({
   const dispatch = useAppDispatch();
   const [form, setForm] = useState<StoreGeneralSettings>(initialSettings);
   const [isSaving, setIsSaving] = useState(false);
-  const [logoLoadError, setLogoLoadError] = useState(false);
+  const [logoLightLoadError, setLogoLightLoadError] = useState(false);
+  const [logoDarkLoadError, setLogoDarkLoadError] = useState(false);
   const [faviconLoadError, setFaviconLoadError] = useState(false);
 
   useEffect(() => {
@@ -46,8 +47,19 @@ export const AdminSettingsTab: React.FC<AdminSettingsTabProps> = ({
   }, [initialSettings]);
 
   // Derived normalized URLs for Google Drive and standard links
-  const normalizedLogo = normalizeGoogleDriveImageUrl(form.logoUrl);
-  const logoDriveId = extractGoogleDriveFileId(form.logoUrl);
+  const normalizedLightLogo = normalizeGoogleDriveImageUrl(
+    form.logoLightUrl || form.logoUrl
+  );
+  const lightLogoDriveId = extractGoogleDriveFileId(
+    form.logoLightUrl || form.logoUrl
+  );
+
+  const normalizedDarkLogo = normalizeGoogleDriveImageUrl(
+    form.logoDarkUrl || form.logoUrl
+  );
+  const darkLogoDriveId = extractGoogleDriveFileId(
+    form.logoDarkUrl || form.logoUrl
+  );
 
   const normalizedFavicon = normalizeGoogleDriveImageUrl(form.faviconUrl);
   const faviconDriveId = extractGoogleDriveFileId(form.faviconUrl);
@@ -58,7 +70,9 @@ export const AdminSettingsTab: React.FC<AdminSettingsTabProps> = ({
     try {
       const sanitized: StoreGeneralSettings = {
         ...form,
-        logoUrl: form.logoUrl?.trim() || "",
+        logoLightUrl: form.logoLightUrl?.trim() || "",
+        logoDarkUrl: form.logoDarkUrl?.trim() || "",
+        logoUrl: form.logoLightUrl?.trim() || form.logoDarkUrl?.trim() || "",
         faviconUrl: form.faviconUrl?.trim() || "",
       };
       await saveStoreSettings(sanitized);
@@ -81,7 +95,7 @@ export const AdminSettingsTab: React.FC<AdminSettingsTabProps> = ({
           <span>Store Settings &amp; Brand Profile</span>
         </h2>
         <p className="text-xs text-gray-500 dark:text-neutral-400 mt-0.5">
-          General business metadata, visual brand assets (logo &amp; favicon), contact lines, currency, and storefront ribbons.
+          General business metadata, visual brand assets (light/dark logos &amp; favicon), contact lines, currency, and storefront ribbons.
         </p>
       </div>
 
@@ -90,17 +104,17 @@ export const AdminSettingsTab: React.FC<AdminSettingsTabProps> = ({
         className="bg-white dark:bg-neutral-900 p-6 sm:p-8 rounded-3xl border border-stone-200/80 dark:border-neutral-800 shadow-xs space-y-8 text-xs"
       >
         {/* ==================================================================== */}
-        {/* Brand Assets: Logo & Favicon with Google Drive Support */}
+        {/* Brand Assets: Light Logo, Dark Logo, and Favicon with Google Drive Support */}
         {/* ==================================================================== */}
         <div className="space-y-5">
           <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-gray-100 dark:border-neutral-800 pb-3">
             <div>
               <h3 className="font-bold uppercase tracking-wider text-gray-900 dark:text-white flex items-center gap-1.5 text-sm">
                 <PhotoIcon className="size-4 text-orange-600" />
-                <span>Brand Identity: Logo &amp; Favicon</span>
+                <span>Brand Identity: Logos &amp; Favicon</span>
               </h3>
               <p className="text-[11px] text-gray-500 dark:text-neutral-400 mt-0.5">
-                Upload or link your storefront logo and browser tab favicon. Google Drive share links are fully supported.
+                Configure your storefront logos (light &amp; dark mode) and browser tab favicon. Google Drive share links are fully supported.
               </p>
             </div>
             <div className="flex items-center gap-1.5 px-3 py-1 bg-amber-50 dark:bg-amber-950/40 border border-amber-200/70 dark:border-amber-800/60 rounded-full text-[10px] font-semibold text-amber-800 dark:text-amber-300 w-fit">
@@ -119,28 +133,33 @@ export const AdminSettingsTab: React.FC<AdminSettingsTabProps> = ({
                 How to use Google Drive share links:
               </p>
               <p className="text-[11px]">
-                In Google Drive, right-click your image &rarr; select <span className="font-semibold text-gray-800 dark:text-neutral-200">Share</span> &rarr; change General access to <span className="font-semibold text-orange-600 dark:text-orange-400">&ldquo;Anyone with the link&rdquo; (Viewer)</span> &rarr; click <span className="font-semibold text-gray-800 dark:text-neutral-200">Copy link</span> and paste it below. Our system automatically converts it into a high-speed CDN image!
+                In Google Drive, right-click your image &rarr; select <span className="font-semibold text-gray-800 dark:text-neutral-200">Share</span> &rarr; change General access to <span className="font-semibold text-orange-600 dark:text-orange-400">&ldquo;Anyone with the link&rdquo; (Viewer)</span> &rarr; click <span className="font-semibold text-gray-800 dark:text-neutral-200">Copy link</span> and paste below. The system automatically converts it into a high-speed CDN image!
               </p>
             </div>
           </div>
 
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-            {/* Field 1: Store Logo URL */}
-            <div className="space-y-3 p-4 bg-stone-50/70 dark:bg-neutral-800/40 rounded-2xl border border-stone-200/70 dark:border-neutral-700/60">
+            {/* Field 1: Store Logo URL (Light Mode) */}
+            <div className="space-y-3 p-5 bg-stone-50/70 dark:bg-neutral-800/40 rounded-2xl border border-stone-200/70 dark:border-neutral-700/60">
               <div className="flex items-center justify-between">
-                <label className="block font-bold text-gray-800 dark:text-neutral-200">
-                  Store Logo URL
-                </label>
-                {form.logoUrl && (
+                <div>
+                  <label className="block font-bold text-gray-900 dark:text-white text-xs">
+                    1. Store Logo URL (Light Mode)
+                  </label>
+                  <p className="text-[10px] text-gray-500 dark:text-neutral-400">
+                    Shown in the main navigation on white/light backgrounds.
+                  </p>
+                </div>
+                {form.logoLightUrl && (
                   <button
                     type="button"
                     onClick={() => {
-                      setForm({ ...form, logoUrl: "" });
-                      setLogoLoadError(false);
+                      setForm({ ...form, logoLightUrl: "" });
+                      setLogoLightLoadError(false);
                     }}
                     className="text-[10px] text-gray-500 hover:text-red-500 transition cursor-pointer"
                   >
-                    Reset to Default Logo
+                    Reset
                   </button>
                 )}
               </div>
@@ -148,10 +167,10 @@ export const AdminSettingsTab: React.FC<AdminSettingsTabProps> = ({
               <div className="relative">
                 <input
                   type="text"
-                  value={form.logoUrl || ""}
+                  value={form.logoLightUrl || ""}
                   onChange={(e) => {
-                    setForm({ ...form, logoUrl: e.target.value });
-                    setLogoLoadError(false);
+                    setForm({ ...form, logoLightUrl: e.target.value });
+                    setLogoLightLoadError(false);
                   }}
                   placeholder="https://drive.google.com/file/d/.../view?usp=sharing"
                   className="w-full px-3 py-2.5 bg-white dark:bg-neutral-800 border border-gray-200 dark:border-neutral-700 rounded-xl focus:outline-none focus:ring-2 focus:ring-orange-600 font-mono text-[11px]"
@@ -159,20 +178,20 @@ export const AdminSettingsTab: React.FC<AdminSettingsTabProps> = ({
               </div>
 
               {/* Google Drive Status Notification */}
-              {logoDriveId && (
+              {lightLogoDriveId && (
                 <div className="flex items-center gap-1.5 text-[11px] text-emerald-700 dark:text-emerald-400 font-medium">
                   <CheckCircleIcon className="size-4 shrink-0" />
-                  <span>Google Drive link detected (File ID: {logoDriveId.slice(0, 8)}...)</span>
+                  <span>Google Drive link detected (File ID: {lightLogoDriveId.slice(0, 8)}...)</span>
                 </div>
               )}
 
-              {/* Logo Previews (Light & Dark) */}
+              {/* Light Logo Preview */}
               <div className="space-y-2 pt-1">
                 <div className="flex items-center justify-between text-[11px] font-semibold text-gray-600 dark:text-neutral-400">
-                  <span>Live Logo Previews</span>
-                  {normalizedLogo && (
+                  <span>Light Mode Live Preview</span>
+                  {normalizedLightLogo && (
                     <a
-                      href={normalizedLogo}
+                      href={normalizedLightLogo}
                       target="_blank"
                       rel="noopener noreferrer"
                       className="inline-flex items-center gap-1 text-orange-600 dark:text-orange-400 hover:underline text-[10px]"
@@ -183,71 +202,151 @@ export const AdminSettingsTab: React.FC<AdminSettingsTabProps> = ({
                   )}
                 </div>
 
-                <div className="grid grid-cols-2 gap-2">
-                  {/* Light Surface Preview (Simulating Website Header) */}
-                  <div className="p-3 bg-white border border-gray-200 rounded-xl flex flex-col items-center justify-center min-h-[90px] shadow-2xs">
-                    <span className="text-[9px] uppercase font-bold text-gray-400 mb-1.5 tracking-wider">
-                      Light Header Preview
-                    </span>
-                    <img
-                      src={normalizedLogo || "/silkendrift-logo.svg"}
-                      alt="Logo preview on light"
-                      className="h-8 max-h-10 w-auto max-w-full object-contain"
-                      onLoad={() => setLogoLoadError(false)}
-                      onError={() => setLogoLoadError(true)}
-                    />
-                  </div>
-
-                  {/* Dark Surface Preview (Simulating Website Footer) */}
-                  <div className="p-3 bg-[#0c0e12] border border-neutral-800 rounded-xl flex flex-col items-center justify-center min-h-[90px] shadow-2xs">
-                    <span className="text-[9px] uppercase font-bold text-neutral-500 mb-1.5 tracking-wider">
-                      Dark Footer Preview
-                    </span>
-                    <img
-                      src={normalizedLogo || "/silkendrift-logo-dark.svg"}
-                      alt="Logo preview on dark"
-                      className="h-8 max-h-10 w-auto max-w-full object-contain"
-                      onLoad={() => setLogoLoadError(false)}
-                      onError={() => setLogoLoadError(true)}
-                    />
-                  </div>
+                <div className="p-4 bg-white border border-gray-200 rounded-2xl flex flex-col items-center justify-center min-h-[110px] shadow-2xs">
+                  <span className="text-[9px] uppercase font-bold text-gray-400 mb-2 tracking-wider">
+                    Light Surface Preview
+                  </span>
+                  <img
+                    src={normalizedLightLogo || "/silkendrift-logo.svg"}
+                    alt="Store logo preview (light)"
+                    className="h-12 sm:h-14 max-h-16 w-auto max-w-full object-contain"
+                    onLoad={() => setLogoLightLoadError(false)}
+                    onError={() => setLogoLightLoadError(true)}
+                  />
                 </div>
 
-                {logoLoadError && (
+                {logoLightLoadError && (
                   <div className="p-2.5 bg-rose-50 dark:bg-rose-950/40 border border-rose-200 dark:border-rose-900 rounded-xl text-rose-700 dark:text-rose-400 flex items-start gap-2 text-[10px]">
                     <ExclamationTriangleIcon className="size-4 shrink-0 mt-0.5" />
                     <span>
-                      Could not load logo preview. If this is a Google Drive link, please ensure General Access is set to <strong>&ldquo;Anyone with the link&rdquo;</strong> in Google Drive sharing settings.
+                      Could not load light logo preview. If this is a Google Drive link, please ensure General Access is set to <strong>&ldquo;Anyone with the link&rdquo;</strong> in Google Drive sharing settings.
                     </span>
                   </div>
                 )}
                 <p className="text-[10px] text-gray-400 dark:text-neutral-500">
-                  Logo will dynamically update across header, mobile drawer, and footer.
+                  Rendered on daytime headers and bright surfaces.
                 </p>
               </div>
             </div>
 
-            {/* Field 2: Store Favicon URL */}
-            <div className="space-y-3 p-4 bg-stone-50/70 dark:bg-neutral-800/40 rounded-2xl border border-stone-200/70 dark:border-neutral-700/60">
+            {/* Field 2: Store Logo URL (Dark Mode & Footer) */}
+            <div className="space-y-3 p-5 bg-stone-50/70 dark:bg-neutral-800/40 rounded-2xl border border-stone-200/70 dark:border-neutral-700/60">
               <div className="flex items-center justify-between">
-                <label className="block font-bold text-gray-800 dark:text-neutral-200">
-                  Store Favicon URL
-                </label>
-                {form.faviconUrl && (
+                <div>
+                  <label className="block font-bold text-gray-900 dark:text-white text-xs">
+                    2. Store Logo URL (Dark Mode &amp; Footer)
+                  </label>
+                  <p className="text-[10px] text-gray-500 dark:text-neutral-400">
+                    Shown in dark mode navigation and the dark footer.
+                  </p>
+                </div>
+                {form.logoDarkUrl && (
                   <button
                     type="button"
                     onClick={() => {
-                      setForm({ ...form, faviconUrl: "" });
-                      setFaviconLoadError(false);
+                      setForm({ ...form, logoDarkUrl: "" });
+                      setLogoDarkLoadError(false);
                     }}
                     className="text-[10px] text-gray-500 hover:text-red-500 transition cursor-pointer"
                   >
-                    Reset to Default Favicon
+                    Reset
                   </button>
                 )}
               </div>
 
               <div className="relative">
+                <input
+                  type="text"
+                  value={form.logoDarkUrl || ""}
+                  onChange={(e) => {
+                    setForm({ ...form, logoDarkUrl: e.target.value });
+                    setLogoDarkLoadError(false);
+                  }}
+                  placeholder="https://drive.google.com/file/d/.../view?usp=sharing"
+                  className="w-full px-3 py-2.5 bg-white dark:bg-neutral-800 border border-gray-200 dark:border-neutral-700 rounded-xl focus:outline-none focus:ring-2 focus:ring-orange-600 font-mono text-[11px]"
+                />
+              </div>
+
+              {/* Google Drive Status Notification */}
+              {darkLogoDriveId && (
+                <div className="flex items-center gap-1.5 text-[11px] text-emerald-700 dark:text-emerald-400 font-medium">
+                  <CheckCircleIcon className="size-4 shrink-0" />
+                  <span>Google Drive link detected (File ID: {darkLogoDriveId.slice(0, 8)}...)</span>
+                </div>
+              )}
+
+              {/* Dark Logo Preview */}
+              <div className="space-y-2 pt-1">
+                <div className="flex items-center justify-between text-[11px] font-semibold text-gray-600 dark:text-neutral-400">
+                  <span>Dark Mode &amp; Footer Live Preview</span>
+                  {normalizedDarkLogo && (
+                    <a
+                      href={normalizedDarkLogo}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="inline-flex items-center gap-1 text-orange-600 dark:text-orange-400 hover:underline text-[10px]"
+                    >
+                      <span>Open image in new tab</span>
+                      <ArrowTopRightOnSquareIcon className="size-3" />
+                    </a>
+                  )}
+                </div>
+
+                <div className="p-4 bg-[#0c0e12] border border-neutral-800 rounded-2xl flex flex-col items-center justify-center min-h-[110px] shadow-2xs">
+                  <span className="text-[9px] uppercase font-bold text-neutral-500 mb-2 tracking-wider">
+                    Dark Surface &amp; Footer Preview
+                  </span>
+                  <img
+                    src={normalizedDarkLogo || "/silkendrift-logo-dark.svg"}
+                    alt="Store logo preview (dark)"
+                    className="h-12 sm:h-14 max-h-16 w-auto max-w-full object-contain"
+                    onLoad={() => setLogoDarkLoadError(false)}
+                    onError={() => setLogoDarkLoadError(true)}
+                  />
+                </div>
+
+                {logoDarkLoadError && (
+                  <div className="p-2.5 bg-rose-50 dark:bg-rose-950/40 border border-rose-200 dark:border-rose-900 rounded-xl text-rose-700 dark:text-rose-400 flex items-start gap-2 text-[10px]">
+                    <ExclamationTriangleIcon className="size-4 shrink-0 mt-0.5" />
+                    <span>
+                      Could not load dark logo preview. If this is a Google Drive link, please ensure General Access is set to <strong>&ldquo;Anyone with the link&rdquo;</strong> in Google Drive sharing settings.
+                    </span>
+                  </div>
+                )}
+                <p className="text-[10px] text-gray-400 dark:text-neutral-500">
+                  Rendered on dark mode navigation and the dark storefront footer.
+                </p>
+              </div>
+            </div>
+          </div>
+
+          {/* Field 3: Store Favicon URL */}
+          <div className="space-y-3 p-5 bg-stone-50/70 dark:bg-neutral-800/40 rounded-2xl border border-stone-200/70 dark:border-neutral-700/60">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+              <div>
+                <label className="block font-bold text-gray-900 dark:text-white text-xs">
+                  3. Store Favicon URL (Browser Tab Icon)
+                </label>
+                <p className="text-[10px] text-gray-500 dark:text-neutral-400">
+                  Small square icon displayed on browser tabs, bookmarks, and mobile home screen shortcuts.
+                </p>
+              </div>
+              {form.faviconUrl && (
+                <button
+                  type="button"
+                  onClick={() => {
+                    setForm({ ...form, faviconUrl: "" });
+                    setFaviconLoadError(false);
+                  }}
+                  className="text-[10px] text-gray-500 hover:text-red-500 transition cursor-pointer w-fit"
+                >
+                  Reset to Default Favicon
+                </button>
+              )}
+            </div>
+
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 items-center">
+              <div className="space-y-2">
                 <input
                   type="text"
                   value={form.faviconUrl || ""}
@@ -258,18 +357,20 @@ export const AdminSettingsTab: React.FC<AdminSettingsTabProps> = ({
                   placeholder="https://drive.google.com/file/d/.../view?usp=sharing"
                   className="w-full px-3 py-2.5 bg-white dark:bg-neutral-800 border border-gray-200 dark:border-neutral-700 rounded-xl focus:outline-none focus:ring-2 focus:ring-orange-600 font-mono text-[11px]"
                 />
+
+                {faviconDriveId && (
+                  <div className="flex items-center gap-1.5 text-[11px] text-emerald-700 dark:text-emerald-400 font-medium">
+                    <CheckCircleIcon className="size-4 shrink-0" />
+                    <span>Google Drive link detected (File ID: {faviconDriveId.slice(0, 8)}...)</span>
+                  </div>
+                )}
+                <p className="text-[10px] text-gray-400 dark:text-neutral-500">
+                  Recommended: 32x32px, 64x64px, or square PNG/ICO with transparent background.
+                </p>
               </div>
 
-              {/* Google Drive Status Notification */}
-              {faviconDriveId && (
-                <div className="flex items-center gap-1.5 text-[11px] text-emerald-700 dark:text-emerald-400 font-medium">
-                  <CheckCircleIcon className="size-4 shrink-0" />
-                  <span>Google Drive link detected (File ID: {faviconDriveId.slice(0, 8)}...)</span>
-                </div>
-              )}
-
               {/* Favicon Browser Tab Simulation Preview */}
-              <div className="space-y-2 pt-1">
+              <div className="space-y-2">
                 <div className="flex items-center justify-between text-[11px] font-semibold text-gray-600 dark:text-neutral-400">
                   <span>Browser Tab Simulation Preview</span>
                   {normalizedFavicon && (
@@ -311,13 +412,10 @@ export const AdminSettingsTab: React.FC<AdminSettingsTabProps> = ({
                   <div className="p-2.5 bg-rose-50 dark:bg-rose-950/40 border border-rose-200 dark:border-rose-900 rounded-xl text-rose-700 dark:text-rose-400 flex items-start gap-2 text-[10px]">
                     <ExclamationTriangleIcon className="size-4 shrink-0 mt-0.5" />
                     <span>
-                      Could not load favicon preview. If using Google Drive, check that file access is set to <strong>&ldquo;Anyone with the link&rdquo;</strong>. Recommended size: 32x32px or 64x64px square image.
+                      Could not load favicon preview. If using Google Drive, check that file access is set to <strong>&ldquo;Anyone with the link&rdquo;</strong>.
                     </span>
                   </div>
                 )}
-                <p className="text-[10px] text-gray-400 dark:text-neutral-500">
-                  Favicon dynamically updates the browser tab icon across all pages for visitors.
-                </p>
               </div>
             </div>
           </div>

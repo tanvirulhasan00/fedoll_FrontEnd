@@ -44,10 +44,20 @@ export default function Header() {
   const { totalQuantity } = useAppSelector((state) => state.cart);
   const { wishlistIds } = useAppSelector((state) => state.home);
   const { settings } = useAppSelector((state) => state.storeSettings);
-  const [logoLoadError, setLogoLoadError] = useState(false);
+  const [logoLightError, setLogoLightError] = useState(false);
+  const [logoDarkError, setLogoDarkError] = useState(false);
 
-  const customLogoUrl = normalizeGoogleDriveImageUrl(settings?.logoUrl);
-  const hasCustomLogo = !logoLoadError && !!customLogoUrl;
+  const customLogoLight = normalizeGoogleDriveImageUrl(
+    settings?.logoLightUrl || settings?.logoUrl
+  );
+  const customLogoDark = normalizeGoogleDriveImageUrl(
+    settings?.logoDarkUrl || settings?.logoUrl
+  );
+
+  const lightLogoSrc =
+    !logoLightError && customLogoLight ? customLogoLight : "/silkendrift-logo.svg";
+  const darkLogoSrc =
+    !logoDarkError && customLogoDark ? customLogoDark : "/silkendrift-logo-dark.svg";
 
   useEffect(() => {
     setIsMounted(true);
@@ -113,23 +123,18 @@ export default function Header() {
         <div className="flex lg:flex-1">
           <Link to="/" className="-m-1.5 p-1.5 flex items-center">
             <span className="sr-only">{settings?.storeName || "SilkenDrift"}</span>
-            {hasCustomLogo ? (
-              <img
-                alt={settings?.storeName || "SilkenDrift"}
-                src={customLogoUrl}
-                className="h-8 max-h-10 w-auto max-w-[190px] object-contain rounded-md"
-                onError={() => setLogoLoadError(true)}
-              />
-            ) : (
-              <>
-                <img alt="SilkenDrift" src="/silkendrift-logo.svg" className="h-8 w-auto dark:hidden" />
-                <img
-                  alt="SilkenDrift"
-                  src="/silkendrift-logo-dark.svg"
-                  className="h-8 w-auto hidden dark:block rounded-md"
-                />
-              </>
-            )}
+            <img
+              alt={settings?.storeName || "SilkenDrift"}
+              src={lightLogoSrc}
+              className="h-11 sm:h-12 max-h-14 w-auto max-w-[240px] object-contain dark:hidden"
+              onError={() => setLogoLightError(true)}
+            />
+            <img
+              alt={settings?.storeName || "SilkenDrift"}
+              src={darkLogoSrc}
+              className="h-11 sm:h-12 max-h-14 w-auto max-w-[240px] object-contain hidden dark:block"
+              onError={() => setLogoDarkError(true)}
+            />
           </Link>
         </div>
         <div className="flex items-center gap-2 lg:hidden">
@@ -255,23 +260,18 @@ export default function Header() {
               onClick={() => setMobileMenuOpen(false)}
             >
               <span className="sr-only">{settings?.storeName || "SilkenDrift"}</span>
-              {hasCustomLogo ? (
-                <img
-                  alt={settings?.storeName || "SilkenDrift"}
-                  src={customLogoUrl}
-                  className="h-8 max-h-10 w-auto max-w-[190px] object-contain rounded-md"
-                  onError={() => setLogoLoadError(true)}
-                />
-              ) : (
-                <>
-                  <img alt="SilkenDrift" src="/silkendrift-logo.svg" className="h-8 w-auto dark:hidden" />
-                  <img
-                    alt="SilkenDrift"
-                    src="/silkendrift-logo-dark.svg"
-                    className="h-8 w-auto hidden dark:block rounded-md"
-                  />
-                </>
-              )}
+              <img
+                alt={settings?.storeName || "SilkenDrift"}
+                src={lightLogoSrc}
+                className="h-10 sm:h-11 max-h-12 w-auto max-w-[220px] object-contain dark:hidden"
+                onError={() => setLogoLightError(true)}
+              />
+              <img
+                alt={settings?.storeName || "SilkenDrift"}
+                src={darkLogoSrc}
+                className="h-10 sm:h-11 max-h-12 w-auto max-w-[220px] object-contain hidden dark:block"
+                onError={() => setLogoDarkError(true)}
+              />
             </Link>
             <button
               type="button"
