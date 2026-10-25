@@ -10,10 +10,18 @@ import {
 } from "firebase/firestore";
 import { db } from "./firebase.config";
 
+export type CouponDiscountType =
+  | "percentage"
+  | "fixed_amount"
+  | "free_shipping"
+  | "shipping_discount";
+
 export interface CouponItem {
   id: string;
   code: string;
-  discountPercent: number;
+  discountType?: CouponDiscountType;
+  discountPercent?: number;
+  discountAmount?: number;
   minSpend: number;
   description: string;
   active: boolean;
@@ -23,9 +31,35 @@ export interface CouponItem {
 
 export const initialCoupons: CouponItem[] = [
   {
+    id: "coup-free-delivery",
+    code: "FREEDELIVERY",
+    discountType: "free_shipping",
+    discountPercent: 0,
+    discountAmount: 0,
+    minSpend: 2000,
+    description: "100% Free Nationwide Courier Delivery on orders over ৳2,000.",
+    active: true,
+    usedCount: 84,
+    expiresAt: "2026-12-31",
+  },
+  {
+    id: "coup-ship-50",
+    code: "SHIP50",
+    discountType: "shipping_discount",
+    discountPercent: 0,
+    discountAmount: 50,
+    minSpend: 1000,
+    description: "৳50 off courier delivery charges across all districts.",
+    active: true,
+    usedCount: 42,
+    expiresAt: "2026-12-31",
+  },
+  {
     id: "coup-1",
     code: "SILKENDRIFT2026",
+    discountType: "percentage",
     discountPercent: 15,
+    discountAmount: 0,
     minSpend: 1500,
     description: "15% off on all outerwear and signature winter selvedge denim.",
     active: true,
@@ -35,7 +69,9 @@ export const initialCoupons: CouponItem[] = [
   {
     id: "coup-2",
     code: "WELCOME10",
+    discountType: "percentage",
     discountPercent: 10,
+    discountAmount: 0,
     minSpend: 1000,
     description: "Welcome discount for newly registered SilkenDrift customers.",
     active: true,
@@ -45,7 +81,9 @@ export const initialCoupons: CouponItem[] = [
   {
     id: "coup-3",
     code: "VIP20",
+    discountType: "percentage",
     discountPercent: 20,
+    discountAmount: 0,
     minSpend: 5000,
     description: "VIP privileged discount for orders exceeding ৳5,000.",
     active: true,

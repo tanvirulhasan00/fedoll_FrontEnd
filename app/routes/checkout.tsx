@@ -174,27 +174,61 @@ export default function CheckoutPage() {
     return district.toLowerCase().includes("dhaka") || cityThana.toLowerCase().includes("dhaka");
   }, [district, cityThana]);
 
-  const freeThreshold = shippingSettings.freeShippingThreshold || 2500;
-  const isFreeDelivery = totalAmount >= freeThreshold;
-
-  const standardDeliveryFee = useMemo(() => {
-    if (isFreeDelivery) return 0;
+  const baseDeliveryFee = useMemo(() => {
     return isInsideDhaka
       ? shippingSettings.standardInsideDhaka || 70
       : shippingSettings.standardOutsideDhaka || 130;
-  }, [isFreeDelivery, isInsideDhaka, shippingSettings]);
+  }, [isInsideDhaka, shippingSettings]);
 
-  const discountAmount = useMemo(() => {
-    if (!appliedCoupon) return 0;
-    return Math.round((totalAmount * appliedCoupon.discountPercent) / 100);
-  }, [appliedCoupon, totalAmount]);
+  // Coupon Discounts: Handles Free Delivery, Custom Delivery Discount (৳), Percentage Off, and Fixed Off
+  const { orderDiscount, shippingDiscount, isCouponFreeDelivery } = useMemo(() => {
+    if (!appliedCoupon) {
+      return { orderDiscount: 0, shippingDiscount: 0, isCouponFreeDelivery: false };
+    }
+
+    if (appliedCoupon.discountType === "free_shipping") {
+      return {
+        orderDiscount: 0,
+        shippingDiscount: baseDeliveryFee,
+        isCouponFreeDelivery: true,
+      };
+    }
+
+    if (appliedCoupon.discountType === "shipping_discount") {
+      const discount = Math.min(baseDeliveryFee, appliedCoupon.discountAmount || 0);
+      return {
+        orderDiscount: 0,
+        shippingDiscount: discount,
+        isCouponFreeDelivery: discount >= baseDeliveryFee,
+      };
+    }
+
+    if (appliedCoupon.discountType === "fixed_amount") {
+      const discount = Math.min(totalAmount, appliedCoupon.discountAmount || 0);
+      return {
+        orderDiscount: discount,
+        shippingDiscount: 0,
+        isCouponFreeDelivery: false,
+      };
+    }
+
+    // Default: percentage
+    const percent = appliedCoupon.discountPercent || 0;
+    const discount = Math.round((totalAmount * percent) / 100);
+    return {
+      orderDiscount: discount,
+      shippingDiscount: 0,
+      isCouponFreeDelivery: false,
+    };
+  }, [appliedCoupon, baseDeliveryFee, totalAmount]);
+
+  const standardDeliveryFee = Math.max(0, baseDeliveryFee - shippingDiscount);
+  const discountAmount = orderDiscount;
 
   const finalTotalAmount = Math.max(
     0,
     totalAmount - discountAmount + standardDeliveryFee
   );
-
-  const amountRemainingForFreeShipping = Math.max(0, freeThreshold - totalAmount);
 
   // Handle Apply Coupon
   const handleApplyCoupon = (e: React.FormEvent) => {
@@ -221,18 +255,58 @@ export default function CheckoutPage() {
           return;
         }
         setAppliedCoupon(match);
-        toast.success(`🎉 Voucher applied! ${match.discountPercent}% discount activated.`);
+        if (match.discountType === "free_shipping") {
+          toast.success(`🎉 Voucher "${cleanCode}" applied! 100% Free Courier Delivery activated.`);
+        } else if (match.discountType === "shipping_discount") {
+          toast.success(`🎉 Voucher "${cleanCode}" applied! ৳${match.discountAmount} off delivery charges.`);
+        } else if (match.discountType === "fixed_amount") {
+          toast.success(`🎉 Voucher "${cleanCode}" applied! ৳${match.discountAmount} discount activated.`);
+        } else {
+          toast.success(`🎉 Voucher "${cleanCode}" applied! ${match.discountPercent}% discount activated.`);
+        }
         setPromoCodeInput("");
         setApplyingCoupon(false);
         return;
       }
 
       // 2. Predefined fallback codes
-      if (cleanCode === "SILKENDRIFT2026") {
+      if (cleanCode === "FREEDELIVERY") {
+        setAppliedCoupon({
+          id: "coup-free-delivery",
+          code: "FREEDELIVERY",
+          discountType: "free_shipping",
+          discountPercent: 0,
+          discountAmount: 0,
+          minSpend: 0,
+          description: "100% Free Courier Delivery nationwide",
+          active: true,
+          usedCount: 0,
+          expiresAt: "2026-12-31",
+        });
+        toast.success("🎉 FREEDELIVERY applied! 100% Free Courier Delivery activated.");
+        setPromoCodeInput("");
+      } else if (cleanCode === "SHIP50") {
+        setAppliedCoupon({
+          id: "coup-ship-50",
+          code: "SHIP50",
+          discountType: "shipping_discount",
+          discountPercent: 0,
+          discountAmount: 50,
+          minSpend: 0,
+          description: "৳50 off courier delivery charges",
+          active: true,
+          usedCount: 0,
+          expiresAt: "2026-12-31",
+        });
+        toast.success("🎉 SHIP50 applied! ৳50 off delivery charges.");
+        setPromoCodeInput("");
+      } else if (cleanCode === "SILKENDRIFT2026") {
         setAppliedCoupon({
           id: "fedoll-2026",
           code: "SILKENDRIFT2026",
+          discountType: "percentage",
           discountPercent: 15,
+          discountAmount: 0,
           minSpend: 1500,
           description: "15% off seasonal discount",
           active: true,
@@ -245,7 +319,9 @@ export default function CheckoutPage() {
         setAppliedCoupon({
           id: "welcome-10",
           code: "WELCOME10",
+          discountType: "percentage",
           discountPercent: 10,
+          discountAmount: 0,
           minSpend: 1000,
           description: "10% Welcome discount",
           active: true,
@@ -255,7 +331,7 @@ export default function CheckoutPage() {
         toast.success("🎉 WELCOME10 applied! 10% discount activated.");
         setPromoCodeInput("");
       } else {
-        toast.error(`Invalid promo code "${cleanCode}". Try SILKENDRIFT2026 or WELCOME10.`);
+        toast.error(`Invalid promo code "${cleanCode}". Try FREEDELIVERY, SHIP50, or SILKENDRIFT2026.`);
       }
       setApplyingCoupon(false);
     }, 300);
@@ -1124,9 +1200,14 @@ export default function CheckoutPage() {
                           <span className="font-mono text-base font-extrabold text-orange-600 dark:text-orange-400">
                             {standardDeliveryFee === 0 ? "FREE DELIVERY" : `৳${standardDeliveryFee}`}
                           </span>
-                          {isFreeDelivery && (
+                          {isCouponFreeDelivery && (
                             <span className="text-[10px] text-emerald-600 block font-semibold">
-                              Free delivery unlocked
+                              Free delivery voucher applied
+                            </span>
+                          )}
+                          {!isCouponFreeDelivery && shippingDiscount > 0 && (
+                            <span className="text-[10px] text-cyan-600 block font-semibold">
+                              -৳{shippingDiscount} delivery discount applied
                             </span>
                           )}
                         </div>
@@ -1271,33 +1352,25 @@ export default function CheckoutPage() {
                     ))}
                   </div>
 
-                  {/* Free Courier Delivery Progress */}
-                  <div className="p-3.5 rounded-2xl bg-stone-50 dark:bg-neutral-950 border border-stone-200/80 dark:border-neutral-800">
-                    <div className="flex items-center justify-between text-xs text-gray-700 dark:text-neutral-300 mb-1.5 font-medium">
-                      <span>
-                        {isFreeDelivery ? (
-                          <span className="text-emerald-600 dark:text-emerald-400 font-bold flex items-center gap-1">
-                            <SparklesIcon className="size-3.5" /> FREE Nationwide Courier Delivery unlocked!
-                          </span>
-                        ) : (
-                          <>
-                            Add{" "}
-                            <strong className="text-orange-600 font-bold">
-                              ৳{amountRemainingForFreeShipping.toLocaleString()}
-                            </strong>{" "}
-                            more for FREE delivery
-                          </>
-                        )}
+                  {/* Doorstep Courier Delivery Banner */}
+                  <div className="p-3.5 rounded-2xl bg-stone-50 dark:bg-neutral-950 border border-stone-200/80 dark:border-neutral-800 flex items-center justify-between text-xs text-gray-700 dark:text-neutral-300">
+                    <div className="flex items-center gap-2">
+                      <TruckIcon className="size-4 text-orange-600 shrink-0" />
+                      <span>Standard Doorstep Courier Delivery</span>
+                    </div>
+                    {isCouponFreeDelivery ? (
+                      <span className="text-[10px] font-bold text-emerald-600 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-950/60 px-2.5 py-0.5 rounded-full border border-emerald-200/60 dark:border-emerald-800/40">
+                        FREE DELIVERY
                       </span>
-                    </div>
-                    <div className="w-full h-1.5 bg-stone-200 dark:bg-neutral-800 rounded-full overflow-hidden">
-                      <div
-                        className="h-full bg-gradient-to-r from-orange-500 to-amber-500 rounded-full transition-all duration-300"
-                        style={{
-                          width: `${Math.min(100, (totalAmount / freeThreshold) * 100)}%`,
-                        }}
-                      />
-                    </div>
+                    ) : shippingDiscount > 0 ? (
+                      <span className="text-[10px] font-bold text-cyan-600 dark:text-cyan-400 bg-cyan-50 dark:bg-cyan-950/60 px-2.5 py-0.5 rounded-full border border-cyan-200/60 dark:border-cyan-800/40">
+                        -৳{shippingDiscount} DELIVERY DISCOUNT
+                      </span>
+                    ) : (
+                      <span className="text-[10px] font-semibold text-gray-500 dark:text-neutral-400">
+                        {isInsideDhaka ? "৳70 Inside Dhaka" : "৳130 Outside Dhaka"}
+                      </span>
+                    )}
                   </div>
 
                   {/* Promo Code Form */}
@@ -1307,7 +1380,15 @@ export default function CheckoutPage() {
                         <div className="flex items-center gap-2">
                           <TagIcon className="size-4 text-emerald-600" />
                           <span className="font-bold text-emerald-900 dark:text-emerald-200">
-                            {appliedCoupon.code} (-{appliedCoupon.discountPercent}%)
+                            {appliedCoupon.code} (
+                            {appliedCoupon.discountType === "free_shipping"
+                              ? "100% FREE DELIVERY"
+                              : appliedCoupon.discountType === "shipping_discount"
+                              ? `-৳${appliedCoupon.discountAmount} Delivery`
+                              : appliedCoupon.discountType === "fixed_amount"
+                              ? `-৳${appliedCoupon.discountAmount}`
+                              : `-${appliedCoupon.discountPercent}%`}
+                            )
                           </span>
                         </div>
                         <button
@@ -1321,13 +1402,15 @@ export default function CheckoutPage() {
                     ) : (
                       <form onSubmit={handleApplyCoupon} className="flex gap-2">
                         <input
+                          id="checkout-promo-input"
                           type="text"
                           value={promoCodeInput}
                           onChange={(e) => setPromoCodeInput(e.target.value)}
-                          placeholder="Promo code (e.g. SILKENDRIFT2026)"
+                          placeholder="Promo code (e.g. FREEDELIVERY or SILKENDRIFT2026)"
                           className="flex-1 px-3 py-2 text-xs rounded-xl border border-stone-300 dark:border-neutral-700 bg-stone-50 dark:bg-neutral-800 text-gray-900 dark:text-white uppercase font-mono font-semibold focus:outline-none focus:ring-1 focus:ring-orange-600"
                         />
                         <button
+                          id="checkout-apply-promo-btn"
                           type="submit"
                           disabled={applyingCoupon}
                           className="px-4 py-2 rounded-xl bg-stone-900 dark:bg-white text-white dark:text-neutral-900 text-xs font-bold hover:bg-orange-600 dark:hover:bg-orange-500 dark:hover:text-white transition cursor-pointer disabled:opacity-50"
@@ -1357,7 +1440,18 @@ export default function CheckoutPage() {
                     <div className="flex justify-between text-gray-600 dark:text-neutral-400">
                       <span>Delivery ({isInsideDhaka ? "Inside Dhaka" : "Outside Dhaka"})</span>
                       <span className="font-bold text-gray-900 dark:text-white font-mono">
-                        {standardDeliveryFee === 0 ? "FREE" : `৳${standardDeliveryFee}`}
+                        {standardDeliveryFee === 0 ? (
+                          <span className="text-emerald-600 dark:text-emerald-400 font-bold">FREE</span>
+                        ) : shippingDiscount > 0 ? (
+                          <>
+                            <span className="line-through text-gray-400 mr-1.5 font-normal">
+                              ৳{baseDeliveryFee}
+                            </span>
+                            <span>৳{standardDeliveryFee}</span>
+                          </>
+                        ) : (
+                          `৳${standardDeliveryFee}`
+                        )}
                       </span>
                     </div>
 

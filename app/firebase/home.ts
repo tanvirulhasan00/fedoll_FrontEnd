@@ -160,7 +160,7 @@ export const initialValueProps: ValueProp[] = [
     id: "prop-1",
     icon: "TruckIcon",
     title: "Fast Delivery in Bangladesh",
-    description: "2-3 days delivery across Dhaka and all 64 districts. Free shipping on orders over ৳2,500.",
+    description: "2-3 days delivery across Dhaka and all 64 districts. Use voucher FREEDELIVERY for free delivery.",
   },
   {
     id: "prop-2",
@@ -459,7 +459,7 @@ export const initialSpotlightBanner: SpotlightBanner = {
   tag: "Special Offer • Bangladesh",
   title: "Premium Selvedge Denim & Winter Coats",
   description:
-    "Order online today and enjoy 15% discount on your first purchase. Free courier delivery all across Bangladesh on orders over ৳2,500.",
+    "Order online today and enjoy 15% discount with voucher SILKENDRIFT2026. Use voucher FREEDELIVERY for free courier delivery all across Bangladesh.",
   ctaText: "Shop The Collection",
   ctaLink: "/products?category=Denim",
   image:

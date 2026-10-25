@@ -562,7 +562,7 @@ export const AdminSettingsTab: React.FC<AdminSettingsTabProps> = ({
                 type="text"
                 value={form.announcementNotice}
                 onChange={(e) => setForm({ ...form, announcementNotice: e.target.value })}
-                placeholder="Free delivery nationwide on orders above ৳2500"
+                placeholder="Flash Winter Drop: Use voucher FREEDELIVERY for free delivery!"
                 className="w-full px-3 py-2.5 bg-stone-50 dark:bg-neutral-800 border border-gray-200 dark:border-neutral-700 rounded-xl focus:outline-none"
               />
             </div>

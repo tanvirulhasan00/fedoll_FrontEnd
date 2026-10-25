@@ -35,7 +35,7 @@ export const defaultStoreSettings: StoreGeneralSettings = {
   currency: "BDT",
   currencySymbol: "৳",
   vatRatePercent: 0,
-  announcementNotice: "Flash Winter Drop: Free Courier Delivery on all orders over ৳2,500!",
+  announcementNotice: "Flash Winter Drop: Use voucher FREEDELIVERY for free delivery on orders over ৳2,000!",
   announcementActive: true,
   orderPrefix: "FED-",
   supportHours: "10:00 AM - 10:00 PM (Sat - Thu)",

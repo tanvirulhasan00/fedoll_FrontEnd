@@ -270,37 +270,30 @@ export const AdminShippingTab: React.FC<AdminShippingTabProps> = ({
         </div>
       </div>
 
-      {/* SECTION 2: STOREWIDE SHIPPING RULES & THRESHOLDS */}
+      {/* SECTION 2: STOREWIDE SHIPPING RULES & RATES */}
       <div className="bg-white dark:bg-neutral-900 p-6 sm:p-8 rounded-3xl border border-stone-200/80 dark:border-neutral-800 shadow-xs space-y-5">
         <div>
           <h3 className="text-lg font-black text-gray-900 dark:text-white">
-            Nationwide Delivery Rules &amp; Free Shipping Threshold
+            Nationwide Delivery Rules &amp; Shipping Rates
           </h3>
           <p className="text-xs text-gray-500 dark:text-neutral-400 mt-0.5">
-            Configure default delivery fees and cart spend levels to unlock free courier delivery.
+            Configure default delivery fees across Bangladesh. Automatic cart free delivery is disabled — create custom Free Delivery or ৳ off vouchers in the Coupons tab.
           </p>
         </div>
 
-        <form onSubmit={handleSaveSettings} className="space-y-4 text-xs">
-          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-            <div>
-              <label className="block font-semibold text-gray-700 dark:text-neutral-300 mb-1">
-                Free Delivery Threshold (BDT ৳) *
-              </label>
-              <input
-                type="number"
-                required
-                value={settings.freeShippingThreshold}
-                onChange={(e) =>
-                  setSettings({ ...settings, freeShippingThreshold: Number(e.target.value) })
-                }
-                className="w-full px-3 py-2 bg-stone-50 dark:bg-neutral-800 border border-gray-200 dark:border-neutral-700 rounded-xl font-bold text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-orange-600"
-              />
-              <span className="text-[10px] text-gray-400 block mt-1">
-                Orders equal or higher receive Free Courier Delivery.
-              </span>
-            </div>
+        <div className="p-4 rounded-2xl bg-amber-50/80 dark:bg-amber-950/30 border border-amber-200 dark:border-amber-800/60 flex items-start gap-3 text-xs text-amber-900 dark:text-amber-200">
+          <TruckIcon className="size-5 text-amber-600 dark:text-amber-400 shrink-0 mt-0.5" />
+          <div className="space-y-1">
+            <span className="font-bold">Free Delivery Policy:</span>
+            <p className="text-amber-800 dark:text-amber-300">
+              Automatic spend-threshold free delivery is turned off. You now have full control in the{" "}
+              <strong className="underline">Coupons</strong> tab to create 100% Free Delivery codes (e.g. <span className="font-mono font-bold">FREEDELIVERY</span>) or custom delivery fee discounts (e.g. <span className="font-mono font-bold">SHIP50</span>) with any minimum spend requirements.
+            </p>
+          </div>
+        </div>
 
+        <form onSubmit={handleSaveSettings} className="space-y-4 text-xs">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div>
               <label className="block font-semibold text-gray-700 dark:text-neutral-300 mb-1">
                 Default Inside Dhaka Fee (BDT ৳)

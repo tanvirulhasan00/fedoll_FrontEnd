@@ -18,6 +18,7 @@ import {
   MinusIcon,
   TagIcon,
   LockClosedIcon,
+  TruckIcon,
 } from "@heroicons/react/24/outline";
 import { useNavigate } from "react-router";
 import { useAppDispatch, useAppSelector } from "~/redux/hooks/hook";
@@ -38,35 +39,69 @@ export default function CartDrawer() {
   const { user, isAuthenticated } = useAppSelector((state) => state.auth);
 
   const [promoCode, setPromoCode] = useState("");
-  const [discountPercent, setDiscountPercent] = useState(0);
+  const [appliedPromo, setAppliedPromo] = useState<{
+    code: string;
+    discountType: "percentage" | "free_shipping" | "shipping_discount" | "fixed_amount";
+    discountValue: number;
+  } | null>(null);
 
-  // Free shipping threshold in BDT
-  const freeShippingThreshold = 2500;
-  const remainingForFreeShipping = Math.max(
-    0,
-    freeShippingThreshold - totalAmount
-  );
-  const shippingProgress = Math.min(
-    100,
-    (totalAmount / freeShippingThreshold) * 100
-  );
+  const baseShippingCost = 70; // Standard Dhaka baseline
 
   const handleApplyPromo = (e: React.FormEvent) => {
     e.preventDefault();
-    if (promoCode.trim().toUpperCase() === "SILKENDRIFT2026") {
-      setDiscountPercent(15);
+    const clean = promoCode.trim().toUpperCase();
+    if (!clean) return;
+
+    if (clean === "FREEDELIVERY") {
+      setAppliedPromo({
+        code: "FREEDELIVERY",
+        discountType: "free_shipping",
+        discountValue: 0,
+      });
+      toast.success("Promo code applied! 100% Free Courier Delivery activated.");
+    } else if (clean === "SHIP50") {
+      setAppliedPromo({
+        code: "SHIP50",
+        discountType: "shipping_discount",
+        discountValue: 50,
+      });
+      toast.success("Promo code applied! ৳50 off delivery charges.");
+    } else if (clean === "SILKENDRIFT2026") {
+      setAppliedPromo({
+        code: "SILKENDRIFT2026",
+        discountType: "percentage",
+        discountValue: 15,
+      });
       toast.success("Promo code applied! 15% discount activated.");
-    } else if (promoCode.trim().toUpperCase() === "WELCOME10") {
-      setDiscountPercent(10);
+    } else if (clean === "WELCOME10") {
+      setAppliedPromo({
+        code: "WELCOME10",
+        discountType: "percentage",
+        discountValue: 10,
+      });
       toast.success("Welcome discount applied! 10% off.");
     } else {
-      toast.error("Invalid discount code. Try SILKENDRIFT2026");
+      toast.error("Invalid voucher code. Try FREEDELIVERY, SHIP50, or SILKENDRIFT2026.");
     }
   };
 
-  const discountAmount = Math.round((totalAmount * discountPercent) / 100);
-  const shippingCost = remainingForFreeShipping === 0 ? 0 : 70;
-  const finalTotal = Math.max(0, totalAmount - discountAmount + shippingCost);
+  const isFreeDelivery = appliedPromo?.discountType === "free_shipping";
+  const shippingDiscount =
+    appliedPromo?.discountType === "free_shipping"
+      ? baseShippingCost
+      : appliedPromo?.discountType === "shipping_discount"
+      ? Math.min(baseShippingCost, appliedPromo.discountValue)
+      : 0;
+
+  const orderDiscount =
+    appliedPromo?.discountType === "percentage"
+      ? Math.round((totalAmount * appliedPromo.discountValue) / 100)
+      : appliedPromo?.discountType === "fixed_amount"
+      ? Math.min(totalAmount, appliedPromo.discountValue)
+      : 0;
+
+  const shippingCost = Math.max(0, baseShippingCost - shippingDiscount);
+  const finalTotal = Math.max(0, totalAmount - orderDiscount + shippingCost);
 
   return (
     <Transition show={isCartOpen} as={React.Fragment}>
@@ -117,34 +152,25 @@ export default function CartDrawer() {
                     </button>
                   </div>
 
-                  {/* Free Shipping Progress Indicator (in BDT) */}
-                  <div className="px-6 py-3.5 bg-stone-50 dark:bg-neutral-950/80 border-b border-stone-200/80 dark:border-neutral-800">
-                    <div className="flex items-center justify-between text-xs text-gray-700 dark:text-neutral-300 mb-1.5 font-medium">
-                      <span>
-                        {remainingForFreeShipping === 0 ? (
-                          <span className="text-emerald-700 dark:text-emerald-400 font-bold flex items-center gap-1">
-                            <SparklesIcon className="size-3.5" /> Free Courier Delivery in Bangladesh unlocked!
-                          </span>
-                        ) : (
-                          <>
-                            Add{" "}
-                            <strong className="text-orange-600 dark:text-orange-400">
-                              ৳{remainingForFreeShipping.toLocaleString()}
-                            </strong>{" "}
-                            more for Free Delivery
-                          </>
-                        )}
+                  {/* Doorstep Courier Delivery Banner */}
+                  <div className="px-6 py-3 bg-stone-50 dark:bg-neutral-950/80 border-b border-stone-200/80 dark:border-neutral-800 flex items-center justify-between text-xs text-gray-700 dark:text-neutral-300">
+                    <span className="flex items-center gap-1.5 font-medium">
+                      <TruckIcon className="size-4 text-orange-600 dark:text-orange-400" />
+                      <span>Standard Doorstep Courier Delivery</span>
+                    </span>
+                    {isFreeDelivery ? (
+                      <span className="text-[10px] font-bold text-emerald-600 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-950/60 px-2 py-0.5 rounded-full border border-emerald-200/60 dark:border-emerald-800/40">
+                        FREE DELIVERY
                       </span>
-                      <span className="text-[11px] text-gray-500 dark:text-neutral-400">
-                        {Math.round(shippingProgress)}%
+                    ) : shippingDiscount > 0 ? (
+                      <span className="text-[10px] font-bold text-cyan-600 dark:text-cyan-400 bg-cyan-50 dark:bg-cyan-950/60 px-2 py-0.5 rounded-full border border-cyan-200/60 dark:border-cyan-800/40">
+                        -৳{shippingDiscount} OFF DELIVERY
                       </span>
-                    </div>
-                    <div className="w-full h-1.5 bg-gray-200 dark:bg-neutral-800 rounded-full overflow-hidden">
-                      <div
-                        className="h-full bg-orange-600 dark:bg-orange-500 rounded-full transition-all duration-500"
-                        style={{ width: `${shippingProgress}%` }}
-                      />
-                    </div>
+                    ) : (
+                      <span className="text-[10px] text-orange-600 dark:text-orange-400 font-semibold">
+                        Coupons available
+                      </span>
+                    )}
                   </div>
 
                   {/* Cart Items List */}
@@ -323,16 +349,31 @@ export default function CartDrawer() {
                             ৳{totalAmount.toLocaleString()}
                           </span>
                         </div>
-                        {discountPercent > 0 && (
+                        {orderDiscount > 0 && (
                           <div className="flex justify-between text-emerald-700 dark:text-emerald-400 font-semibold">
-                            <span>Discount ({discountPercent}%)</span>
-                            <span>-৳{discountAmount.toLocaleString()}</span>
+                            <span>
+                              Order Discount{" "}
+                              {appliedPromo?.discountType === "percentage"
+                                ? `(${appliedPromo.discountValue}%)`
+                                : ""}
+                            </span>
+                            <span>-৳{orderDiscount.toLocaleString()}</span>
                           </div>
                         )}
                         <div className="flex justify-between">
-                          <span>Courier Delivery (Bangladesh)</span>
+                          <span>Courier Delivery (Dhaka)</span>
                           <span className="font-semibold text-gray-900 dark:text-white">
-                            {remainingForFreeShipping === 0 ? "FREE" : "৳70 (Dhaka) / ৳130"}
+                            {shippingCost === 0 ? (
+                              <span className="text-emerald-600 dark:text-emerald-400 font-bold">
+                                FREE (Voucher)
+                              </span>
+                            ) : shippingDiscount > 0 ? (
+                              <span className="text-cyan-600 dark:text-cyan-400 font-bold">
+                                ৳{shippingCost} (-৳{shippingDiscount})
+                              </span>
+                            ) : (
+                              "৳70"
+                            )}
                           </span>
                         </div>
                         <div className="pt-2 border-t border-gray-200 dark:border-neutral-800 flex justify-between text-sm font-bold text-gray-900 dark:text-white">
