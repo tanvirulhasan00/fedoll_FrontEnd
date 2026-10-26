@@ -47,6 +47,7 @@ import {
 } from "~/components/ui/accordion";
 import { toast } from "sonner";
 import { Spinner } from "~/components/ui/spinner";
+import { ProductDetailSkeleton } from "~/components/main/Skeletons";
 
 export function meta({}: Route.MetaArgs) {
   return [
@@ -183,12 +184,9 @@ export default function ProductDetailPage() {
       <div className="min-h-screen bg-white dark:bg-neutral-950 text-gray-900 dark:text-white flex flex-col font-sans transition-colors">
         <Topbar />
         <Header />
-        <div className="flex-1 flex flex-col items-center justify-center py-32 space-y-4">
-          <Spinner className="size-10 text-orange-600 dark:text-orange-400 animate-spin" />
-          <p className="text-sm font-semibold text-gray-600 dark:text-neutral-400">
-            Loading garment details from Cloud Firestore...
-          </p>
-        </div>
+        <main className="flex-1">
+          <ProductDetailSkeleton />
+        </main>
         <Footer />
       </div>
     );

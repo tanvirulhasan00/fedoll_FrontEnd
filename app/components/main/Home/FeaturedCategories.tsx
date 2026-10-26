@@ -7,9 +7,14 @@ import {
   extractGoogleDriveFileId,
   getGoogleDriveThumbnailUrl,
 } from "~/firebase";
+import { FeaturedCategoriesSkeleton } from "~/components/main/Skeletons";
 
 export default function FeaturedCategories() {
-  const { featuredCategories } = useAppSelector((state) => state.home);
+  const { featuredCategories, loading } = useAppSelector((state) => state.home);
+
+  if (loading && (!featuredCategories || featuredCategories.length === 0)) {
+    return <FeaturedCategoriesSkeleton />;
+  }
 
   if (!featuredCategories || featuredCategories.length === 0) return null;
 

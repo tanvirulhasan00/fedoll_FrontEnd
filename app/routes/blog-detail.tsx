@@ -25,6 +25,7 @@ import {
 } from "@heroicons/react/24/outline";
 import { HeartIcon as HeartSolidIcon } from "@heroicons/react/24/solid";
 import { toast } from "sonner";
+import { BlogDetailSkeleton } from "~/components/main/Skeletons";
 
 export function meta({ params }: Route.MetaArgs) {
   return [
@@ -260,18 +261,7 @@ export default function BlogDetailPage() {
         </div>
 
         {detailLoading || (!selectedBlog && !detailError) ? (
-          /* Loading state */
-          <div className="max-w-4xl mx-auto px-4 sm:px-6 py-16 animate-pulse space-y-8">
-            <div className="h-6 w-32 bg-gray-200 dark:bg-neutral-800 rounded-full" />
-            <div className="h-12 w-5/6 bg-gray-200 dark:bg-neutral-800 rounded-xl" />
-            <div className="h-6 w-3/4 bg-gray-200 dark:bg-neutral-800 rounded" />
-            <div className="h-96 w-full bg-gray-200 dark:bg-neutral-800 rounded-3xl" />
-            <div className="space-y-4 pt-6">
-              <div className="h-4 bg-gray-200 dark:bg-neutral-800 rounded w-full" />
-              <div className="h-4 bg-gray-200 dark:bg-neutral-800 rounded w-5/6" />
-              <div className="h-4 bg-gray-200 dark:bg-neutral-800 rounded w-4/6" />
-            </div>
-          </div>
+          <BlogDetailSkeleton />
         ) : detailError || !selectedBlog ? (
           /* Error / Not found state */
           <div className="max-w-xl mx-auto px-4 py-24 text-center">

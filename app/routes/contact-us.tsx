@@ -36,6 +36,7 @@ import {
   AccordionContent,
 } from "~/components/ui/accordion";
 import { toast } from "sonner";
+import { ContactPageSkeleton } from "~/components/main/Skeletons";
 
 export function meta({}: Route.MetaArgs) {
   return [
@@ -271,8 +272,12 @@ export default function ContactUsPage() {
           </div>
         </section>
 
-        {/* 4 Direct Assistance Channels */}
-        <section className="py-12 bg-white dark:bg-neutral-950 border-b border-stone-200/60 dark:border-neutral-800 transition-colors">
+        {loadingPage && !pageData ? (
+          <ContactPageSkeleton />
+        ) : (
+          <>
+            {/* 4 Direct Assistance Channels */}
+            <section className="py-12 bg-white dark:bg-neutral-950 border-b border-stone-200/60 dark:border-neutral-800 transition-colors">
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
               {pageData?.channels?.map((channel) => (
@@ -811,6 +816,8 @@ export default function ContactUsPage() {
             </div>
           </div>
         </section>
+          </>
+        )}
       </main>
 
       {/* Global Footer */}

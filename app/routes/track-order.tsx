@@ -21,6 +21,7 @@ import {
 } from "@heroicons/react/24/outline";
 import { Spinner } from "~/components/ui/spinner";
 import OrderTrackerView from "~/components/main/Profile/OrderTrackerView";
+import { OrderTrackerSkeleton } from "~/components/main/Skeletons";
 import { AuthModal } from "~/components/main/Auth/AuthModal";
 import { toast } from "sonner";
 
@@ -162,11 +163,8 @@ export default function TrackOrderPage() {
 
           {/* Loading customer session check */}
           {authLoading ? (
-            <div className="max-w-3xl mx-auto py-24 flex flex-col items-center justify-center space-y-4">
-              <Spinner className="size-10 text-orange-600 dark:text-orange-400 animate-spin" />
-              <p className="text-sm font-semibold text-gray-600 dark:text-neutral-400">
-                Verifying customer credentials...
-              </p>
+            <div className="max-w-3xl mx-auto py-8">
+              <OrderTrackerSkeleton />
             </div>
           ) : !isAuthenticated || !user ? (
             /* UNAUTHENTICATED RESTRICTED ACCESS SCREEN */
@@ -370,7 +368,9 @@ export default function TrackOrderPage() {
               </div>
 
               {/* Results: Order Tracker View */}
-              {order ? (
+              {loading && !order ? (
+                <OrderTrackerSkeleton />
+              ) : order ? (
                 <div className="space-y-4">
                   <OrderTrackerView
                     order={order}

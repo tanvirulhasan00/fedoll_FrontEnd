@@ -27,6 +27,7 @@ import {
   getVariantImages,
   DEFAULT_CATEGORY_NAME,
 } from "~/firebase";
+import { ProductCardSkeleton } from "~/components/main/Skeletons";
 
 interface ShowcaseProductCardProps {
   product: ProductItem;
@@ -267,51 +268,6 @@ const ShowcaseProductCard: React.FC<ShowcaseProductCardProps> = ({
                 />
               );
             })}
-          </div>
-        </div>
-      </div>
-    </div>
-  );
-};
-
-const ProductCardSkeleton: React.FC = () => {
-  return (
-    <div className="flex flex-col rounded-2xl bg-white dark:bg-neutral-900 border border-gray-200/80 dark:border-neutral-800 overflow-hidden shadow-xs animate-pulse">
-      {/* Product Card Image Container Skeleton */}
-      <div className="relative aspect-4/5 w-full bg-stone-100 dark:bg-neutral-800 flex items-center justify-center">
-        <div className="w-12 h-12 rounded-full bg-stone-200 dark:bg-neutral-700 opacity-60" />
-        {/* Top Badges Skeleton */}
-        <div className="absolute top-3 left-3 w-16 h-5 rounded-full bg-stone-200 dark:bg-neutral-700" />
-        <div className="absolute top-3 right-3 size-9 rounded-full bg-stone-200 dark:bg-neutral-700" />
-      </div>
-
-      {/* Details Container Skeleton */}
-      <div className="p-4 sm:p-5 flex flex-col flex-1 gap-3">
-        {/* Category & Rating Skeleton */}
-        <div className="flex items-center justify-between">
-          <div className="w-16 h-3 rounded-full bg-stone-200 dark:bg-neutral-800" />
-          <div className="w-12 h-3 rounded-full bg-stone-200 dark:bg-neutral-800" />
-        </div>
-
-        {/* Title Skeleton */}
-        <div className="space-y-1.5">
-          <div className="w-4/5 h-4 rounded-md bg-stone-200 dark:bg-neutral-800" />
-          <div className="w-1/2 h-4 rounded-md bg-stone-200 dark:bg-neutral-800" />
-        </div>
-
-        {/* Stock status skeleton */}
-        <div className="w-24 h-3.5 rounded-full bg-stone-100 dark:bg-neutral-800" />
-
-        {/* Price & Action Skeleton */}
-        <div className="pt-3 mt-auto border-t border-gray-100 dark:border-neutral-800 flex items-center justify-between">
-          <div className="space-y-1">
-            <div className="w-20 h-5 rounded-md bg-stone-200 dark:bg-neutral-800" />
-            <div className="w-14 h-3 rounded-md bg-stone-100 dark:bg-neutral-800" />
-          </div>
-          <div className="flex items-center gap-1.5">
-            <div className="size-3.5 rounded-full bg-stone-200 dark:bg-neutral-800" />
-            <div className="size-3.5 rounded-full bg-stone-200 dark:bg-neutral-800" />
-            <div className="size-3.5 rounded-full bg-stone-200 dark:bg-neutral-800" />
           </div>
         </div>
       </div>

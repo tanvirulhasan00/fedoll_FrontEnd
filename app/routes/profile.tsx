@@ -43,6 +43,7 @@ import OrderTrackerView from "~/components/main/Profile/OrderTrackerView";
 import ProfileSettings from "~/components/main/Profile/ProfileSettings";
 import WishlistView from "~/components/main/Profile/WishlistView";
 import OrderCancelRequestModal from "~/components/main/Profile/OrderCancelRequestModal";
+import { OrderCardSkeleton, OrderTrackerSkeleton } from "~/components/main/Skeletons";
 
 export function meta() {
   return [
@@ -317,11 +318,18 @@ export default function ProfilePage() {
 
           {/* Loading customer session check */}
           {authLoading ? (
-            <div className="max-w-3xl mx-auto py-24 flex flex-col items-center justify-center space-y-4">
-              <Spinner className="size-10 text-orange-600 dark:text-orange-400 animate-spin" />
-              <p className="text-sm font-semibold text-gray-600 dark:text-neutral-400">
-                Verifying customer account...
-              </p>
+            <div className="space-y-8 animate-pulse">
+              <div className="bg-white dark:bg-neutral-900 rounded-3xl border border-stone-200/80 dark:border-neutral-800 p-6 sm:p-8 flex flex-col sm:flex-row items-center gap-6">
+                <div className="size-20 rounded-full bg-stone-200/80 dark:bg-neutral-800/80 shrink-0" />
+                <div className="flex-1 space-y-2 text-center sm:text-left">
+                  <div className="h-6 w-48 bg-stone-200/80 dark:bg-neutral-800/80 rounded-md mx-auto sm:mx-0" />
+                  <div className="h-4 w-32 bg-stone-200/80 dark:bg-neutral-800/80 rounded-md mx-auto sm:mx-0" />
+                </div>
+              </div>
+              <div className="space-y-4">
+                <OrderCardSkeleton />
+                <OrderCardSkeleton />
+              </div>
             </div>
           ) : !isAuthenticated || !user ? (
             <div className="max-w-3xl mx-auto py-12">
@@ -600,11 +608,10 @@ export default function ProfilePage() {
 
                   {/* Orders Cards List */}
                   {loadingOrders ? (
-                    <div className="py-20 text-center space-y-3">
-                      <Spinner className="size-8 text-orange-600 mx-auto" />
-                      <p className="text-xs text-gray-500">
-                        Fetching your orders from Cloud Firestore...
-                      </p>
+                    <div className="space-y-4">
+                      {[1, 2, 3].map((i) => (
+                        <OrderCardSkeleton key={i} />
+                      ))}
                     </div>
                   ) : filteredOrders.length === 0 ? (
                     <div className="py-20 text-center bg-white dark:bg-neutral-900 rounded-3xl border border-stone-200/80 dark:border-neutral-800 p-8">
@@ -1045,7 +1052,9 @@ export default function ProfilePage() {
                   </div>
 
                   {/* Render Live Tracking View */}
-                  {trackedOrder ? (
+                  {trackingLoading && !trackedOrder ? (
+                    <OrderTrackerSkeleton />
+                  ) : trackedOrder ? (
                     <OrderTrackerView
                       order={trackedOrder}
                       onRefresh={loadOrders}

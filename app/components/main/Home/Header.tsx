@@ -23,7 +23,7 @@ import { UserMenu } from "../Auth/UserMenu";
 import { openCart } from "~/redux/features/cart/cartSlice";
 import CartDrawer from "../Cart/CartDrawer";
 import ThemeToggle from "../Utilities/ThemeToggle";
-import BrandLogo from "~/components/ui/BrandLogo";
+import BrandLogo, { NavbarLogoSkeleton } from "~/components/ui/BrandLogo";
 
 const NAV_ITEMS = [
   { name: "Home", href: "/" },
@@ -49,9 +49,12 @@ export default function Header() {
   );
   const { totalQuantity } = useAppSelector((state) => state.cart);
   const { wishlistIds } = useAppSelector((state) => state.home);
-  const { settings } = useAppSelector((state) => state.storeSettings);
+  const { settings, loading: settingsLoading, initialized: settingsInitialized } =
+    useAppSelector((state) => state.storeSettings);
   const [logoLightError, setLogoLightError] = useState(false);
   const [logoDarkError, setLogoDarkError] = useState(false);
+
+  const isLogoLoading = !isMounted || settingsLoading || !settingsInitialized;
 
   const customLogoLight = normalizeGoogleDriveImageUrl(
     settings?.logoLightUrl || settings?.logoUrl
@@ -127,7 +130,9 @@ export default function Header() {
         <div className="flex lg:flex-1">
           <Link to="/" className="-m-1.5 p-1.5 flex items-center">
             <span className="sr-only">{settings?.storeName || "SilkenDrift"}</span>
-            {hasCustomLightLogo || hasCustomDarkLogo ? (
+            {isLogoLoading ? (
+              <NavbarLogoSkeleton className="h-11 sm:h-12" />
+            ) : hasCustomLightLogo || hasCustomDarkLogo ? (
               <>
                 {hasCustomLightLogo ? (
                   <img
@@ -282,7 +287,9 @@ export default function Header() {
               onClick={() => setMobileMenuOpen(false)}
             >
               <span className="sr-only">{settings?.storeName || "SilkenDrift"}</span>
-              {hasCustomLightLogo || hasCustomDarkLogo ? (
+              {isLogoLoading ? (
+                <NavbarLogoSkeleton className="h-10 sm:h-11" />
+              ) : hasCustomLightLogo || hasCustomDarkLogo ? (
                 <>
                   {hasCustomLightLogo ? (
                     <img

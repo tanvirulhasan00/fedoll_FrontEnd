@@ -2,12 +2,17 @@ import React from "react";
 import { Link } from "react-router";
 import { useAppSelector } from "~/redux/hooks/hook";
 import { ClockIcon, ArrowRightIcon, BookOpenIcon } from "@heroicons/react/24/outline";
+import { JournalPreviewSkeleton } from "~/components/main/Skeletons";
 
 export default function JournalPreviewSection() {
-  const { blogs } = useAppSelector((state) => state.blogs);
+  const { blogs, loading } = useAppSelector((state) => state.blogs);
 
   // Take the 3 top or latest stories
   const previewBlogs = blogs.slice(0, 3);
+
+  if (loading && (!previewBlogs || previewBlogs.length === 0)) {
+    return <JournalPreviewSkeleton />;
+  }
 
   if (!previewBlogs || previewBlogs.length === 0) return null;
 

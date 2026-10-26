@@ -8,10 +8,15 @@ import {
   TagIcon,
 } from "@heroicons/react/24/outline";
 import { toast } from "sonner";
+import { SpotlightSectionSkeleton } from "~/components/main/Skeletons";
 
 export default function SpotlightSection() {
-  const { spotlightBanner } = useAppSelector((state) => state.home);
+  const { spotlightBanner, loading } = useAppSelector((state) => state.home);
   const [copied, setCopied] = useState(false);
+
+  if (loading && !spotlightBanner) {
+    return <SpotlightSectionSkeleton />;
+  }
 
   if (!spotlightBanner) return null;
 

@@ -21,6 +21,7 @@ import {
   BuildingLibraryIcon,
 } from "@heroicons/react/24/outline";
 import { toast } from "sonner";
+import { AboutPageSkeleton } from "~/components/main/Skeletons";
 
 export function meta({}: Route.MetaArgs) {
   return [
@@ -71,8 +72,12 @@ export default function AboutUsPage() {
       <Header />
 
       <main className="flex-1">
-        {/* Editorial Hero Header */}
-        <section className="relative overflow-hidden bg-gradient-to-b from-stone-50 dark:from-neutral-900/50 via-orange-50/20 dark:via-neutral-950 to-white dark:to-neutral-950 border-b border-stone-200/60 dark:border-neutral-800 py-16 sm:py-24 transition-colors">
+        {loading && !data ? (
+          <AboutPageSkeleton />
+        ) : (
+          <>
+            {/* Editorial Hero Header */}
+            <section className="relative overflow-hidden bg-gradient-to-b from-stone-50 dark:from-neutral-900/50 via-orange-50/20 dark:via-neutral-950 to-white dark:to-neutral-950 border-b border-stone-200/60 dark:border-neutral-800 py-16 sm:py-24 transition-colors">
           <div className="absolute inset-0 opacity-40 bg-[radial-gradient(#ea580c_1px,transparent_1px)] [background-size:24px_24px] pointer-events-none" />
 
           <div className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
@@ -388,6 +393,8 @@ export default function AboutUsPage() {
             </div>
           </div>
         </section>
+          </>
+        )}
       </main>
 
       <Footer />

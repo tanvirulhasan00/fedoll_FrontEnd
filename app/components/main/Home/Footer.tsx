@@ -21,7 +21,7 @@ import { useAppSelector } from "~/redux/hooks/hook";
 import { Link } from "react-router";
 import NewsLetter from "./Newsletter";
 import { normalizeGoogleDriveImageUrl } from "~/firebase";
-import BrandLogo from "~/components/ui/BrandLogo";
+import BrandLogo, { NavbarLogoSkeleton } from "~/components/ui/BrandLogo";
 
 const TRUST_PILLARS = [
   {
@@ -109,7 +109,8 @@ const SOCIAL_LINKS = [
 
 const Footer = () => {
   const { categories } = useAppSelector((state) => state.products);
-  const { settings } = useAppSelector((state) => state.storeSettings);
+  const { settings, loading: settingsLoading, initialized: settingsInitialized } =
+    useAppSelector((state) => state.storeSettings);
   const [logoError, setLogoError] = useState(false);
 
   const customLogoDarkUrl = normalizeGoogleDriveImageUrl(
@@ -183,7 +184,9 @@ const Footer = () => {
           <div className="lg:col-span-4 flex flex-col justify-between">
             <div>
               <Link to="/" className="inline-block group">
-                {hasCustomLogoDark ? (
+                {settingsLoading || !settingsInitialized ? (
+                  <NavbarLogoSkeleton className="h-12 sm:h-14" />
+                ) : hasCustomLogoDark ? (
                   <img
                     src={customLogoDarkUrl!}
                     alt={

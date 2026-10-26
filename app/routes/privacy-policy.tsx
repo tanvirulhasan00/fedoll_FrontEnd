@@ -26,6 +26,7 @@ import {
   PrinterIcon,
 } from "@heroicons/react/24/outline";
 import { toast } from "sonner";
+import { LegalPolicySkeleton } from "~/components/main/Skeletons";
 
 export function meta() {
   return [
@@ -81,8 +82,12 @@ export default function PrivacyPolicyPage() {
       <Header />
 
       <main className="flex-1 pb-20">
-        {/* Hero Header */}
-        <section className="relative overflow-hidden bg-gradient-to-b from-stone-900 via-neutral-900 to-stone-950 text-white py-16 sm:py-24 border-b border-stone-800">
+        {loading ? (
+          <LegalPolicySkeleton />
+        ) : (
+          <>
+            {/* Hero Header */}
+            <section className="relative overflow-hidden bg-gradient-to-b from-stone-900 via-neutral-900 to-stone-950 text-white py-16 sm:py-24 border-b border-stone-800">
           <div className="absolute inset-0 opacity-15 bg-[radial-gradient(#ea580c_1px,transparent_1px)] [background-size:24px_24px] pointer-events-none" />
 
           <div className="relative max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 text-center space-y-6">
@@ -322,6 +327,8 @@ export default function PrivacyPolicyPage() {
             </div>
           </div>
         </div>
+          </>
+        )}
       </main>
 
       <Footer />

@@ -57,6 +57,7 @@ import AdminMessagesTab from "~/components/admin/AdminMessagesTab";
 import AdminNewsletterTab from "~/components/admin/AdminNewsletterTab";
 import AdminLegalTab from "~/components/admin/AdminLegalTab";
 import AdminSettingsTab from "~/components/admin/AdminSettingsTab";
+import { AdminDashboardSkeleton } from "~/components/main/Skeletons";
 import { setStoreSettings as setReduxStoreSettings } from "~/redux/features/storeSettingsSlice";
 import {
   Bars3Icon,
@@ -256,11 +257,8 @@ export default function AdminDashboardPage() {
   // Prevent flicker during initial authentication resolution
   if (authLoading) {
     return (
-      <div className="min-h-screen bg-stone-100 dark:bg-neutral-950 flex flex-col items-center justify-center p-8 space-y-3">
-        <Spinner className="size-10 text-orange-600 animate-spin" />
-        <p className="text-xs font-semibold text-gray-600 dark:text-neutral-400">
-          Verifying administrator credentials...
-        </p>
+      <div className="min-h-screen bg-stone-100 dark:bg-neutral-950 p-6 sm:p-10">
+        <AdminDashboardSkeleton />
       </div>
     );
   }
@@ -474,12 +472,7 @@ export default function AdminDashboardPage() {
             {/* Dashboard Body Content */}
             <main className="flex-1 p-4 sm:p-8 max-w-7xl w-full mx-auto">
               {loadingData && products.length === 0 ? (
-                <div className="py-32 text-center space-y-3">
-                  <Spinner className="size-8 text-orange-600 mx-auto" />
-                  <p className="text-xs text-gray-500 font-medium">
-                    Loading SilkenDrift Atelier management records...
-                  </p>
-                </div>
+                <AdminDashboardSkeleton />
               ) : (
                 <>
                   {currentTab === "overview" && (

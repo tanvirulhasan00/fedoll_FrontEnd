@@ -24,6 +24,7 @@ import { HeartIcon as HeartSolidIcon, StarIcon } from "@heroicons/react/24/solid
 import { toast } from "sonner";
 import { Spinner } from "~/components/ui/spinner";
 import StockAvailabilityBadge from "~/components/ui/StockAvailabilityBadge";
+import { ProductCardSkeleton } from "~/components/main/Skeletons";
 
 export const WishlistView: React.FC = () => {
   const dispatch = useAppDispatch();
@@ -366,9 +367,10 @@ export const WishlistView: React.FC = () => {
         /* Loved Products Grid */
         <div className="space-y-4">
           {loadingMissing && lovedProducts.length === 0 ? (
-            <div className="py-20 flex flex-col items-center justify-center space-y-3">
-              <Spinner className="size-8 text-orange-600 animate-spin" />
-              <p className="text-xs text-gray-500">Loading loved styles...</p>
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
+              {[1, 2, 3, 4, 5, 6].map((i) => (
+                <ProductCardSkeleton key={i} />
+              ))}
             </div>
           ) : (
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">

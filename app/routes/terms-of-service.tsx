@@ -3,6 +3,7 @@ import { Link } from "react-router";
 import Topbar from "~/components/main/Home/Topbar";
 import Header from "~/components/main/Home/Header";
 import Footer from "~/components/main/Home/Footer";
+import { LegalPolicySkeleton } from "~/components/main/Skeletons";
 import {
   fetchTermsOfService,
   defaultTermsOfService,
@@ -67,7 +68,11 @@ export default function TermsOfServicePage() {
       <Header />
 
       <main className="flex-1 pb-20">
-        {/* Hero Section */}
+        {loading ? (
+          <LegalPolicySkeleton />
+        ) : (
+          <>
+            {/* Hero Section */}
         <section className="relative overflow-hidden bg-gradient-to-b from-stone-900 via-neutral-900 to-stone-950 text-white py-16 sm:py-24 border-b border-stone-800">
           <div className="absolute inset-0 opacity-15 bg-[radial-gradient(#ea580c_1px,transparent_1px)] [background-size:24px_24px] pointer-events-none" />
 
@@ -282,6 +287,8 @@ export default function TermsOfServicePage() {
             </div>
           </div>
         </div>
+          </>
+        )}
       </main>
 
       <Footer />

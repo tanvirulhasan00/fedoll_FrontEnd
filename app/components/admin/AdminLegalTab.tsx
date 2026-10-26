@@ -19,6 +19,7 @@ import {
 import { Link } from "react-router";
 import { toast } from "sonner";
 import { Spinner } from "~/components/ui/spinner";
+import { LegalPolicySkeleton } from "~/components/main/Skeletons";
 import {
   fetchPrivacyPolicy,
   savePrivacyPolicy,
@@ -220,14 +221,7 @@ export const AdminLegalTab: React.FC = () => {
   };
 
   if (loading) {
-    return (
-      <div className="bg-white dark:bg-neutral-900 p-12 rounded-3xl border border-stone-200 dark:border-neutral-800 text-center space-y-4">
-        <Spinner className="size-8 text-orange-600 mx-auto animate-spin" />
-        <p className="text-xs text-gray-500 font-semibold">
-          Loading legal policies from Cloud Firestore...
-        </p>
-      </div>
-    );
+    return <LegalPolicySkeleton />;
   }
 
   return (

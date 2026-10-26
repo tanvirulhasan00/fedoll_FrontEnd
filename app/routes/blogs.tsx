@@ -25,6 +25,8 @@ import {
 } from "@heroicons/react/24/outline";
 import { HeartIcon as HeartSolidIcon } from "@heroicons/react/24/solid";
 import { toast } from "sonner";
+import { Skeleton } from "~/components/ui/skeleton";
+import { BlogCardSkeleton } from "~/components/main/Skeletons";
 
 export function meta({}: Route.MetaArgs) {
   return [
@@ -161,25 +163,33 @@ export default function BlogsPage() {
             {/* Filter and Search Bar */}
             <div className="mt-10 pt-8 border-t border-stone-200/80 dark:border-neutral-800 flex flex-col lg:flex-row lg:items-center justify-between gap-6">
               {/* Category Pills */}
-              <div className="flex items-center gap-2 overflow-x-auto pb-2 scrollbar-none">
-                {displayCategories.map((cat) => {
-                  const active = selectedCategory === cat;
-                  return (
-                    <button
-                      key={cat}
-                      type="button"
-                      onClick={() => dispatch(setSelectedCategory(cat))}
-                      className={`whitespace-nowrap px-4 py-2 rounded-full text-xs sm:text-sm font-medium transition cursor-pointer ${
-                        active
-                          ? "bg-gray-900 dark:bg-orange-600 text-white shadow-sm"
-                          : "bg-white dark:bg-neutral-900 text-gray-600 dark:text-neutral-400 border border-gray-200 dark:border-neutral-800 hover:border-gray-400 dark:hover:border-neutral-700 hover:text-gray-900 dark:hover:text-white"
-                      }`}
-                    >
-                      {cat}
-                    </button>
-                  );
-                })}
-              </div>
+              {loading && blogs.length === 0 ? (
+                <div className="flex items-center gap-2 overflow-x-auto pb-2 scrollbar-none">
+                  {[1, 2, 3, 4, 5].map((i) => (
+                    <Skeleton key={i} className="h-9 w-24 rounded-full" />
+                  ))}
+                </div>
+              ) : (
+                <div className="flex items-center gap-2 overflow-x-auto pb-2 scrollbar-none">
+                  {displayCategories.map((cat) => {
+                    const active = selectedCategory === cat;
+                    return (
+                      <button
+                        key={cat}
+                        type="button"
+                        onClick={() => dispatch(setSelectedCategory(cat))}
+                        className={`whitespace-nowrap px-4 py-2 rounded-full text-xs sm:text-sm font-medium transition cursor-pointer ${
+                          active
+                            ? "bg-gray-900 dark:bg-orange-600 text-white shadow-sm"
+                            : "bg-white dark:bg-neutral-900 text-gray-600 dark:text-neutral-400 border border-gray-200 dark:border-neutral-800 hover:border-gray-400 dark:hover:border-neutral-700 hover:text-gray-900 dark:hover:text-white"
+                        }`}
+                      >
+                        {cat}
+                      </button>
+                    );
+                  })}
+                </div>
+              )}
 
               {/* Search Field */}
               <div className="relative w-full lg:w-72">
@@ -211,25 +221,7 @@ export default function BlogsPage() {
             /* Loading Skeletons */
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
               {[1, 2, 3, 4, 5, 6].map((i) => (
-                <div
-                  key={i}
-                  className="rounded-2xl border border-gray-200 dark:border-neutral-800 overflow-hidden bg-white dark:bg-neutral-900 shadow-xs animate-pulse"
-                >
-                  <div className="h-52 bg-gray-200 dark:bg-neutral-800" />
-                  <div className="p-6 space-y-4">
-                    <div className="h-4 w-24 bg-gray-200 dark:bg-neutral-800 rounded" />
-                    <div className="h-6 w-5/6 bg-gray-200 dark:bg-neutral-800 rounded" />
-                    <div className="h-4 w-full bg-gray-200 dark:bg-neutral-800 rounded" />
-                    <div className="h-4 w-3/4 bg-gray-200 dark:bg-neutral-800 rounded" />
-                    <div className="pt-4 flex items-center gap-3">
-                      <div className="size-10 rounded-full bg-gray-200 dark:bg-neutral-800" />
-                      <div className="space-y-1 flex-1">
-                        <div className="h-3 w-28 bg-gray-200 dark:bg-neutral-800 rounded" />
-                        <div className="h-2 w-20 bg-gray-200 dark:bg-neutral-800 rounded" />
-                      </div>
-                    </div>
-                  </div>
-                </div>
+                <BlogCardSkeleton key={i} />
               ))}
             </div>
           ) : filteredBlogs.length === 0 ? (

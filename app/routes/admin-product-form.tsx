@@ -33,6 +33,7 @@ import { StarIcon as StarSolidIcon } from "@heroicons/react/24/solid";
 import { toast } from "sonner";
 import { Spinner } from "~/components/ui/spinner";
 import ThemeToggle from "~/components/main/Utilities/ThemeToggle";
+import { ProductFormSkeleton } from "~/components/main/Skeletons";
 
 interface FormColorItem {
   name: string;
@@ -507,14 +508,7 @@ export default function AdminProductFormPage() {
 
   // Prevent access flicker while resolving auth status
   if (authLoading) {
-    return (
-      <div className="min-h-screen bg-stone-100 dark:bg-neutral-950 flex flex-col items-center justify-center p-8 space-y-3">
-        <Spinner className="size-10 text-orange-600 animate-spin" />
-        <p className="text-xs font-semibold text-gray-600 dark:text-neutral-400">
-          Verifying administrator credentials...
-        </p>
-      </div>
-    );
+    return <ProductFormSkeleton />;
   }
 
   // Access check
@@ -550,14 +544,7 @@ export default function AdminProductFormPage() {
   }
 
   if (loadingInitial) {
-    return (
-      <div className="min-h-screen bg-stone-100 dark:bg-neutral-950 flex flex-col items-center justify-center p-8 space-y-3">
-        <Spinner className="size-10 text-orange-600 animate-spin" />
-        <p className="text-xs font-semibold text-gray-600 dark:text-neutral-400">
-          Loading garment &amp; variant specifications...
-        </p>
-      </div>
-    );
+    return <ProductFormSkeleton />;
   }
 
   return (

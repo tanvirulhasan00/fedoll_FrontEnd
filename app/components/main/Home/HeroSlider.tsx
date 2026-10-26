@@ -18,12 +18,16 @@ import {
   extractGoogleDriveFileId,
   getGoogleDriveThumbnailUrl,
 } from "~/firebase";
+import { HeroSliderSkeleton } from "~/components/main/Skeletons";
 
 export default function HeroSlider() {
   const dispatch = useAppDispatch();
-  const { heroBanners, activeHeroIndex, products: homeProducts } = useAppSelector(
-    (state) => state.home
-  );
+  const {
+    heroBanners,
+    activeHeroIndex,
+    products: homeProducts,
+    loading,
+  } = useAppSelector((state) => state.home);
   const { items: catalogProducts } = useAppSelector(
     (state) => state.products
   );
@@ -62,6 +66,10 @@ export default function HeroSlider() {
     }, 6500);
     return () => clearInterval(interval);
   }, [dispatch, heroBanners.length]);
+
+  if (loading && (!heroBanners || heroBanners.length === 0)) {
+    return <HeroSliderSkeleton />;
+  }
 
   if (!heroBanners || heroBanners.length === 0) return null;
 

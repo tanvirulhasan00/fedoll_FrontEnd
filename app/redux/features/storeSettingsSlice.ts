@@ -27,12 +27,14 @@ const getInitialStoreSettings = (): StoreGeneralSettings => {
 export interface StoreSettingsState {
   settings: StoreGeneralSettings;
   loading: boolean;
+  initialized: boolean;
   error: string | null;
 }
 
 const initialState: StoreSettingsState = {
   settings: getInitialStoreSettings(),
-  loading: false,
+  loading: true,
+  initialized: false,
   error: null,
 };
 
@@ -56,6 +58,8 @@ export const storeSettingsSlice = createSlice({
   reducers: {
     setStoreSettings: (state, action: PayloadAction<StoreGeneralSettings>) => {
       state.settings = action.payload;
+      state.loading = false;
+      state.initialized = true;
       if (typeof window !== "undefined") {
         try {
           localStorage.setItem(LOCAL_STORAGE_STORE_KEY, JSON.stringify(action.payload));
@@ -70,10 +74,12 @@ export const storeSettingsSlice = createSlice({
       })
       .addCase(loadStoreSettings.fulfilled, (state, action) => {
         state.loading = false;
+        state.initialized = true;
         state.settings = action.payload;
       })
       .addCase(loadStoreSettings.rejected, (state, action) => {
         state.loading = false;
+        state.initialized = true;
         state.error = action.error.message || "Failed to load store settings";
       })
       .addCase(persistStoreSettings.fulfilled, (state, action) => {

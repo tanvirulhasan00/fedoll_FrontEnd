@@ -8,6 +8,33 @@ interface BrandLogoProps {
   alt?: string;
   onError?: () => void;
   showText?: boolean;
+  isLoading?: boolean;
+}
+
+export function NavbarLogoSkeleton({
+  className = "h-11 sm:h-12",
+  showText = true,
+}: {
+  className?: string;
+  showText?: boolean;
+}) {
+  return (
+    <div
+      className={clsx(
+        "inline-flex items-center gap-2.5 select-none animate-pulse py-1",
+        className
+      )}
+      aria-label="Loading brand logo..."
+    >
+      <div className="size-8 sm:size-9 rounded-full bg-stone-200/90 dark:bg-neutral-800/90 shrink-0 ring-1 ring-stone-300/50 dark:ring-neutral-700/50" />
+      {showText && (
+        <div className="flex flex-col gap-1.5 text-left">
+          <div className="h-4 sm:h-4.5 w-24 sm:w-28 rounded-md bg-stone-200/90 dark:bg-neutral-800/90" />
+          <div className="h-2 sm:h-2.5 w-16 sm:w-20 rounded-md bg-stone-200/70 dark:bg-neutral-800/70" />
+        </div>
+      )}
+    </div>
+  );
 }
 
 export function BrandLogo({
@@ -17,7 +44,12 @@ export function BrandLogo({
   alt = "SilkenDrift",
   onError,
   showText = true,
+  isLoading = false,
 }: BrandLogoProps) {
+  if (isLoading) {
+    return <NavbarLogoSkeleton className={className} showText={showText} />;
+  }
+
   if (customSrc) {
     return (
       <img

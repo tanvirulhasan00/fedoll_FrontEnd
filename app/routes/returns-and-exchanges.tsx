@@ -38,6 +38,7 @@ import {
 import { SILKENDRIFT_DROP_OFF_HUBS } from "~/components/admin/returns";
 import { toast } from "sonner";
 import { Spinner } from "~/components/ui/spinner";
+import { LegalPolicySkeleton, OrderTrackerSkeleton } from "~/components/main/Skeletons";
 
 export function meta() {
   return [
@@ -366,6 +367,9 @@ export default function ReturnsAndExchangesPage() {
               TAB 1: POLICY & 5-STEP PROCESS
               ================================================================== */}
           {activeTab === "policy" && (
+            loadingPolicy ? (
+              <LegalPolicySkeleton />
+            ) : (
             <div className="space-y-12">
               {/* 5-Step Visual Reverse Logistics Stepper */}
               <div className="bg-white dark:bg-neutral-900 rounded-3xl border border-stone-200/80 dark:border-neutral-800 p-6 sm:p-10 shadow-xs space-y-6">
@@ -587,6 +591,7 @@ export default function ReturnsAndExchangesPage() {
                 </div>
               </div>
             </div>
+            )
           )}
 
           {/* ==================================================================
@@ -1147,7 +1152,13 @@ export default function ReturnsAndExchangesPage() {
                 </form>
 
                 {/* Tracking Results */}
-                {trackSearched && (
+                {trackingLoading && (
+                  <div className="pt-4 border-t border-stone-100 dark:border-neutral-800">
+                    <OrderTrackerSkeleton />
+                  </div>
+                )}
+
+                {!trackingLoading && trackSearched && (
                   <div className="pt-4 border-t border-stone-100 dark:border-neutral-800">
                     {trackedRequest ? (
                       <div className="space-y-6">

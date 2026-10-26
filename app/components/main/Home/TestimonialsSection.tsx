@@ -1,9 +1,14 @@
 import React from "react";
 import { useAppSelector } from "~/redux/hooks/hook";
 import { StarIcon, CheckBadgeIcon } from "@heroicons/react/24/solid";
+import { TestimonialsSectionSkeleton } from "~/components/main/Skeletons";
 
 export default function TestimonialsSection() {
-  const { testimonials } = useAppSelector((state) => state.home);
+  const { testimonials, loading } = useAppSelector((state) => state.home);
+
+  if (loading && (!testimonials || testimonials.length === 0)) {
+    return <TestimonialsSectionSkeleton />;
+  }
 
   if (!testimonials || testimonials.length === 0) return null;
 
