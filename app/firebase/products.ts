@@ -1275,6 +1275,47 @@ export const deleteProductFromFirestore = async (id: string): Promise<boolean> =
 };
 
 /**
+ * Admin: Batch delete multiple products
+ */
+export const deleteMultipleProductsFromFirestore = async (
+  ids: string[]
+): Promise<boolean> => {
+  if (!ids || ids.length === 0) return true;
+
+  // Firestore batches are limited to 500 operations
+  const chunkSize = 400;
+  for (let i = 0; i < ids.length; i += chunkSize) {
+    const chunk = ids.slice(i, i + chunkSize);
+    const batch = writeBatch(db);
+    chunk.forEach((id) => {
+      batch.delete(doc(db, "products", id));
+    });
+    await batch.commit();
+  }
+
+  try {
+    const idSet = new Set(ids);
+    const updated = getLocalProducts().filter((p) => !idSet.has(p.id));
+    saveAllLocalProducts(updated);
+  } catch (err) {
+    console.warn("Could not update local products cache on batch delete:", err);
+  }
+
+  try {
+    const idSet = new Set(ids);
+    for (let i = initialProductsData.length - 1; i >= 0; i--) {
+      if (idSet.has(initialProductsData[i].id)) {
+        initialProductsData.splice(i, 1);
+      }
+    }
+  } catch (err) {
+    console.warn("Could not mutate in-memory initialProductsData on batch delete:", err);
+  }
+
+  return true;
+};
+
+/**
  * Admin: Create or update a product category
  */
 export const saveCategoryToFirestore = async (
