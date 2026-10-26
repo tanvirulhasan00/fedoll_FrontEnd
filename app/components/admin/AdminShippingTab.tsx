@@ -702,13 +702,13 @@ export const AdminShippingTab: React.FC<AdminShippingTabProps> = ({
                         </span>
                       </div>
                       <div className="text-xs text-gray-500 dark:text-neutral-400 flex items-center gap-3">
-                        <span>Base Rate: ৳{providerToDelete.baseRate}</span>
+                        <span>Inside Dhaka: ৳{providerToDelete.insideDhakaRate}</span>
                         <span>•</span>
-                        <span>ETA: {providerToDelete.estimatedDays}</span>
+                        <span>ETA: {providerToDelete.deliveryTimeInside}</span>
                       </div>
-                      {providerToDelete.hubCoverage && (
+                      {providerToDelete.pickupHub && (
                         <p className="text-[11px] text-gray-500 dark:text-neutral-400">
-                          Coverage: {providerToDelete.hubCoverage}
+                          Pickup Hub: {providerToDelete.pickupHub}
                         </p>
                       )}
                     </div>

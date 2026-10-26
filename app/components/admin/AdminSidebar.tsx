@@ -25,6 +25,7 @@ import {
   normalizeGoogleDriveImageUrl,
   getRoleAllowedTabs,
   getRoleConfig,
+  normalizeRole,
   type AdminTab,
 } from "~/firebase";
 
@@ -82,7 +83,12 @@ export const AdminSidebar: React.FC<AdminSidebarProps> = ({
     },
     { id: "shipping", label: "Shipping & Couriers", icon: TruckIcon, badge: "Logistics" },
     { id: "customers", label: "Shoppers & Customers", icon: UsersIcon },
-    { id: "staff", label: "Staff & App Users", icon: ShieldCheckIcon, badge: "Roles" },
+    {
+      id: "staff",
+      label: normalizeRole(user?.role) === "salesman" ? "My Staff Account" : "Staff & App Users",
+      icon: ShieldCheckIcon,
+      badge: normalizeRole(user?.role) === "salesman" ? undefined : "Roles",
+    },
     { id: "coupons", label: "Coupons & Discounts", icon: TagIcon },
     {
       id: "messages",

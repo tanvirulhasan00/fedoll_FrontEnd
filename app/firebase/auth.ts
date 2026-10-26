@@ -3,6 +3,7 @@ import {
   createUserWithEmailAndPassword,
   signOut,
   sendPasswordResetEmail,
+  updatePassword,
   GoogleAuthProvider,
   signInWithPopup,
   onAuthStateChanged,
@@ -362,5 +363,68 @@ export const deleteCustomerInFirestore = async (
     console.error("Could not delete customer document in Firestore:", err);
     throw err;
   }
+};
+
+/**
+ * Delete any user record in Firestore (alias)
+ */
+export const deleteUserInFirestore = deleteCustomerInFirestore;
+
+/**
+ * Update user account info in Firestore (alias)
+ */
+export const updateUserAccountInFirestore = updateUserProfileInFirestore;
+
+/**
+ * Change currently authenticated user's password in live Firebase Auth
+ */
+export const changeCurrentUserPassword = async (
+  newPassword: string
+): Promise<boolean> => {
+  if (!auth.currentUser) {
+    throw new Error("No authenticated user is currently signed in.");
+  }
+  await updatePassword(auth.currentUser, newPassword);
+  // Also log timestamp in firestore
+  try {
+    await updateUserProfileInFirestore(auth.currentUser.uid, {
+      updatedAt: serverTimestamp(),
+    } as any);
+  } catch (err) {
+    console.warn("Could not record password timestamp in Firestore:", err);
+  }
+  return true;
+};
+
+/**
+ * Admin: Assign a new temporary password and/or send an official Firebase password reset email to a target user
+ */
+export const adminSetUserPasswordOrReset = async (
+  targetUid: string,
+  targetEmail: string,
+  newPassword?: string,
+  sendEmail: boolean = false
+): Promise<{ emailSent: boolean; passwordSaved: boolean }> => {
+  let emailSent = false;
+  let passwordSaved = false;
+
+  const updates: Record<string, unknown> = {
+    passwordUpdatedAt: serverTimestamp(),
+  };
+
+  if (newPassword && newPassword.trim().length >= 6) {
+    updates.temporaryPassword = newPassword.trim();
+    passwordSaved = true;
+  }
+
+  const userRef = doc(db, "users", targetUid);
+  await setDoc(userRef, updates, { merge: true });
+
+  if (sendEmail && targetEmail) {
+    await sendPasswordResetEmail(auth, targetEmail);
+    emailSent = true;
+  }
+
+  return { emailSent, passwordSaved };
 };
 

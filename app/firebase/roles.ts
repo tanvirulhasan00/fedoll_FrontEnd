@@ -66,8 +66,148 @@ export const canManageStaff = (role?: string | null): boolean => {
 };
 
 /**
+ * Validates whether currentUser has permission to view targetUser.
+ * Rule:
+ * - Admin can see all users (Admin, Manager, Salesman, Customer).
+ * - Manager cannot see Admin, but can see own account and Salesman accounts.
+ * - Salesman can only see his own account.
+ */
+export const canViewUser = (
+  currentUserRole: string | null | undefined,
+  targetUserRole: string | null | undefined,
+  isSelf: boolean
+): boolean => {
+  const normCurrent = normalizeRole(currentUserRole);
+  const normTarget = normalizeRole(targetUserRole);
+
+  if (normCurrent === "admin") {
+    // Admin can see everyone
+    return true;
+  }
+
+  if (normCurrent === "manager") {
+    // Manager cannot see admin
+    if (normTarget === "admin") {
+      return false;
+    }
+    // Manager can see his own account, salesman accounts, and retail shoppers
+    if (isSelf || normTarget === "salesman" || normTarget === "customer") {
+      return true;
+    }
+    return false;
+  }
+
+  if (normCurrent === "salesman") {
+    // Salesman only see his own account (and retail shoppers if viewing customer directory)
+    if (isSelf || normTarget === "customer") {
+      return true;
+    }
+    return false;
+  }
+
+  return false;
+};
+
+/**
+ * Validates whether currentUser has permission to edit targetUser's information.
+ * Rule:
+ * - Admin can edit manager, salesman, and admin info too (including own info).
+ * - Manager cannot edit admin, but can edit his own and salesman accounts.
+ * - Salesman can only edit his own account.
+ */
+export const canEditUser = (
+  currentUserRole: string | null | undefined,
+  targetUserRole: string | null | undefined,
+  isSelf: boolean
+): { canEdit: boolean; reason?: string } => {
+  const normCurrent = normalizeRole(currentUserRole);
+  const normTarget = normalizeRole(targetUserRole);
+
+  if (normCurrent === "admin") {
+    // Admin can edit manager, salesman, and admin info too (including self)
+    return { canEdit: true };
+  }
+
+  if (normCurrent === "manager") {
+    // Manager cannot edit admin
+    if (normTarget === "admin") {
+      return {
+        canEdit: false,
+        reason: "Managers cannot edit Administrator accounts.",
+      };
+    }
+    // Manager can edit his own and salesman account
+    if (isSelf || normTarget === "salesman") {
+      return { canEdit: true };
+    }
+    return {
+      canEdit: false,
+      reason: "Managers can only edit their own account and Salesman accounts.",
+    };
+  }
+
+  if (normCurrent === "salesman") {
+    // Salesman can only edit his own account
+    if (isSelf) {
+      return { canEdit: true };
+    }
+    return {
+      canEdit: false,
+      reason: "Sales representatives can only edit their own account.",
+    };
+  }
+
+  return { canEdit: false, reason: "Unauthorized to edit user accounts." };
+};
+
+/**
+ * Validates whether currentUser has permission to change targetUser's password.
+ * Rule:
+ * - Admin can change password of manager, salesman, and admin info too (including own).
+ * - Manager can change password for his own account only.
+ * - Salesman can change password for his own account only.
+ */
+export const canChangeUserPassword = (
+  currentUserRole: string | null | undefined,
+  targetUserRole: string | null | undefined,
+  isSelf: boolean
+): { canChangePassword: boolean; reason?: string } => {
+  const normCurrent = normalizeRole(currentUserRole);
+
+  if (normCurrent === "admin") {
+    // Admin can change password of manager, salesman, and admin info too
+    return { canChangePassword: true };
+  }
+
+  if (normCurrent === "manager") {
+    if (isSelf) {
+      return { canChangePassword: true };
+    }
+    return {
+      canChangePassword: false,
+      reason: "Managers can only change password for their own account.",
+    };
+  }
+
+  if (normCurrent === "salesman") {
+    if (isSelf) {
+      return { canChangePassword: true };
+    }
+    return {
+      canChangePassword: false,
+      reason: "Sales representatives can only change password for their own account.",
+    };
+  }
+
+  return { canChangePassword: false, reason: "Unauthorized to change password." };
+};
+
+/**
  * Validates whether currentUser has permission to delete targetUser.
- * Rule: "no one can delete admin. admin can delete or demote all roles"
+ * Rule:
+ * - Admin can delete manager, salesman, and other admin info too, but CANNOT delete own account.
+ * - Manager cannot delete admin (nor other staff).
+ * - Salesman cannot delete accounts.
  */
 export const canDeleteUser = (
   currentUserRole: string | null | undefined,
@@ -78,14 +218,6 @@ export const canDeleteUser = (
     return { canDelete: false, reason: "You cannot delete your own active account." };
   }
 
-  const normTarget = normalizeRole(targetUserRole);
-  if (normTarget === "admin") {
-    return {
-      canDelete: false,
-      reason: "Administrators are protected by system security rules and cannot be deleted.",
-    };
-  }
-
   const normCurrent = normalizeRole(currentUserRole);
   if (normCurrent !== "admin") {
     return {
@@ -94,12 +226,13 @@ export const canDeleteUser = (
     };
   }
 
+  // Admin can delete manager, salesman, and other admins too (own account prevented above)
   return { canDelete: true };
 };
 
 /**
  * Validates whether currentUser has permission to change (promote or demote) targetUser's role.
- * Rule: "admin can delete or demote all roles"
+ * Only administrators have authority to alter user roles.
  */
 export const canChangeRole = (
   currentUserRole: string | null | undefined,
@@ -159,6 +292,7 @@ export const getRoleAllowedTabs = (role?: string | null): AdminTab[] => {
         "blogs",
         "shipping",
         "customers",
+        "staff",
         "coupons",
         "messages",
         "newsletters",
@@ -172,6 +306,7 @@ export const getRoleAllowedTabs = (role?: string | null): AdminTab[] => {
         "products",
         "messages",
         "customers",
+        "staff",
       ];
     default:
       return [];
@@ -201,11 +336,13 @@ export const ROLE_CONFIGS: Record<
     badgeClass:
       "bg-purple-100 text-purple-800 dark:bg-purple-950/60 dark:text-purple-300 border-purple-200 dark:border-purple-800",
     description:
-      "Unrestricted administrative power: store general settings, legal policies, staff promotions/demotions, inventory, order processing, and all store data.",
+      "Unrestricted administrative power: edit, delete, and change password of manager, salesman, and admin info (cannot delete own account). Full control over store settings, legal, and catalog.",
     permissions: [
+      "Edit Info & Change Password of Manager, Salesman & Admin Accounts",
+      "Delete Staff Accounts (Protected: Cannot delete own account)",
+      "Promote, Demote & Alter Staff Roles",
       "Manage Store Settings, Branding & Payment Parameters",
       "Draft, Publish & Modify Store Legal Policies",
-      "Promote, Demote & Delete Staff Members",
       "Full Control over Catalog, Categories & Heavy Restocking",
       "Process Orders, Logistics & Return Tickets",
       "Create & Manage Coupons & Promotional Campaigns",
@@ -220,8 +357,10 @@ export const ROLE_CONFIGS: Record<
     badgeClass:
       "bg-blue-100 text-blue-800 dark:bg-blue-950/60 dark:text-blue-300 border-blue-200 dark:border-blue-800",
     description:
-      "Operational leadership: product catalog authoring, inventory restocking, logistics courier configuration, customer communications, coupons, and journal posts.",
+      "Operational leadership: author products, manage stock and orders. Can view & edit own and salesman accounts (cannot see, edit, or delete admin accounts).",
     permissions: [
+      "View & Edit Own Account and Salesman Accounts (Cannot see/edit/delete Admin)",
+      "Change Password for Own Account",
       "Author & Edit Products, Categories & Pricing",
       "Inventory Stock Tracking & Batch Restocking",
       "Order Fulfillment, Courier Routing & Status Updates",
@@ -240,8 +379,10 @@ export const ROLE_CONFIGS: Record<
     badgeClass:
       "bg-emerald-100 text-emerald-800 dark:bg-emerald-950/60 dark:text-emerald-300 border-emerald-200 dark:border-emerald-800",
     description:
-      "Front-line sales and customer fulfillment: order processing, shipping labels/stickers, return inspects, stock lookup, and customer communication.",
+      "Front-line sales and customer fulfillment: order processing, shipping labels, stock lookup. Can only see and edit own account.",
     permissions: [
+      "View & Edit Own Account Only (Cannot see or edit other accounts)",
+      "Change Password for Own Account",
       "View Orders & Update Fulfillment Status",
       "Print Packaging Stickers & Invoices",
       "Inspect & Update Returns & Exchanges",
