@@ -11,9 +11,11 @@ import {
   setPersistence,
   browserLocalPersistence,
   browserSessionPersistence,
+  getAuth,
   type User,
   type NextOrObserver,
 } from "firebase/auth";
+import { initializeApp, getApps } from "firebase/app";
 import {
   doc,
   setDoc,
@@ -25,7 +27,7 @@ import {
   serverTimestamp,
   type DocumentData,
 } from "firebase/firestore";
-import { auth, db } from "./firebase.config";
+import { auth, db, firebaseConfig } from "./firebase.config";
 
 export const googleProvider = new GoogleAuthProvider();
 googleProvider.setCustomParameters({
@@ -47,6 +49,9 @@ export interface FirestoreUserProfile {
     district?: string;
     postalCode?: string;
   };
+  assignedPassword?: string;
+  temporaryPassword?: string;
+  passwordUpdatedAt?: string | unknown;
   createdAt?: string | unknown;
   lastLoginAt?: string | unknown;
 }
@@ -314,6 +319,8 @@ export const fetchAllCustomersFromFirestore = async (): Promise<
           role: data.role || "customer",
           phoneNumber: data.phoneNumber || "",
           deliveryAddress: data.deliveryAddress || {},
+          assignedPassword: data.assignedPassword || data.temporaryPassword || "",
+          temporaryPassword: data.temporaryPassword || data.assignedPassword || "",
           createdAt: data.createdAt,
           lastLoginAt: data.lastLoginAt,
         };
@@ -414,6 +421,7 @@ export const adminSetUserPasswordOrReset = async (
 
   if (newPassword && newPassword.trim().length >= 6) {
     updates.temporaryPassword = newPassword.trim();
+    updates.assignedPassword = newPassword.trim();
     passwordSaved = true;
   }
 
@@ -427,4 +435,81 @@ export const adminSetUserPasswordOrReset = async (
 
   return { emailSent, passwordSaved };
 };
+
+/**
+ * Admin: Create a new staff account (manager or salesman, or admin)
+ * Uses a secondary Firebase App instance so the current admin is NOT logged out!
+ */
+export const adminCreateStaffAccount = async (params: {
+  email: string;
+  password: string;
+  displayName: string;
+  role: "manager" | "salesman" | "admin";
+  phoneNumber?: string;
+  deliveryAddress?: {
+    street?: string;
+    city?: string;
+    district?: string;
+    postalCode?: string;
+  };
+}): Promise<FirestoreUserProfile> => {
+  const { email, password, displayName, role, phoneNumber, deliveryAddress } =
+    params;
+
+  // Initialize or get secondary auth instance to prevent switching current admin user
+  const existingApp = getApps().find((a) => a.name === "SecondaryStaffAuth");
+  const secondaryApp =
+    existingApp || initializeApp(firebaseConfig, "SecondaryStaffAuth");
+  const secondaryAuth = getAuth(secondaryApp);
+
+  let newUid = "";
+  try {
+    const cred = await createUserWithEmailAndPassword(
+      secondaryAuth,
+      email.trim(),
+      password.trim()
+    );
+    newUid = cred.user.uid;
+    if (displayName) {
+      await updateProfile(cred.user, { displayName: displayName.trim() });
+    }
+  } catch (err: unknown) {
+    throw err;
+  } finally {
+    // Immediately sign out secondary auth so it doesn't keep a session
+    try {
+      await signOut(secondaryAuth);
+    } catch {
+      // ignore
+    }
+  }
+
+  // Create/Save the user profile in Firestore
+  const newStaffProfile: FirestoreUserProfile = {
+    uid: newUid,
+    email: email.trim(),
+    displayName: displayName.trim(),
+    photoURL: "",
+    role,
+    phoneNumber: phoneNumber?.trim() || "",
+    deliveryAddress: deliveryAddress || {},
+    assignedPassword: password.trim(),
+    temporaryPassword: password.trim(),
+  };
+
+  const userRef = doc(db, "users", newUid);
+  await setDoc(
+    userRef,
+    {
+      ...newStaffProfile,
+      createdAt: serverTimestamp(),
+      updatedAt: serverTimestamp(),
+      lastLoginAt: serverTimestamp(),
+    },
+    { merge: true }
+  );
+
+  return newStaffProfile;
+};
+
 

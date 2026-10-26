@@ -41,6 +41,7 @@ import {
   updateUserProfileInFirestore,
   changeCurrentUserPassword,
   adminSetUserPasswordOrReset,
+  adminCreateStaffAccount,
   normalizeRole,
   isStaffRole,
   canDeleteUser,
@@ -98,20 +99,67 @@ export const AdminCustomersTab: React.FC<AdminCustomersTabProps> = ({
     }
   };
 
+  // --- Password Visibility in Staff Table (For Admin) ---
+  const [revealedPasswords, setRevealedPasswords] = useState<
+    Record<string, boolean>
+  >({});
+  const [copiedStaffPasswordUid, setCopiedStaffPasswordUid] = useState<
+    string | null
+  >(null);
+
+  const togglePasswordReveal = (uid: string) => {
+    setRevealedPasswords((prev) => ({
+      ...prev,
+      [uid]: !prev[uid],
+    }));
+  };
+
+  const handleCopyStaffPassword = (uid: string, pwd?: string) => {
+    if (!pwd) {
+      toast.error("No password on file for this account.");
+      return;
+    }
+    navigator.clipboard.writeText(pwd);
+    setCopiedStaffPasswordUid(uid);
+    toast.success("Password copied to clipboard!");
+    setTimeout(() => setCopiedStaffPasswordUid(null), 2000);
+  };
+
   // --- Modals State ---
 
-  // 1. Delete Modal State
+  // 1. Create Staff Account Modal State (Admin Only)
+  const [isCreateStaffOpen, setIsCreateStaffOpen] = useState(false);
+  const [createDisplayName, setCreateDisplayName] = useState("");
+  const [createEmail, setCreateEmail] = useState("");
+  const [createPassword, setCreatePassword] = useState("");
+  const [createRole, setCreateRole] = useState<"manager" | "salesman" | "admin">(
+    "manager"
+  );
+  const [createPhone, setCreatePhone] = useState("");
+  const [createStreet, setCreateStreet] = useState("");
+  const [createCity, setCreateCity] = useState("Dhaka");
+  const [createDistrict, setCreateDistrict] = useState("Dhaka");
+  const [showCreatePassword, setShowCreatePassword] = useState(true);
+  const [isCreatingStaff, setIsCreatingStaff] = useState(false);
+  const [createdStaffResult, setCreatedStaffResult] = useState<{
+    email: string;
+    password: string;
+    displayName: string;
+    role: string;
+  } | null>(null);
+
+  // 2. Delete Modal State
   const [customerToDelete, setCustomerToDelete] =
     useState<FirestoreUserProfile | null>(null);
   const [isDeletingCustomer, setIsDeletingCustomer] = useState(false);
 
-  // 2. Role Assignment (Promote / Demote) Modal State (Admin Only)
+  // 3. Role Assignment (Promote / Demote) Modal State (Admin Only)
   const [userToChangeRole, setUserToChangeRole] =
     useState<FirestoreUserProfile | null>(null);
   const [selectedNewRole, setSelectedNewRole] = useState<AppRole>("manager");
   const [isUpdatingRole, setIsUpdatingRole] = useState(false);
 
-  // 3. Edit User Info Modal State
+  // 4. Edit User Info Modal State
   const [userToEdit, setUserToEdit] = useState<FirestoreUserProfile | null>(null);
   const [editDisplayName, setEditDisplayName] = useState("");
   const [editPhoneNumber, setEditPhoneNumber] = useState("");
@@ -123,7 +171,7 @@ export const AdminCustomersTab: React.FC<AdminCustomersTabProps> = ({
   const [editRole, setEditRole] = useState<AppRole>("customer");
   const [isSavingEdit, setIsSavingEdit] = useState(false);
 
-  // 4. Change Password Modal State
+  // 5. Change Password Modal State
   const [userToChangePassword, setUserToChangePassword] =
     useState<FirestoreUserProfile | null>(null);
   const [newPassword, setNewPassword] = useState("");
@@ -235,6 +283,95 @@ export const AdminCustomersTab: React.FC<AdminCustomersTabProps> = ({
     managerCount,
     salesmanCount,
   ]);
+
+  // --- Handlers: Create Staff Account ---
+
+  const handleOpenCreateStaffModal = () => {
+    setIsCreateStaffOpen(true);
+    setCreateDisplayName("");
+    setCreateEmail("");
+    setCreatePassword("");
+    setCreateRole("manager");
+    setCreatePhone("");
+    setCreateStreet("");
+    setCreateCity("Dhaka");
+    setCreateDistrict("Dhaka");
+    setShowCreatePassword(true);
+    setCreatedStaffResult(null);
+  };
+
+  const handleGenerateCreateStaffPassword = () => {
+    const chars =
+      "ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnpqrstuvwxyz23456789!@#$%&*";
+    let pwd = "";
+    for (let i = 0; i < 12; i++) {
+      pwd += chars.charAt(Math.floor(Math.random() * chars.length));
+    }
+    setCreatePassword(pwd);
+    setShowCreatePassword(true);
+    toast.success("Generated strong random password!");
+  };
+
+  const handleConfirmCreateStaff = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!isSuper) {
+      toast.error("Only Administrators possess authority to create staff accounts.");
+      return;
+    }
+
+    if (!createDisplayName.trim()) {
+      toast.error("Please provide staff member's full name.");
+      return;
+    }
+
+    if (!createEmail.trim()) {
+      toast.error("Please provide a valid email address.");
+      return;
+    }
+
+    if (createPassword.length < 6) {
+      toast.error("Password must contain at least 6 characters.");
+      return;
+    }
+
+    setIsCreatingStaff(true);
+    try {
+      await adminCreateStaffAccount({
+        email: createEmail.trim(),
+        password: createPassword.trim(),
+        displayName: createDisplayName.trim(),
+        role: createRole,
+        phoneNumber: createPhone.trim(),
+        deliveryAddress: {
+          street: createStreet.trim(),
+          city: createCity.trim(),
+          district: createDistrict.trim(),
+        },
+      });
+
+      setCreatedStaffResult({
+        email: createEmail.trim(),
+        password: createPassword.trim(),
+        displayName: createDisplayName.trim(),
+        role: createRole,
+      });
+
+      const config = getRoleConfig(createRole);
+      toast.success(
+        `Staff account created for "${createDisplayName.trim()}" as ${config.label}!`
+      );
+      onRefresh();
+    } catch (err: unknown) {
+      const error = err as Error;
+      if (error.message?.includes("email-already-in-use")) {
+        toast.error("An account with this email already exists in Firebase.");
+      } else {
+        toast.error(error.message || "Failed to create staff account.");
+      }
+    } finally {
+      setIsCreatingStaff(false);
+    }
+  };
 
   // --- Handlers: Edit Account Info ---
 
@@ -578,14 +715,28 @@ export const AdminCustomersTab: React.FC<AdminCustomersTabProps> = ({
             </p>
           </div>
 
-          <button
-            type="button"
-            onClick={onRefresh}
-            className="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl border border-gray-200 dark:border-neutral-700 hover:bg-stone-50 dark:hover:bg-neutral-800 text-xs font-semibold text-gray-700 dark:text-neutral-200 transition cursor-pointer self-start sm:self-auto"
-          >
-            <ArrowPathIcon className="size-4" />
-            <span>Refresh Directory</span>
-          </button>
+          <div className="flex items-center gap-2">
+            {/* Create Staff Account Button (Admin Only) */}
+            {isSuper && (
+              <button
+                type="button"
+                onClick={handleOpenCreateStaffModal}
+                className="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl bg-orange-600 hover:bg-orange-700 text-white text-xs font-bold shadow-sm transition cursor-pointer"
+              >
+                <UserPlusIcon className="size-4" />
+                <span>Create Staff Account</span>
+              </button>
+            )}
+
+            <button
+              type="button"
+              onClick={onRefresh}
+              className="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl border border-gray-200 dark:border-neutral-700 hover:bg-stone-50 dark:hover:bg-neutral-800 text-xs font-semibold text-gray-700 dark:text-neutral-200 transition cursor-pointer self-start sm:self-auto"
+            >
+              <ArrowPathIcon className="size-4" />
+              <span>Refresh</span>
+            </button>
+          </div>
         </div>
 
         {/* Dedicated View Switcher */}
@@ -879,10 +1030,10 @@ export const AdminCustomersTab: React.FC<AdminCustomersTabProps> = ({
                   </span>
                 </div>
                 <p className="text-xs text-gray-600 dark:text-neutral-300 leading-relaxed">
-                  Super Administrator power: can edit, delete, and change password of manager, salesman, and other admin accounts (cannot delete own account).
+                  Super Administrator power: can create manager &amp; salesman accounts, edit info, delete accounts (cannot delete own account), and view assigned passwords.
                 </p>
                 <div className="pt-2 border-t border-purple-100 dark:border-purple-950 text-[11px] text-purple-900 dark:text-purple-300 font-semibold space-y-1">
-                  <p>• Full account editing &amp; password management</p>
+                  <p>• Create accounts &amp; view passwords</p>
                   <p>• Can delete staff (Self account is protected)</p>
                 </div>
               </div>
@@ -933,7 +1084,7 @@ export const AdminCustomersTab: React.FC<AdminCustomersTabProps> = ({
             </div>
           </div>
 
-          {/* Filter & Search Bar */}
+          {/* Filter, Search Bar & Quick Create Button */}
           <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3 bg-white dark:bg-neutral-900 p-4 rounded-2xl border border-stone-200/80 dark:border-neutral-800 shadow-xs">
             <div className="flex items-center gap-1.5 overflow-x-auto">
               {staffRoleFilterTabs.map((tab) => (
@@ -952,15 +1103,28 @@ export const AdminCustomersTab: React.FC<AdminCustomersTabProps> = ({
               ))}
             </div>
 
-            <div className="relative min-w-[240px]">
-              <MagnifyingGlassIcon className="absolute left-3.5 top-1/2 -translate-y-1/2 size-4 text-gray-400" />
-              <input
-                type="text"
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                placeholder="Search staff members..."
-                className="w-full pl-9 pr-3 py-2 text-xs bg-stone-50 dark:bg-neutral-800 border border-gray-200 dark:border-neutral-700 rounded-xl text-gray-900 dark:text-white focus:outline-none focus:ring-1 focus:ring-orange-600"
-              />
+            <div className="flex items-center gap-2">
+              <div className="relative min-w-[220px]">
+                <MagnifyingGlassIcon className="absolute left-3.5 top-1/2 -translate-y-1/2 size-4 text-gray-400" />
+                <input
+                  type="text"
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  placeholder="Search staff members..."
+                  className="w-full pl-9 pr-3 py-2 text-xs bg-stone-50 dark:bg-neutral-800 border border-gray-200 dark:border-neutral-700 rounded-xl text-gray-900 dark:text-white focus:outline-none focus:ring-1 focus:ring-orange-600"
+                />
+              </div>
+
+              {isSuper && (
+                <button
+                  type="button"
+                  onClick={handleOpenCreateStaffModal}
+                  className="px-3.5 py-2 rounded-xl bg-orange-600 hover:bg-orange-700 text-white font-bold text-xs flex items-center gap-1.5 transition shrink-0 cursor-pointer shadow-xs"
+                >
+                  <UserPlusIcon className="size-4" />
+                  <span className="hidden md:inline">Add Staff</span>
+                </button>
+              )}
             </div>
           </div>
 
@@ -974,6 +1138,15 @@ export const AdminCustomersTab: React.FC<AdminCustomersTabProps> = ({
                     <th className="py-3.5 px-4">Contact Email</th>
                     <th className="py-3.5 px-4">Contact Phone</th>
                     <th className="py-3.5 px-4">Assigned Role</th>
+                    {/* Assigned Password Column: ONLY Visible to Admin! */}
+                    {isSuper && (
+                      <th className="py-3.5 px-4 text-center">
+                        <span className="inline-flex items-center gap-1">
+                          <KeyIcon className="size-3 text-amber-500" />
+                          <span>Password (Admin View)</span>
+                        </span>
+                      </th>
+                    )}
                     <th className="py-3.5 px-4">Standard Permissions</th>
                     <th className="py-3.5 px-4 text-right">Management &amp; Actions</th>
                   </tr>
@@ -981,7 +1154,10 @@ export const AdminCustomersTab: React.FC<AdminCustomersTabProps> = ({
                 <tbody className="divide-y divide-gray-100 dark:divide-neutral-800">
                   {filteredStaff.length === 0 ? (
                     <tr>
-                      <td colSpan={6} className="py-14 text-center text-gray-400 space-y-2">
+                      <td
+                        colSpan={isSuper ? 7 : 6}
+                        className="py-14 text-center text-gray-400 space-y-2"
+                      >
                         <ShieldCheckIcon className="size-8 mx-auto text-stone-300 dark:text-neutral-600" />
                         <p>No staff accounts found matching your query.</p>
                       </td>
@@ -991,6 +1167,9 @@ export const AdminCustomersTab: React.FC<AdminCustomersTabProps> = ({
                       const norm = normalizeRole(staff.role);
                       const config = getRoleConfig(norm);
                       const isCurrentSelf = staff.uid === currentAdminUid;
+                      const staffPwd =
+                        staff.assignedPassword || staff.temporaryPassword;
+                      const isPwdRevealed = Boolean(revealedPasswords[staff.uid]);
 
                       const editCheck = canEditUser(
                         currentUserRole,
@@ -1090,6 +1269,55 @@ export const AdminCustomersTab: React.FC<AdminCustomersTabProps> = ({
                             </span>
                           </td>
 
+                          {/* Password Cell (Admin Only!) */}
+                          {isSuper && (
+                            <td className="py-3.5 px-4 text-center">
+                              {staffPwd ? (
+                                <div className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-xl bg-stone-100 dark:bg-neutral-800 border border-stone-200 dark:border-neutral-700">
+                                  <span className="font-mono text-[11px] text-stone-900 dark:text-neutral-100 font-bold select-all">
+                                    {isPwdRevealed ? staffPwd : "••••••••"}
+                                  </span>
+
+                                  {/* Toggle reveal */}
+                                  <button
+                                    type="button"
+                                    onClick={() => togglePasswordReveal(staff.uid)}
+                                    className="p-1 text-stone-400 hover:text-stone-700 dark:hover:text-stone-200 transition cursor-pointer"
+                                    title={
+                                      isPwdRevealed ? "Hide password" : "Show password"
+                                    }
+                                  >
+                                    {isPwdRevealed ? (
+                                      <EyeSlashIcon className="size-3.5 text-stone-600 dark:text-neutral-300" />
+                                    ) : (
+                                      <EyeIcon className="size-3.5 text-stone-400" />
+                                    )}
+                                  </button>
+
+                                  {/* Copy password */}
+                                  <button
+                                    type="button"
+                                    onClick={() =>
+                                      handleCopyStaffPassword(staff.uid, staffPwd)
+                                    }
+                                    className="p-1 text-stone-400 hover:text-orange-600 transition cursor-pointer"
+                                    title="Copy password to clipboard"
+                                  >
+                                    {copiedStaffPasswordUid === staff.uid ? (
+                                      <CheckIcon className="size-3.5 text-emerald-600" />
+                                    ) : (
+                                      <DocumentDuplicateIcon className="size-3.5 text-stone-400" />
+                                    )}
+                                  </button>
+                                </div>
+                              ) : (
+                                <span className="text-[10px] text-gray-400 italic font-mono">
+                                  Not recorded
+                                </span>
+                              )}
+                            </td>
+                          )}
+
                           <td className="py-3.5 px-4">
                             <p className="text-xs text-gray-600 dark:text-neutral-300 font-medium">
                               {config.tagline}
@@ -1146,10 +1374,7 @@ export const AdminCustomersTab: React.FC<AdminCustomersTabProps> = ({
                                 </button>
                               )}
 
-                              {/* 4. Delete Staff Member:
-                                  - Admin can delete manager, salesman, and other admins!
-                                  - Protected: Admin cannot delete own account.
-                                  - Manager & Salesman cannot delete accounts. */}
+                              {/* 4. Delete Staff Member */}
                               {isCurrentSelf ? (
                                 <div
                                   className="flex items-center gap-1 px-2.5 py-1 rounded-lg bg-stone-100 dark:bg-neutral-800/80 border border-stone-200 dark:border-neutral-700 text-stone-400 text-[10px] font-bold select-none"
@@ -1181,7 +1406,334 @@ export const AdminCustomersTab: React.FC<AdminCustomersTabProps> = ({
         </div>
       )}
 
-      {/* MODAL 1: Edit Account Information Modal */}
+      {/* MODAL 1: Create Staff Member Account Modal (Admin Only) */}
+      <Transition appear show={isCreateStaffOpen} as={React.Fragment}>
+        <Dialog
+          as="div"
+          className="relative z-50 font-sans"
+          onClose={() => {
+            if (!isCreatingStaff) {
+              setIsCreateStaffOpen(false);
+              setCreatedStaffResult(null);
+            }
+          }}
+        >
+          <TransitionChild
+            as={React.Fragment}
+            enter="ease-out duration-200"
+            enterFrom="opacity-0"
+            enterTo="opacity-100"
+            leave="ease-in duration-150"
+            leaveFrom="opacity-100"
+            leaveTo="opacity-0"
+          >
+            <div className="fixed inset-0 bg-stone-900/60 backdrop-blur-xs" />
+          </TransitionChild>
+
+          <div className="fixed inset-0 overflow-y-auto">
+            <div className="flex min-h-full items-center justify-center p-4 text-center sm:p-6">
+              <TransitionChild
+                as={React.Fragment}
+                enter="ease-out duration-200"
+                enterFrom="opacity-0 scale-95"
+                enterTo="opacity-100 scale-100"
+                leave="ease-in duration-150"
+                leaveFrom="opacity-100 scale-100"
+                leaveTo="opacity-0 scale-95"
+              >
+                <DialogPanel className="w-full max-w-lg transform overflow-hidden rounded-3xl bg-white dark:bg-neutral-900 p-6 sm:p-8 text-left shadow-2xl transition-all border border-stone-200/80 dark:border-neutral-800 space-y-5 text-gray-900 dark:text-white">
+                  {/* Header */}
+                  <div className="flex items-start justify-between gap-3 pb-3 border-b border-stone-100 dark:border-neutral-800">
+                    <div className="flex items-center gap-3">
+                      <div className="size-11 rounded-2xl bg-orange-100 dark:bg-orange-950/60 text-orange-600 dark:text-orange-400 flex items-center justify-center shrink-0">
+                        <UserPlusIcon className="size-6" />
+                      </div>
+                      <div>
+                        <DialogTitle className="text-base font-bold text-gray-900 dark:text-white">
+                          Create Staff Account
+                        </DialogTitle>
+                        <p className="text-xs text-gray-500 dark:text-neutral-400">
+                          Create a new Manager or Salesman with direct login credentials.
+                        </p>
+                      </div>
+                    </div>
+
+                    <button
+                      type="button"
+                      disabled={isCreatingStaff}
+                      onClick={() => {
+                        setIsCreateStaffOpen(false);
+                        setCreatedStaffResult(null);
+                      }}
+                      className="p-1.5 text-stone-400 hover:text-stone-700 dark:hover:text-stone-200 rounded-lg hover:bg-stone-100 dark:hover:bg-neutral-800 transition cursor-pointer"
+                    >
+                      <XMarkIcon className="size-5" />
+                    </button>
+                  </div>
+
+                  {/* SUCCESS VIEW: Show created credentials with visible password */}
+                  {createdStaffResult ? (
+                    <div className="space-y-4 py-2">
+                      <div className="p-4 rounded-2xl bg-emerald-50 dark:bg-emerald-950/30 border border-emerald-200 dark:border-emerald-800/60 space-y-3">
+                        <div className="flex items-center gap-2">
+                          <CheckBadgeIcon className="size-6 text-emerald-600 shrink-0" />
+                          <h4 className="font-bold text-sm text-emerald-900 dark:text-emerald-300">
+                            Account Successfully Created &amp; Activated!
+                          </h4>
+                        </div>
+                        <p className="text-xs text-emerald-800/80 dark:text-emerald-300/80">
+                          The new staff member can now log in using these credentials. The password is saved and visible to you at any time.
+                        </p>
+
+                        <div className="p-3 bg-white dark:bg-neutral-900 rounded-xl border border-emerald-200/80 dark:border-emerald-900/40 space-y-2 text-xs font-mono">
+                          <div className="flex justify-between items-center">
+                            <span className="text-gray-500">Name:</span>
+                            <span className="font-bold text-gray-900 dark:text-white">
+                              {createdStaffResult.displayName}
+                            </span>
+                          </div>
+                          <div className="flex justify-between items-center">
+                            <span className="text-gray-500">Role:</span>
+                            <span className="px-2 py-0.5 rounded-full text-[10px] font-bold uppercase bg-stone-100 dark:bg-neutral-800 text-stone-800 dark:text-neutral-200">
+                              {createdStaffResult.role}
+                            </span>
+                          </div>
+                          <div className="flex justify-between items-center">
+                            <span className="text-gray-500">Login Email:</span>
+                            <span className="font-bold text-gray-900 dark:text-white">
+                              {createdStaffResult.email}
+                            </span>
+                          </div>
+                          <div className="flex justify-between items-center pt-1 border-t border-gray-100 dark:border-neutral-800">
+                            <span className="text-gray-500 font-bold">Password:</span>
+                            <span className="font-bold text-orange-600 dark:text-orange-400 bg-orange-50 dark:bg-orange-950/40 px-2 py-0.5 rounded-md select-all">
+                              {createdStaffResult.password}
+                            </span>
+                          </div>
+                        </div>
+                      </div>
+
+                      {/* Success Actions */}
+                      <div className="flex items-center justify-end gap-2.5 pt-2 border-t border-stone-100 dark:border-neutral-800">
+                        <button
+                          type="button"
+                          onClick={() => {
+                            const credText = `SilkenDrift Staff Credentials\nRole: ${createdStaffResult.role.toUpperCase()}\nName: ${createdStaffResult.displayName}\nEmail: ${createdStaffResult.email}\nPassword: ${createdStaffResult.password}`;
+                            navigator.clipboard.writeText(credText);
+                            toast.success("Full credentials copied to clipboard!");
+                          }}
+                          className="px-4 py-2 rounded-xl border border-gray-200 dark:border-neutral-700 text-gray-700 dark:text-neutral-300 font-semibold text-xs hover:bg-stone-50 dark:hover:bg-neutral-800 transition cursor-pointer flex items-center gap-1.5"
+                        >
+                          <DocumentDuplicateIcon className="size-4 text-stone-600" />
+                          <span>Copy All Credentials</span>
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => {
+                            handleOpenCreateStaffModal();
+                          }}
+                          className="px-4 py-2 rounded-xl bg-orange-600 hover:bg-orange-700 text-white font-bold text-xs shadow-md transition cursor-pointer"
+                        >
+                          Create Another
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setIsCreateStaffOpen(false);
+                            setCreatedStaffResult(null);
+                          }}
+                          className="px-4 py-2 rounded-xl bg-stone-900 dark:bg-white text-white dark:text-stone-900 font-bold text-xs shadow-md transition cursor-pointer"
+                        >
+                          Done
+                        </button>
+                      </div>
+                    </div>
+                  ) : (
+                    /* FORM VIEW: Create Staff Account Form */
+                    <form onSubmit={handleConfirmCreateStaff} className="space-y-4">
+                      {/* Role Selector: Manager or Salesman or Admin */}
+                      <div>
+                        <label className="block text-xs font-bold text-gray-700 dark:text-neutral-300 mb-1.5">
+                          Select Staff Role *
+                        </label>
+                        <div className="grid grid-cols-2 gap-2.5">
+                          <div
+                            onClick={() => setCreateRole("manager")}
+                            className={`p-3 rounded-2xl border transition cursor-pointer flex items-center gap-2.5 ${
+                              createRole === "manager"
+                                ? "border-blue-500 bg-blue-50/50 dark:bg-blue-950/30 ring-2 ring-blue-500/20"
+                                : "border-stone-200 dark:border-neutral-800 hover:border-stone-300"
+                            }`}
+                          >
+                            <span className="text-xl">💼</span>
+                            <div>
+                              <p className="font-bold text-xs text-gray-900 dark:text-white">
+                                Operations Manager
+                              </p>
+                              <p className="text-[10px] text-gray-500 dark:text-neutral-400">
+                                Merchandising &amp; Stock
+                              </p>
+                            </div>
+                          </div>
+
+                          <div
+                            onClick={() => setCreateRole("salesman")}
+                            className={`p-3 rounded-2xl border transition cursor-pointer flex items-center gap-2.5 ${
+                              createRole === "salesman"
+                                ? "border-emerald-500 bg-emerald-50/50 dark:bg-emerald-950/30 ring-2 ring-emerald-500/20"
+                                : "border-stone-200 dark:border-neutral-800 hover:border-stone-300"
+                            }`}
+                          >
+                            <span className="text-xl">🏷️</span>
+                            <div>
+                              <p className="font-bold text-xs text-gray-900 dark:text-white">
+                                Sales Representative
+                              </p>
+                              <p className="text-[10px] text-gray-500 dark:text-neutral-400">
+                                Orders &amp; Fulfillment
+                              </p>
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+
+                      {/* Display Name */}
+                      <div>
+                        <label className="block text-xs font-bold text-gray-700 dark:text-neutral-300 mb-1">
+                          Full Name *
+                        </label>
+                        <input
+                          type="text"
+                          required
+                          value={createDisplayName}
+                          onChange={(e) => setCreateDisplayName(e.target.value)}
+                          placeholder="e.g. Rafiqul Islam"
+                          className="w-full px-3.5 py-2.5 text-xs bg-stone-50 dark:bg-neutral-800 border border-gray-200 dark:border-neutral-700 rounded-xl text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-orange-500/20 focus:border-orange-500"
+                        />
+                      </div>
+
+                      {/* Email Address */}
+                      <div>
+                        <label className="block text-xs font-bold text-gray-700 dark:text-neutral-300 mb-1">
+                          Login Email Address *
+                        </label>
+                        <input
+                          type="email"
+                          required
+                          value={createEmail}
+                          onChange={(e) => setCreateEmail(e.target.value)}
+                          placeholder="e.g. rafiq@silkendrift.com"
+                          className="w-full px-3.5 py-2.5 text-xs bg-stone-50 dark:bg-neutral-800 border border-gray-200 dark:border-neutral-700 rounded-xl text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-orange-500/20 focus:border-orange-500 font-mono"
+                        />
+                      </div>
+
+                      {/* Password (Visible for Admin!) */}
+                      <div>
+                        <div className="flex items-center justify-between mb-1">
+                          <label className="block text-xs font-bold text-gray-700 dark:text-neutral-300">
+                            Password (Visible for Admin) *
+                          </label>
+                          <button
+                            type="button"
+                            onClick={handleGenerateCreateStaffPassword}
+                            className="text-[11px] font-bold text-orange-600 hover:text-orange-700 flex items-center gap-1 cursor-pointer"
+                          >
+                            <SparklesIcon className="size-3.5" />
+                            <span>Generate Strong Password</span>
+                          </button>
+                        </div>
+                        <div className="relative">
+                          <input
+                            type={showCreatePassword ? "text" : "password"}
+                            required
+                            value={createPassword}
+                            onChange={(e) => setCreatePassword(e.target.value)}
+                            placeholder="Minimum 6 characters"
+                            className="w-full pl-3.5 pr-10 py-2.5 text-xs bg-stone-50 dark:bg-neutral-800 border border-gray-200 dark:border-neutral-700 rounded-xl text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-orange-500/20 focus:border-orange-500 font-mono font-bold"
+                          />
+                          <button
+                            type="button"
+                            onClick={() => setShowCreatePassword(!showCreatePassword)}
+                            className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 cursor-pointer"
+                          >
+                            {showCreatePassword ? (
+                              <EyeSlashIcon className="size-4" />
+                            ) : (
+                              <EyeIcon className="size-4" />
+                            )}
+                          </button>
+                        </div>
+                        <p className="text-[10px] text-gray-400 mt-1">
+                          The assigned password is saved in Firestore so you can view it anytime from the staff table.
+                        </p>
+                      </div>
+
+                      {/* Optional Contact Phone & Location */}
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-2 border-t border-stone-100 dark:border-neutral-800">
+                        <div>
+                          <label className="block text-xs font-bold text-gray-700 dark:text-neutral-300 mb-1">
+                            Contact Phone
+                          </label>
+                          <input
+                            type="tel"
+                            value={createPhone}
+                            onChange={(e) => setCreatePhone(e.target.value)}
+                            placeholder="+880 1..."
+                            className="w-full px-3.5 py-2 text-xs bg-stone-50 dark:bg-neutral-800 border border-gray-200 dark:border-neutral-700 rounded-xl text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-orange-500/20 focus:border-orange-500"
+                          />
+                        </div>
+                        <div>
+                          <label className="block text-xs font-bold text-gray-700 dark:text-neutral-300 mb-1">
+                            Operational Hub / City
+                          </label>
+                          <input
+                            type="text"
+                            value={createCity}
+                            onChange={(e) => setCreateCity(e.target.value)}
+                            placeholder="Dhaka"
+                            className="w-full px-3.5 py-2 text-xs bg-stone-50 dark:bg-neutral-800 border border-gray-200 dark:border-neutral-700 rounded-xl text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-orange-500/20 focus:border-orange-500"
+                          />
+                        </div>
+                      </div>
+
+                      {/* Actions */}
+                      <div className="flex items-center justify-end gap-2.5 pt-3 border-t border-stone-100 dark:border-neutral-800">
+                        <button
+                          type="button"
+                          disabled={isCreatingStaff}
+                          onClick={() => setIsCreateStaffOpen(false)}
+                          className="px-4 py-2.5 rounded-xl border border-gray-200 dark:border-neutral-700 text-gray-700 dark:text-neutral-300 font-semibold text-xs hover:bg-stone-50 dark:hover:bg-neutral-800 transition cursor-pointer"
+                        >
+                          Cancel
+                        </button>
+                        <button
+                          type="submit"
+                          disabled={isCreatingStaff}
+                          className="px-5 py-2.5 rounded-xl bg-orange-600 hover:bg-orange-700 text-white font-bold text-xs shadow-md transition flex items-center gap-2 cursor-pointer disabled:opacity-50"
+                        >
+                          {isCreatingStaff ? (
+                            <>
+                              <Spinner className="size-4 text-white" />
+                              <span>Creating Account...</span>
+                            </>
+                          ) : (
+                            <>
+                              <UserPlusIcon className="size-4" />
+                              <span>Create &amp; Save Credentials</span>
+                            </>
+                          )}
+                        </button>
+                      </div>
+                    </form>
+                  )}
+                </DialogPanel>
+              </TransitionChild>
+            </div>
+          </div>
+        </Dialog>
+      </Transition>
+
+      {/* MODAL 2: Edit Account Information Modal */}
       <Transition appear show={Boolean(userToEdit)} as={React.Fragment}>
         <Dialog
           as="div"
@@ -1397,7 +1949,7 @@ export const AdminCustomersTab: React.FC<AdminCustomersTabProps> = ({
         </Dialog>
       </Transition>
 
-      {/* MODAL 2: Change Password Modal */}
+      {/* MODAL 3: Change Password Modal */}
       <Transition appear show={Boolean(userToChangePassword)} as={React.Fragment}>
         <Dialog
           as="div"
@@ -1464,18 +2016,33 @@ export const AdminCustomersTab: React.FC<AdminCustomersTabProps> = ({
 
                   {/* Target Account Summary */}
                   {userToChangePassword && (
-                    <div className="p-3.5 rounded-2xl bg-stone-50 dark:bg-neutral-800/60 border border-stone-200/80 dark:border-neutral-700/80 flex items-center justify-between">
-                      <div className="min-w-0">
-                        <p className="text-xs font-bold text-gray-900 dark:text-white truncate">
-                          {userToChangePassword.displayName || "User"}
-                        </p>
-                        <p className="text-[11px] text-gray-500 dark:text-neutral-400 font-mono truncate">
-                          {userToChangePassword.email}
-                        </p>
+                    <div className="p-3.5 rounded-2xl bg-stone-50 dark:bg-neutral-800/60 border border-stone-200/80 dark:border-neutral-700/80 space-y-2">
+                      <div className="flex items-center justify-between">
+                        <div className="min-w-0">
+                          <p className="text-xs font-bold text-gray-900 dark:text-white truncate">
+                            {userToChangePassword.displayName || "User"}
+                          </p>
+                          <p className="text-[11px] text-gray-500 dark:text-neutral-400 font-mono truncate">
+                            {userToChangePassword.email}
+                          </p>
+                        </div>
+                        <span className="px-2 py-0.5 rounded-full text-[10px] font-bold uppercase bg-stone-200 dark:bg-neutral-700 text-stone-700 dark:text-neutral-300 shrink-0">
+                          {normalizeRole(userToChangePassword.role)}
+                        </span>
                       </div>
-                      <span className="px-2 py-0.5 rounded-full text-[10px] font-bold uppercase bg-stone-200 dark:bg-neutral-700 text-stone-700 dark:text-neutral-300 shrink-0">
-                        {normalizeRole(userToChangePassword.role)}
-                      </span>
+
+                      {/* Display current password if known for Admin */}
+                      {isSuper &&
+                        (userToChangePassword.assignedPassword ||
+                          userToChangePassword.temporaryPassword) && (
+                          <div className="pt-2 border-t border-stone-200/60 dark:border-neutral-700/60 flex items-center justify-between text-[11px]">
+                            <span className="text-gray-500">Current on file:</span>
+                            <span className="font-mono font-bold text-stone-800 dark:text-stone-200 bg-stone-200/80 dark:bg-neutral-700/80 px-2 py-0.5 rounded-sm select-all">
+                              {userToChangePassword.assignedPassword ||
+                                userToChangePassword.temporaryPassword}
+                            </span>
+                          </div>
+                        )}
                     </div>
                   )}
 
@@ -1643,7 +2210,7 @@ export const AdminCustomersTab: React.FC<AdminCustomersTabProps> = ({
         </Dialog>
       </Transition>
 
-      {/* MODAL 3: Role Assignment / Promotion / Demotion Modal (Admin Only) */}
+      {/* MODAL 4: Role Assignment / Promotion / Demotion Modal (Admin Only) */}
       <Transition appear show={Boolean(userToChangeRole)} as={React.Fragment}>
         <Dialog
           as="div"
@@ -1822,7 +2389,7 @@ export const AdminCustomersTab: React.FC<AdminCustomersTabProps> = ({
         </Dialog>
       </Transition>
 
-      {/* MODAL 4: Delete Account Confirmation Modal */}
+      {/* MODAL 5: Delete Account Confirmation Modal */}
       <Transition appear show={Boolean(customerToDelete)} as={React.Fragment}>
         <Dialog
           as="div"
