@@ -145,10 +145,15 @@ export function extractGoogleDriveFileId(url: string | null | undefined): string
   if (!url || typeof url !== "string") return null;
   const trimmed = url.trim();
 
-  // Pattern 1: /file/d/{id} or /d/{id} in drive.google.com, docs.google.com, or googleusercontent.com
+  // Pattern 1: /d/{id} anywhere in drive.google.com, docs.google.com, etc. (including /file/u/0/d/..., /u/1/file/d/...)
+  const dMatch = trimmed.match(/(?:drive|docs)\.google\.com\/.*?\/d\/([a-zA-Z0-9_-]+)/i);
+  if (dMatch && dMatch[1]) return dMatch[1];
+
+  // Pattern 1b: standard /file/d/{id} or /d/{id}
   const fileDMatch = trimmed.match(/(?:drive|docs)\.google\.com\/(?:file\/)?d\/([a-zA-Z0-9_-]+)/i);
   if (fileDMatch && fileDMatch[1]) return fileDMatch[1];
 
+  // Pattern 1c: googleusercontent.com/d/{id}
   const lh3Match = trimmed.match(/googleusercontent\.com\/d\/([a-zA-Z0-9_-]+)/i);
   if (lh3Match && lh3Match[1]) return lh3Match[1];
 
@@ -162,34 +167,47 @@ export function extractGoogleDriveFileId(url: string | null | undefined): string
   const thumbnailMatch = trimmed.match(/thumbnail\?(?:.*&)?id=([a-zA-Z0-9_-]+)/i);
   if (thumbnailMatch && thumbnailMatch[1]) return thumbnailMatch[1];
 
+  // Pattern 4: raw Google Drive file ID (25-50 characters)
+  if (/^[a-zA-Z0-9_-]{25,50}$/.test(trimmed)) {
+    return trimmed;
+  }
+
   return null;
 }
 
 /**
  * Converts any Google Drive share URL into a direct, embeddable Google CDN image URL.
+ * Uses Google Drive's thumbnail API which is reliable, load-balanced, and avoids 429 throttling.
  * If the URL is not a Google Drive link, returns the original URL untouched.
  */
-export function normalizeGoogleDriveImageUrl(url: string | null | undefined): string {
+export function normalizeGoogleDriveImageUrl(
+  url: string | null | undefined,
+  width = 1200
+): string {
   if (!url || typeof url !== "string") return "";
   const trimmed = url.trim();
   const fileId = extractGoogleDriveFileId(trimmed);
 
   if (fileId) {
-    // Return Google's direct CDN content URL for public Drive files
-    return `https://lh3.googleusercontent.com/d/${fileId}`;
+    // drive.google.com/thumbnail is Google's most reliable, non-throttled endpoint for public Drive files
+    return `https://drive.google.com/thumbnail?id=${fileId}&sz=w${width}`;
   }
 
   return trimmed;
 }
 
 /**
- * Returns alternative fallback URL for Google Drive files if CDN fails (e.g. thumbnail endpoint)
+ * Returns alternative fallback URL for Google Drive files if thumbnail endpoint fails (e.g. lh3 CDN)
  */
-export function getGoogleDriveThumbnailUrl(url: string | null | undefined, width = 1600): string {
+export function getGoogleDriveThumbnailUrl(url: string | null | undefined, width = 1200): string {
+  return normalizeGoogleDriveImageUrl(url, width);
+}
+
+export function getGoogleDriveFallbackUrl(url: string | null | undefined): string {
   if (!url || typeof url !== "string") return "";
   const fileId = extractGoogleDriveFileId(url);
   if (fileId) {
-    return `https://drive.google.com/thumbnail?id=${fileId}&sz=w${width}`;
+    return `https://lh3.googleusercontent.com/d/${fileId}`;
   }
   return url || "";
 }

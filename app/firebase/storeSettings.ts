@@ -27,7 +27,7 @@ export interface StoreGeneralSettings {
 }
 
 export const defaultStoreSettings: StoreGeneralSettings = {
-  storeName: "SilkenDrift Apparel Atelier",
+  storeName: "SilkenDrift",
   tagline: "Everyday High-Grade Export Quality Apparel",
   contactEmail: "support@silkendrift.com",
   contactPhone: "+880 1712-345678",
@@ -39,10 +39,10 @@ export const defaultStoreSettings: StoreGeneralSettings = {
   announcementActive: true,
   orderPrefix: "FED-",
   supportHours: "10:00 AM - 10:00 PM (Sat - Thu)",
-  logoLightUrl: "https://drive.google.com/file/d/1D1j8ncE6keFEl-AB8g0T31JvXilGYCc3/view?usp=sharing",
-  logoDarkUrl: "https://drive.google.com/file/d/1udHKhJXp1azTsNpAN-In8-ZpSp8txAN8/view?usp=sharing",
-  logoUrl: "https://drive.google.com/file/d/1D1j8ncE6keFEl-AB8g0T31JvXilGYCc3/view?usp=sharing",
-  faviconUrl: "https://drive.google.com/file/d/1P0rXG90nds7lqELfcwuwpZy9RKJzJX-c/view?usp=drive_link",
+  logoLightUrl: "",
+  logoDarkUrl: "",
+  logoUrl: "",
+  faviconUrl: "",
 };
 
 import { sanitizeForFirestore } from "./firestore";

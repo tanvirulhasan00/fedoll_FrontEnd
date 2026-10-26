@@ -15,6 +15,7 @@ import { logoutUser } from "~/redux/features/auth/authSlice";
 import {
   logout,
   normalizeGoogleDriveImageUrl,
+  extractGoogleDriveFileId,
   isStaffRole,
   getRoleConfig,
 } from "~/firebase";
@@ -69,6 +70,11 @@ export default function Header() {
   useEffect(() => {
     setIsMounted(true);
   }, []);
+
+  useEffect(() => {
+    setLogoLightError(false);
+    setLogoDarkError(false);
+  }, [settings?.logoLightUrl, settings?.logoDarkUrl, settings?.logoUrl]);
 
   const isNavActive = (href: string) => {
     if (href === "/") {
@@ -139,7 +145,17 @@ export default function Header() {
                     alt={settings?.storeName || "SilkenDrift"}
                     src={customLogoLight!}
                     className="h-11 sm:h-12 max-h-14 w-auto max-w-[240px] object-contain dark:hidden"
-                    onError={() => setLogoLightError(true)}
+                    referrerPolicy="no-referrer"
+                    onError={(e) => {
+                      const target = e.currentTarget;
+                      const fileId = extractGoogleDriveFileId(settings?.logoLightUrl || settings?.logoUrl);
+                      if (fileId && !target.dataset.triedFallback) {
+                        target.dataset.triedFallback = "true";
+                        target.src = `https://lh3.googleusercontent.com/d/${fileId}`;
+                      } else {
+                        setLogoLightError(true);
+                      }
+                    }}
                   />
                 ) : (
                   <div className="dark:hidden">
@@ -151,7 +167,17 @@ export default function Header() {
                     alt={settings?.storeName || "SilkenDrift"}
                     src={customLogoDark!}
                     className="h-11 sm:h-12 max-h-14 w-auto max-w-[240px] object-contain hidden dark:block"
-                    onError={() => setLogoDarkError(true)}
+                    referrerPolicy="no-referrer"
+                    onError={(e) => {
+                      const target = e.currentTarget;
+                      const fileId = extractGoogleDriveFileId(settings?.logoDarkUrl || settings?.logoUrl);
+                      if (fileId && !target.dataset.triedFallback) {
+                        target.dataset.triedFallback = "true";
+                        target.src = `https://lh3.googleusercontent.com/d/${fileId}`;
+                      } else {
+                        setLogoDarkError(true);
+                      }
+                    }}
                   />
                 ) : (
                   <div className="hidden dark:block">
@@ -296,7 +322,17 @@ export default function Header() {
                       alt={settings?.storeName || "SilkenDrift"}
                       src={customLogoLight!}
                       className="h-10 sm:h-11 max-h-12 w-auto max-w-[220px] object-contain dark:hidden"
-                      onError={() => setLogoLightError(true)}
+                      referrerPolicy="no-referrer"
+                      onError={(e) => {
+                        const target = e.currentTarget;
+                        const fileId = extractGoogleDriveFileId(settings?.logoLightUrl || settings?.logoUrl);
+                        if (fileId && !target.dataset.triedFallback) {
+                          target.dataset.triedFallback = "true";
+                          target.src = `https://lh3.googleusercontent.com/d/${fileId}`;
+                        } else {
+                          setLogoLightError(true);
+                        }
+                      }}
                     />
                   ) : (
                     <div className="dark:hidden">
@@ -308,7 +344,17 @@ export default function Header() {
                       alt={settings?.storeName || "SilkenDrift"}
                       src={customLogoDark!}
                       className="h-10 sm:h-11 max-h-12 w-auto max-w-[220px] object-contain hidden dark:block"
-                      onError={() => setLogoDarkError(true)}
+                      referrerPolicy="no-referrer"
+                      onError={(e) => {
+                        const target = e.currentTarget;
+                        const fileId = extractGoogleDriveFileId(settings?.logoDarkUrl || settings?.logoUrl);
+                        if (fileId && !target.dataset.triedFallback) {
+                          target.dataset.triedFallback = "true";
+                          target.src = `https://lh3.googleusercontent.com/d/${fileId}`;
+                        } else {
+                          setLogoDarkError(true);
+                        }
+                      }}
                     />
                   ) : (
                     <div className="hidden dark:block">

@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { Link } from "react-router";
 import {
   ChartBarIcon,
@@ -23,6 +23,7 @@ import type { AuthUser } from "~/redux/features/auth/authSlice";
 import { useAppSelector } from "~/redux/hooks/hook";
 import {
   normalizeGoogleDriveImageUrl,
+  extractGoogleDriveFileId,
   getRoleAllowedTabs,
   getRoleConfig,
   normalizeRole,
@@ -120,6 +121,11 @@ export const AdminSidebar: React.FC<AdminSidebarProps> = ({
   const customLogoUrl = normalizeGoogleDriveImageUrl(
     settings?.logoDarkUrl || settings?.logoLightUrl || settings?.logoUrl
   );
+
+  useEffect(() => {
+    setLogoLoadError(false);
+  }, [settings?.logoDarkUrl, settings?.logoLightUrl, settings?.logoUrl]);
+
   const hasCustomLogo = Boolean(customLogoUrl && !logoLoadError);
 
   const handleTabClick = (tab: AdminTab) => {
@@ -140,8 +146,20 @@ export const AdminSidebar: React.FC<AdminSidebarProps> = ({
             <img
               src={customLogoUrl!}
               alt={settings?.storeName || "SilkenDrift"}
+              referrerPolicy="no-referrer"
               className="size-11 rounded-xl object-contain bg-white/10 p-1.5 border border-stone-700/80 shadow-md"
-              onError={() => setLogoLoadError(true)}
+              onError={(e) => {
+                const target = e.currentTarget;
+                const fileId = extractGoogleDriveFileId(
+                  settings?.logoDarkUrl || settings?.logoLightUrl || settings?.logoUrl
+                );
+                if (fileId && !target.dataset.triedFallback) {
+                  target.dataset.triedFallback = "true";
+                  target.src = `https://lh3.googleusercontent.com/d/${fileId}`;
+                } else {
+                  setLogoLoadError(true);
+                }
+              }}
             />
           ) : (
             <div className="size-11 rounded-xl flex items-center justify-center bg-gradient-to-tr from-orange-600 to-amber-500 text-white font-sans font-black text-lg shadow-md border border-stone-700/80 shrink-0">

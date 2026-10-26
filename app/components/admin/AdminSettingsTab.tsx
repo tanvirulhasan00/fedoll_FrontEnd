@@ -47,6 +47,18 @@ export const AdminSettingsTab: React.FC<AdminSettingsTabProps> = ({
     setForm(initialSettings);
   }, [initialSettings]);
 
+  useEffect(() => {
+    setLogoLightLoadError(false);
+  }, [form.logoLightUrl]);
+
+  useEffect(() => {
+    setLogoDarkLoadError(false);
+  }, [form.logoDarkUrl]);
+
+  useEffect(() => {
+    setFaviconLoadError(false);
+  }, [form.faviconUrl]);
+
   // Derived normalized URLs for Google Drive and standard links
   const normalizedLightLogo = normalizeGoogleDriveImageUrl(
     form.logoLightUrl || form.logoUrl
@@ -211,9 +223,19 @@ export const AdminSettingsTab: React.FC<AdminSettingsTabProps> = ({
                     <img
                       src={normalizedLightLogo}
                       alt="Store logo preview (light)"
+                      referrerPolicy="no-referrer"
                       className="h-12 sm:h-14 max-h-16 w-auto max-w-full object-contain"
                       onLoad={() => setLogoLightLoadError(false)}
-                      onError={() => setLogoLightLoadError(true)}
+                      onError={(e) => {
+                        const target = e.currentTarget;
+                        const fileId = lightLogoDriveId;
+                        if (fileId && !target.dataset.triedFallback) {
+                          target.dataset.triedFallback = "true";
+                          target.src = `https://lh3.googleusercontent.com/d/${fileId}`;
+                        } else {
+                          setLogoLightLoadError(true);
+                        }
+                      }}
                     />
                   ) : (
                     <div className="flex flex-col items-center justify-center py-1">
@@ -310,9 +332,19 @@ export const AdminSettingsTab: React.FC<AdminSettingsTabProps> = ({
                     <img
                       src={normalizedDarkLogo}
                       alt="Store logo preview (dark)"
+                      referrerPolicy="no-referrer"
                       className="h-12 sm:h-14 max-h-16 w-auto max-w-full object-contain"
                       onLoad={() => setLogoDarkLoadError(false)}
-                      onError={() => setLogoDarkLoadError(true)}
+                      onError={(e) => {
+                        const target = e.currentTarget;
+                        const fileId = darkLogoDriveId;
+                        if (fileId && !target.dataset.triedFallback) {
+                          target.dataset.triedFallback = "true";
+                          target.src = `https://lh3.googleusercontent.com/d/${fileId}`;
+                        } else {
+                          setLogoDarkLoadError(true);
+                        }
+                      }}
                     />
                   ) : (
                     <div className="flex flex-col items-center justify-center py-1">
@@ -417,9 +449,19 @@ export const AdminSettingsTab: React.FC<AdminSettingsTabProps> = ({
                       <img
                         src={normalizedFavicon}
                         alt="Favicon preview"
+                        referrerPolicy="no-referrer"
                         className="size-4 rounded-xs object-contain shrink-0"
                         onLoad={() => setFaviconLoadError(false)}
-                        onError={() => setFaviconLoadError(true)}
+                        onError={(e) => {
+                          const target = e.currentTarget;
+                          const fileId = faviconDriveId;
+                          if (fileId && !target.dataset.triedFallback) {
+                            target.dataset.triedFallback = "true";
+                            target.src = `https://lh3.googleusercontent.com/d/${fileId}`;
+                          } else {
+                            setFaviconLoadError(true);
+                          }
+                        }}
                       />
                     ) : (
                       <span className="size-4 rounded-full bg-orange-600 text-[10px] font-bold text-white flex items-center justify-center shrink-0">

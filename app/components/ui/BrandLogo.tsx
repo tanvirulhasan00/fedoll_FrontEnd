@@ -1,5 +1,6 @@
 import React from "react";
 import clsx from "clsx";
+import { extractGoogleDriveFileId } from "~/firebase";
 
 interface BrandLogoProps {
   customSrc?: string;
@@ -46,17 +47,34 @@ export function BrandLogo({
   showText = true,
   isLoading = false,
 }: BrandLogoProps) {
+  const [loadFailed, setLoadFailed] = React.useState(false);
+
+  React.useEffect(() => {
+    setLoadFailed(false);
+  }, [customSrc]);
+
   if (isLoading) {
     return <NavbarLogoSkeleton className={className} showText={showText} />;
   }
 
-  if (customSrc) {
+  if (customSrc && !loadFailed) {
     return (
       <img
         src={customSrc}
         alt={alt}
         className={clsx("object-contain", className)}
-        onError={onError}
+        referrerPolicy="no-referrer"
+        onError={(e) => {
+          const target = e.currentTarget;
+          const fileId = extractGoogleDriveFileId(customSrc);
+          if (fileId && !target.dataset.triedFallback) {
+            target.dataset.triedFallback = "true";
+            target.src = `https://lh3.googleusercontent.com/d/${fileId}`;
+          } else {
+            setLoadFailed(true);
+            onError?.();
+          }
+        }}
       />
     );
   }

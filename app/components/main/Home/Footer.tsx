@@ -16,11 +16,11 @@ import {
   ChatBubbleBottomCenterTextIcon,
   CheckBadgeIcon,
 } from "@heroicons/react/24/outline";
-import React, { useMemo, useState } from "react";
+import React, { useMemo, useState, useEffect } from "react";
 import { useAppSelector } from "~/redux/hooks/hook";
 import { Link } from "react-router";
 import NewsLetter from "./Newsletter";
-import { normalizeGoogleDriveImageUrl } from "~/firebase";
+import { normalizeGoogleDriveImageUrl, extractGoogleDriveFileId } from "~/firebase";
 import BrandLogo, { NavbarLogoSkeleton } from "~/components/ui/BrandLogo";
 
 const TRUST_PILLARS = [
@@ -113,6 +113,10 @@ const Footer = () => {
     useAppSelector((state) => state.storeSettings);
   const [logoError, setLogoError] = useState(false);
 
+  useEffect(() => {
+    setLogoError(false);
+  }, [settings?.logoDarkUrl, settings?.logoUrl]);
+
   const customLogoDarkUrl = normalizeGoogleDriveImageUrl(
     settings?.logoDarkUrl || settings?.logoUrl
   );
@@ -195,7 +199,17 @@ const Footer = () => {
                         : "SilkenDrift - Export Quality Clothes"
                     }
                     className="h-12 sm:h-14 max-h-16 w-auto max-w-[280px] object-contain rounded-md shadow-xs transition-opacity group-hover:opacity-90"
-                    onError={() => setLogoError(true)}
+                    referrerPolicy="no-referrer"
+                    onError={(e) => {
+                      const target = e.currentTarget;
+                      const fileId = extractGoogleDriveFileId(settings?.logoDarkUrl || settings?.logoUrl);
+                      if (fileId && !target.dataset.triedFallback) {
+                        target.dataset.triedFallback = "true";
+                        target.src = `https://lh3.googleusercontent.com/d/${fileId}`;
+                      } else {
+                        setLogoError(true);
+                      }
+                    }}
                   />
                 ) : (
                   <BrandLogo variant="dark" className="h-12 sm:h-14 w-auto" />
