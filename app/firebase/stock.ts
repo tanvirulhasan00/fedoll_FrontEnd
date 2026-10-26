@@ -165,12 +165,13 @@ export const recordStockMovement = async (
 export const restockProductOrVariant = async (params: {
   productId: string;
   variantId?: string;
+  allVariantsMode?: "distribute" | "each";
   quantityToAdd: number;
   note?: string;
   performedBy?: string;
   product?: ProductItem;
-}): Promise<{ success: boolean; newStock: number; updatedProduct?: ProductItem }> => {
-  const { productId, variantId, quantityToAdd, note, performedBy = "Admin Atelier Desk" } = params;
+}): Promise<{ success: boolean; newStock: number; updatedProduct?: ProductItem; totalAdded?: number }> => {
+  const { productId, variantId, allVariantsMode, quantityToAdd, note, performedBy = "Admin Atelier Desk" } = params;
 
   const qty = Math.max(1, Math.floor(Number(quantityToAdd) || 0));
   if (qty <= 0) {
@@ -215,7 +216,8 @@ export const restockProductOrVariant = async (params: {
   // Ensure product has synthesized variants if none exist
   const productWithVars = ensureProductHasVariants(product);
   const previousTotalStock = Number(productWithVars.stockCount) || 0;
-  let newTotalStock = previousTotalStock + qty;
+  let newTotalStock = previousTotalStock;
+  let actualQtyDelta = qty;
   let variantColor = "";
   let variantSize = "";
   let variantSku = "";
@@ -224,7 +226,14 @@ export const restockProductOrVariant = async (params: {
 
   let updatedVariants = productWithVars.variants ? [...productWithVars.variants] : [];
 
-  const isSpecificVariant = variantId && variantId !== "all";
+  const isSpecificVariant =
+    variantId &&
+    variantId !== "all" &&
+    variantId !== "all_distribute" &&
+    variantId !== "all_each";
+
+  const resolvedMode: "distribute" | "each" =
+    allVariantsMode || (variantId === "all_each" ? "each" : "distribute");
 
   if (isSpecificVariant && updatedVariants.length > 0) {
     const varIdx = updatedVariants.findIndex((v) => String(v.id) === String(variantId));
@@ -244,26 +253,48 @@ export const restockProductOrVariant = async (params: {
 
       // Recalculate total product stock as sum of variants
       newTotalStock = updatedVariants.reduce((sum, item) => sum + (Number(item.stockCount) || 0), 0);
+      actualQtyDelta = qty;
     } else {
       newTotalStock = previousTotalStock + qty;
+      actualQtyDelta = qty;
     }
   } else {
-    // If restock is for all variants, distribute evenly
+    // Restocking all variants
     if (updatedVariants.length > 0) {
-      const perVar = Math.floor(qty / updatedVariants.length);
-      const remainder = qty % updatedVariants.length;
-      updatedVariants = updatedVariants.map((v, i) => {
-        const added = perVar + (i === 0 ? remainder : 0);
-        const next = (Number(v.stockCount) || 0) + added;
-        return {
-          ...v,
-          stockCount: next,
-          inStock: next > 0,
-        };
-      });
-      newTotalStock = updatedVariants.reduce((sum, item) => sum + (Number(item.stockCount) || 0), 0);
+      if (resolvedMode === "each") {
+        // Mode 1: Add the specified quantity to EACH individual variant
+        const totalAddedUnits = qty * updatedVariants.length;
+        updatedVariants = updatedVariants.map((v) => {
+          const next = (Number(v.stockCount) || 0) + qty;
+          return {
+            ...v,
+            stockCount: next,
+            inStock: next > 0,
+          };
+        });
+        newTotalStock = updatedVariants.reduce((sum, item) => sum + (Number(item.stockCount) || 0), 0);
+        actualQtyDelta = totalAddedUnits;
+      } else {
+        // Mode 2: Distribute total quantity evenly across variants via round-robin remainder
+        const varCount = updatedVariants.length;
+        const perVar = Math.floor(qty / varCount);
+        const remainder = qty % varCount;
+        updatedVariants = updatedVariants.map((v, i) => {
+          // Remainder is distributed 1 unit per variant across the first `remainder` variants
+          const added = perVar + (i < remainder ? 1 : 0);
+          const next = (Number(v.stockCount) || 0) + added;
+          return {
+            ...v,
+            stockCount: next,
+            inStock: next > 0,
+          };
+        });
+        newTotalStock = updatedVariants.reduce((sum, item) => sum + (Number(item.stockCount) || 0), 0);
+        actualQtyDelta = qty;
+      }
     } else {
       newTotalStock = previousTotalStock + qty;
+      actualQtyDelta = qty;
     }
   }
 
@@ -291,17 +322,23 @@ export const restockProductOrVariant = async (params: {
       variantColor: variantColor || undefined,
       variantSize: variantSize || undefined,
       type: "restock",
-      quantityDelta: qty,
+      quantityDelta: actualQtyDelta,
       previousStock: isSpecificVariant ? prevVariantStock : previousTotalStock,
       newStock: isSpecificVariant ? newVariantStock : newTotalStock,
-      note: note || `Restocked +${qty} units at Atelier Hub.`,
+      note:
+        note ||
+        (isSpecificVariant
+          ? `Restocked +${qty} units (${variantColor}/${variantSize}) at Atelier Hub.`
+          : resolvedMode === "each"
+          ? `Restocked +${qty} units to each of ${updatedVariants.length} variants (+${actualQtyDelta} total) at Atelier Hub.`
+          : `Restocked +${qty} units distributed evenly across variants at Atelier Hub.`),
       performedBy,
     });
   } catch (movErr) {
     console.warn("Could not record restock ledger entry:", movErr);
   }
 
-  return { success: true, newStock: newTotalStock, updatedProduct };
+  return { success: true, newStock: newTotalStock, updatedProduct, totalAdded: actualQtyDelta };
 };
 
 /**

@@ -74,6 +74,7 @@ export const AdminStockTab: React.FC<AdminStockTabProps> = ({
   const [isRestockOpen, setIsRestockOpen] = useState(false);
   const [selectedProduct, setSelectedProduct] = useState<ProductItem | null>(null);
   const [selectedVariantId, setSelectedVariantId] = useState<string>("all");
+  const [allVariantsMode, setAllVariantsMode] = useState<"distribute" | "each">("distribute");
   const [restockQty, setRestockQty] = useState<number>(10);
   const [restockNote, setRestockNote] = useState("");
   const [referenceBatch, setReferenceBatch] = useState("");
@@ -203,14 +204,13 @@ export const AdminStockTab: React.FC<AdminStockTabProps> = ({
   const handleOpenRestock = (product?: ProductItem) => {
     if (product) {
       setSelectedProduct(product);
-      setSelectedVariantId("all");
     } else if (localProducts.length > 0) {
       setSelectedProduct(localProducts[0]);
-      setSelectedVariantId("all");
     } else if (products && products.length > 0) {
       setSelectedProduct(products[0]);
-      setSelectedVariantId("all");
     }
+    setSelectedVariantId("all");
+    setAllVariantsMode("distribute");
     setRestockQty(10);
     setRestockNote("Fresh batch received at Uttara Atelier Hub.");
     setReferenceBatch(`PO-${new Date().getFullYear()}-${Math.floor(1000 + Math.random() * 9000)}`);
@@ -233,10 +233,23 @@ export const AdminStockTab: React.FC<AdminStockTabProps> = ({
 
     setSubmittingRestock(true);
     try {
-      const isVariant = selectedVariantId !== "all" && Boolean(selectedVariantId);
+      const isSpecificVariant =
+        selectedVariantId &&
+        selectedVariantId !== "all" &&
+        selectedVariantId !== "all_distribute" &&
+        selectedVariantId !== "all_each";
+
+      const effectiveAllVariantsMode: "distribute" | "each" =
+        selectedVariantId === "all_each"
+          ? "each"
+          : selectedVariantId === "all_distribute"
+          ? "distribute"
+          : allVariantsMode;
+
       const res = await restockProductOrVariant({
         productId: String(selectedProduct.id),
-        variantId: isVariant ? selectedVariantId : undefined,
+        variantId: isSpecificVariant ? selectedVariantId : undefined,
+        allVariantsMode: isSpecificVariant ? undefined : effectiveAllVariantsMode,
         quantityToAdd: qty,
         note: `${restockNote.trim()} ${referenceBatch ? `[Batch: ${referenceBatch.trim()}]` : ""}`.trim(),
         performedBy: adminName,
@@ -249,20 +262,28 @@ export const AdminStockTab: React.FC<AdminStockTabProps> = ({
           if (String(p.id) !== String(selectedProduct.id)) return p;
           if (res.updatedProduct) return res.updatedProduct;
           let updatedVariants = p.variants ? [...p.variants] : [];
-          if (isVariant && selectedVariantId) {
+          if (isSpecificVariant && selectedVariantId) {
             updatedVariants = updatedVariants.map((v) =>
               String(v.id) === String(selectedVariantId)
                 ? { ...v, stockCount: (Number(v.stockCount) || 0) + qty, inStock: true }
                 : v
             );
           } else if (updatedVariants.length > 0) {
-            const perVar = Math.floor(qty / updatedVariants.length);
-            const rem = qty % updatedVariants.length;
-            updatedVariants = updatedVariants.map((v, i) => ({
-              ...v,
-              stockCount: (Number(v.stockCount) || 0) + perVar + (i === 0 ? rem : 0),
-              inStock: true,
-            }));
+            if (effectiveAllVariantsMode === "each") {
+              updatedVariants = updatedVariants.map((v) => ({
+                ...v,
+                stockCount: (Number(v.stockCount) || 0) + qty,
+                inStock: true,
+              }));
+            } else {
+              const perVar = Math.floor(qty / updatedVariants.length);
+              const rem = qty % updatedVariants.length;
+              updatedVariants = updatedVariants.map((v, i) => ({
+                ...v,
+                stockCount: (Number(v.stockCount) || 0) + perVar + (i < rem ? 1 : 0),
+                inStock: true,
+              }));
+            }
           }
           return {
             ...p,
@@ -273,8 +294,9 @@ export const AdminStockTab: React.FC<AdminStockTabProps> = ({
         })
       );
 
+      const addedUnits = res.totalAdded || qty;
       toast.success(
-        `Successfully restocked +${qty} units for "${selectedProduct.name}"! New stock: ${res.newStock} pcs.`
+        `Successfully restocked +${addedUnits} units for "${selectedProduct.name}"! New stock: ${res.newStock} pcs.`
       );
       setIsRestockOpen(false);
 
@@ -1038,6 +1060,7 @@ export const AdminStockTab: React.FC<AdminStockTabProps> = ({
                           const p = localProducts.find((prod) => String(prod.id) === String(e.target.value)) || null;
                           setSelectedProduct(p);
                           setSelectedVariantId("all");
+                          setAllVariantsMode("distribute");
                         }}
                         className="w-full p-3 rounded-xl bg-stone-50 dark:bg-neutral-800 border border-stone-200 dark:border-neutral-700 font-bold text-gray-900 dark:text-white cursor-pointer"
                       >
@@ -1051,24 +1074,75 @@ export const AdminStockTab: React.FC<AdminStockTabProps> = ({
 
                     {/* Variant Selection if available */}
                     {selectedProduct && selectedProduct.variants && selectedProduct.variants.length > 0 && (
-                      <div className="space-y-1.5">
-                        <label className="font-bold text-gray-700 dark:text-neutral-300">
-                          Specific Variant or All Matrix *
-                        </label>
-                        <select
-                          value={selectedVariantId}
-                          onChange={(e) => setSelectedVariantId(e.target.value)}
-                          className="w-full p-2.5 rounded-xl bg-stone-50 dark:bg-neutral-800 border border-stone-200 dark:border-neutral-700 font-medium text-gray-900 dark:text-white cursor-pointer"
-                        >
-                          <option value="all">
-                            All Variants (Distribute {restockQty} units evenly across variants)
-                          </option>
-                          {selectedProduct.variants.map((v) => (
-                            <option key={v.id} value={v.id}>
-                              {v.color} / Size {v.size} (Current: {v.stockCount ?? 0} pcs) — SKU: {v.sku || "N/A"}
+                      <div className="space-y-3">
+                        <div className="space-y-1.5">
+                          <label className="font-bold text-gray-700 dark:text-neutral-300">
+                            Specific Variant or All Matrix *
+                          </label>
+                          <select
+                            value={selectedVariantId}
+                            onChange={(e) => {
+                              const val = e.target.value;
+                              setSelectedVariantId(val);
+                            }}
+                            className="w-full p-2.5 rounded-xl bg-stone-50 dark:bg-neutral-800 border border-stone-200 dark:border-neutral-700 font-medium text-gray-900 dark:text-white cursor-pointer"
+                          >
+                            <option value="all">
+                              All Variants Matrix ({selectedProduct.variants.length} combinations)
                             </option>
-                          ))}
-                        </select>
+                            {selectedProduct.variants.map((v) => (
+                              <option key={v.id} value={v.id}>
+                                {v.color} / Size {v.size} (Current: {v.stockCount ?? 0} pcs) — SKU: {v.sku || "N/A"}
+                              </option>
+                            ))}
+                          </select>
+                        </div>
+
+                        {/* Strategy Switcher for All Variants */}
+                        {(selectedVariantId === "all" || selectedVariantId === "all_distribute" || selectedVariantId === "all_each") && (
+                          <div className="space-y-1.5 bg-stone-100/70 dark:bg-neutral-800/60 p-2.5 rounded-xl border border-stone-200 dark:border-neutral-700">
+                            <label className="font-bold text-gray-700 dark:text-neutral-300 text-[11px] block">
+                              All-Variants Allocation Strategy *
+                            </label>
+                            <div className="grid grid-cols-2 gap-2">
+                              <button
+                                type="button"
+                                onClick={() => setAllVariantsMode("distribute")}
+                                className={`p-2.5 rounded-xl border text-left transition cursor-pointer ${
+                                  allVariantsMode === "distribute"
+                                    ? "bg-white dark:bg-neutral-900 border-orange-500 text-orange-950 dark:text-orange-200 ring-2 ring-orange-500 shadow-xs"
+                                    : "bg-white/60 dark:bg-neutral-800/60 border-stone-200 dark:border-neutral-700 text-gray-700 dark:text-neutral-300 hover:bg-white dark:hover:bg-neutral-800"
+                                }`}
+                              >
+                                <div className="flex items-center gap-1.5 font-bold text-xs">
+                                  <span className={`size-2 rounded-full ${allVariantsMode === "distribute" ? "bg-orange-500" : "bg-stone-300 dark:bg-neutral-600"}`} />
+                                  <span>Distribute Evenly</span>
+                                </div>
+                                <p className="text-[10px] text-gray-500 dark:text-neutral-400 mt-1 leading-tight">
+                                  Divides {restockQty} pcs evenly across all {selectedProduct.variants.length} variants
+                                </p>
+                              </button>
+
+                              <button
+                                type="button"
+                                onClick={() => setAllVariantsMode("each")}
+                                className={`p-2.5 rounded-xl border text-left transition cursor-pointer ${
+                                  allVariantsMode === "each"
+                                    ? "bg-white dark:bg-neutral-900 border-orange-500 text-orange-950 dark:text-orange-200 ring-2 ring-orange-500 shadow-xs"
+                                    : "bg-white/60 dark:bg-neutral-800/60 border-stone-200 dark:border-neutral-700 text-gray-700 dark:text-neutral-300 hover:bg-white dark:hover:bg-neutral-800"
+                                }`}
+                              >
+                                <div className="flex items-center gap-1.5 font-bold text-xs">
+                                  <span className={`size-2 rounded-full ${allVariantsMode === "each" ? "bg-orange-500" : "bg-stone-300 dark:bg-neutral-600"}`} />
+                                  <span>Add to Each Variant</span>
+                                </div>
+                                <p className="text-[10px] text-gray-500 dark:text-neutral-400 mt-1 leading-tight">
+                                  Adds +{restockQty} pcs to each of {selectedProduct.variants.length} variants (+{restockQty * selectedProduct.variants.length} total)
+                                </p>
+                              </button>
+                            </div>
+                          </div>
+                        )}
                       </div>
                     )}
 
@@ -1154,8 +1228,8 @@ export const AdminStockTab: React.FC<AdminStockTabProps> = ({
 
                     {/* Calculation Preview Box */}
                     {selectedProduct && (
-                      <div className="p-3.5 rounded-2xl bg-orange-50/50 dark:bg-orange-950/20 border border-orange-200/80 dark:border-orange-800/40 text-xs space-y-1.5">
-                        {selectedVariantId !== "all" && selectedProduct.variants ? (() => {
+                      <div className="p-3.5 rounded-2xl bg-orange-50/50 dark:bg-orange-950/20 border border-orange-200/80 dark:border-orange-800/40 text-xs space-y-2">
+                        {selectedVariantId !== "all" && selectedVariantId !== "all_distribute" && selectedVariantId !== "all_each" && selectedProduct.variants ? (() => {
                           const v = selectedProduct.variants.find((item) => String(item.id) === String(selectedVariantId));
                           const currentVarStock = Number(v?.stockCount) || 0;
                           return (
@@ -1181,6 +1255,76 @@ export const AdminStockTab: React.FC<AdminStockTabProps> = ({
                               </div>
                             </>
                           );
+                        })() : selectedProduct.variants && selectedProduct.variants.length > 0 ? (() => {
+                          const varCount = selectedProduct.variants.length;
+                          const currentTotalStock = selectedProduct.stockCount ?? 0;
+                          const isEach = allVariantsMode === "each";
+                          const perVar = Math.floor(restockQty / varCount);
+                          const rem = restockQty % varCount;
+                          const totalIntake = isEach ? restockQty * varCount : restockQty;
+                          const newTotal = currentTotalStock + totalIntake;
+
+                          return (
+                            <>
+                              <div className="flex items-center justify-between text-gray-600 dark:text-neutral-400">
+                                <span>Allocation Strategy:</span>
+                                <strong className="text-gray-900 dark:text-white font-semibold">
+                                  {isEach
+                                    ? `Add +${restockQty} pcs to EACH variant`
+                                    : `Distribute ${restockQty} pcs evenly across ${varCount} variants`}
+                                </strong>
+                              </div>
+                              <div className="flex items-center justify-between text-gray-600 dark:text-neutral-400">
+                                <span>Per-Variant Increase:</span>
+                                <span className="font-mono font-bold text-gray-800 dark:text-neutral-200">
+                                  {isEach
+                                    ? `+${restockQty} pcs each`
+                                    : `${perVar} pcs each ${rem > 0 ? `(+1 for ${rem} variants)` : ""}`}
+                                </span>
+                              </div>
+                              <div className="flex items-center justify-between text-emerald-600 dark:text-emerald-400 font-bold">
+                                <span>Total Restock Intake:</span>
+                                <span className="font-mono font-bold">+{totalIntake} pcs</span>
+                              </div>
+                              <div className="border-t border-orange-200 dark:border-orange-800/60 my-1.5" />
+                              <div className="flex items-center justify-between text-gray-900 dark:text-white font-black text-sm">
+                                <span>Projected New Total Stock:</span>
+                                <span className="font-mono text-orange-600 dark:text-orange-400">
+                                  {newTotal} pcs
+                                </span>
+                              </div>
+
+                              {/* Variant-Level Breakdown */}
+                              <div className="pt-2 border-t border-orange-200/60 dark:border-orange-800/40">
+                                <p className="text-[10px] font-bold text-gray-500 dark:text-neutral-400 uppercase tracking-wider mb-1.5">
+                                  Variant-Level Stock Breakdown:
+                                </p>
+                                <div className="grid grid-cols-2 sm:grid-cols-3 gap-1.5 max-h-36 overflow-y-auto pr-1">
+                                  {selectedProduct.variants.map((v, i) => {
+                                    const curr = Number(v.stockCount) || 0;
+                                    const added = isEach ? restockQty : perVar + (i < rem ? 1 : 0);
+                                    return (
+                                      <div
+                                        key={v.id}
+                                        className="p-1.5 rounded-lg bg-white/70 dark:bg-neutral-800/80 border border-orange-100 dark:border-neutral-700 text-[10px] flex items-center justify-between"
+                                      >
+                                        <span className="truncate mr-1 font-medium text-gray-700 dark:text-neutral-300">
+                                          {v.color.slice(0, 4)}/{v.size}:
+                                        </span>
+                                        <span className="font-mono shrink-0">
+                                          {curr}{" "}
+                                          <span className="text-emerald-600 dark:text-emerald-400 font-bold">
+                                            +{added}
+                                          </span>{" "}
+                                          → <strong>{curr + added}</strong>
+                                        </span>
+                                      </div>
+                                    );
+                                  })}
+                                </div>
+                              </div>
+                            </>
+                          );
                         })() : (
                           <>
                             <div className="flex items-center justify-between text-gray-600 dark:text-neutral-400">
@@ -1188,7 +1332,7 @@ export const AdminStockTab: React.FC<AdminStockTabProps> = ({
                               <span className="font-mono font-bold">{selectedProduct.stockCount ?? 0} pcs</span>
                             </div>
                             <div className="flex items-center justify-between text-emerald-600 dark:text-emerald-400 font-bold mt-1">
-                              <span>Restock Intake (All Variants):</span>
+                              <span>Restock Intake:</span>
                               <span className="font-mono">+{restockQty} pcs</span>
                             </div>
                             <div className="border-t border-orange-200 dark:border-orange-800/60 my-2" />
