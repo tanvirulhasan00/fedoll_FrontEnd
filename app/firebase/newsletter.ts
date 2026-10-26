@@ -34,56 +34,38 @@ export interface NewsletterSubscriptionResult {
   discountCode?: string;
 }
 
-export const initialSubscribers: NewsletterSubscriber[] = [
-  {
-    id: "sub-seed-1",
-    email: "sarah.jenkins@fashiondaily.co.uk",
-    status: "active",
-    subscribedAt: "2026-10-18T14:32:00.000Z",
-    source: "Storefront Footer",
-    notes: "VIP denim release recipient",
-  },
-  {
-    id: "sub-seed-2",
-    email: "tariq.rahman@dhakamail.com",
-    status: "active",
-    subscribedAt: "2026-10-17T09:15:00.000Z",
-    source: "Storefront Footer",
-  },
-  {
-    id: "sub-seed-3",
-    email: "elena.rostova@ateliermag.com",
-    status: "active",
-    subscribedAt: "2026-10-16T18:45:00.000Z",
-    source: "Admin Manual",
-    notes: "Fashion journalist inquiry",
-  },
-  {
-    id: "sub-seed-4",
-    email: "marcus.vance@urbanthread.de",
-    status: "unsubscribed",
-    subscribedAt: "2026-10-10T11:20:00.000Z",
-    source: "Storefront Footer",
-    notes: "Unsubscribed via preferences",
-  },
-];
+const LEGACY_SEED_EMAILS = new Set([
+  "sarah.jenkins@fashiondaily.co.uk",
+  "tariq.rahman@dhakamail.com",
+  "elena.rostova@ateliermag.com",
+  "marcus.vance@urbanthread.de",
+]);
+
+export const initialSubscribers: NewsletterSubscriber[] = [];
 
 const LOCAL_STORAGE_KEY = "fedoll_newsletter_subscribers_v2";
 
 export const getLocalSubscribers = (): NewsletterSubscriber[] => {
-  if (typeof window === "undefined") return initialSubscribers;
+  if (typeof window === "undefined") return [];
   try {
     const raw = localStorage.getItem(LOCAL_STORAGE_KEY);
-    if (raw) {
+    if (raw !== null) {
       const parsed = JSON.parse(raw);
-      if (Array.isArray(parsed) && parsed.length > 0) {
-        return parsed;
+      if (Array.isArray(parsed)) {
+        // Strip out legacy mock seed emails so they never reappear
+        return parsed.filter(
+          (s) =>
+            s &&
+            s.id &&
+            !s.id.startsWith("sub-seed-") &&
+            !LEGACY_SEED_EMAILS.has(s.email?.toLowerCase?.())
+        );
       }
     }
   } catch {
     // Ignore JSON parse errors
   }
-  return initialSubscribers;
+  return [];
 };
 
 export const saveLocalSubscribers = (list: NewsletterSubscriber[]) => {
@@ -294,12 +276,8 @@ export const fetchAllNewsletterSubscribers = async (): Promise<NewsletterSubscri
     return timeB - timeA;
   });
 
-  if (merged.length > 0) {
-    saveLocalSubscribers(merged);
-    return merged;
-  }
-
-  return initialSubscribers;
+  saveLocalSubscribers(merged);
+  return merged;
 };
 
 /**
