@@ -18,7 +18,7 @@ import {
   HeartIcon,
 } from "@heroicons/react/24/outline";
 import { toast } from "sonner";
-import { logout } from "~/firebase";
+import { logout, isStaffRole, getRoleConfig } from "~/firebase";
 import { useAppDispatch } from "~/redux/hooks/hook";
 import { logoutUser, type AuthUser } from "~/redux/features/auth/authSlice";
 
@@ -43,8 +43,9 @@ export const UserMenu: React.FC<UserMenuProps> = ({ user }) => {
   const displayName =
     user.displayName || user.email?.split("@")[0] || "My Account";
   const userInitial = displayName.charAt(0).toUpperCase();
-  const roleDisplay =
-    user.role === "admin" ? "Store Admin" : "Registered Customer";
+  const isStaff = isStaffRole(user.role);
+  const roleConfig = getRoleConfig(user.role);
+  const roleDisplay = roleConfig.label;
 
   return (
     <Menu as="div" className="relative inline-block text-left">
@@ -158,7 +159,7 @@ export const UserMenu: React.FC<UserMenuProps> = ({ user }) => {
               )}
             </MenuItem>
 
-            {user.role === "admin" && (
+            {isStaff && (
               <MenuItem>
                 {({ focus }) => (
                   <Link
@@ -171,10 +172,10 @@ export const UserMenu: React.FC<UserMenuProps> = ({ user }) => {
                   >
                     <div className="flex items-center gap-2.5">
                       <Cog6ToothIcon className="size-4 text-orange-600 dark:text-orange-400" />
-                      <span>Admin Dashboard</span>
+                      <span>Atelier Dashboard</span>
                     </div>
                     <span className="text-[10px] uppercase font-bold tracking-wider px-1.5 py-0.5 rounded-sm bg-orange-700 text-white">
-                      Admin
+                      {roleConfig.shortLabel}
                     </span>
                   </Link>
                 )}

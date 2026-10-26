@@ -36,6 +36,11 @@ import {
   defaultReturnsExchanges,
   fetchBlogsFromFirestore,
   type BlogItem,
+  normalizeRole,
+  isStaffRole,
+  isSuperAdmin,
+  getRoleAllowedTabs,
+  getRoleConfig,
 } from "~/firebase";
 import AdminSidebar, { type AdminTab } from "~/components/admin/AdminSidebar";
 import AdminOverviewTab from "~/components/admin/AdminOverviewTab";
@@ -87,7 +92,11 @@ export default function AdminDashboardPage() {
   const { user, isAuthenticated, loading: authLoading } = useAppSelector(
     (state) => state.auth
   );
-  const isAdmin = user?.role === "admin";
+  const userRole = normalizeRole(user?.role);
+  const isStaff = isStaffRole(userRole);
+  const isAdmin = isSuperAdmin(userRole);
+  const roleConfig = getRoleConfig(userRole);
+  const allowedTabs = getRoleAllowedTabs(userRole);
 
   const validTabs: AdminTab[] = [
     "overview",
@@ -99,6 +108,7 @@ export default function AdminDashboardPage() {
     "blogs",
     "shipping",
     "customers",
+    "staff",
     "coupons",
     "messages",
     "newsletters",
@@ -208,10 +218,17 @@ export default function AdminDashboardPage() {
   };
 
   useEffect(() => {
-    if (isAdmin) {
+    if (isStaff) {
       loadAllAdminData();
     }
-  }, [isAdmin]);
+  }, [isStaff]);
+
+  // Ensure current tab is permitted for the user's role
+  useEffect(() => {
+    if (user && isStaff && !allowedTabs.includes(currentTab)) {
+      handleSelectTab(allowedTabs[0] || "overview");
+    }
+  }, [currentTab, user, isStaff, allowedTabs]);
 
   const handleUpdateOrderStatus = async (orderId: string, status: OrderStatus) => {
     try {
@@ -250,8 +267,8 @@ export default function AdminDashboardPage() {
 
   return (
     <div className="min-h-screen bg-stone-100 dark:bg-neutral-950 text-gray-900 dark:text-neutral-100 flex flex-col font-sans transition-colors selection:bg-orange-500 selection:text-white">
-      {/* ACCESS CONTROL GATE: If user is not authenticated or not an admin */}
-      {!isAdmin ? (
+      {/* ACCESS CONTROL GATE: If user is not authenticated or not staff */}
+      {!isStaff ? (
         <div className="flex-1 flex items-center justify-center p-4 sm:p-8">
           <div className="w-full max-w-lg bg-white dark:bg-neutral-900 rounded-3xl border border-stone-200/80 dark:border-neutral-800 shadow-2xl p-8 sm:p-10 text-center space-y-6">
             {user ? (
@@ -265,10 +282,10 @@ export default function AdminDashboardPage() {
                     Access Denied
                   </span>
                   <h1 className="text-2xl font-black text-gray-900 dark:text-white">
-                    Administrator Privileges Required
+                    Staff Privileges Required
                   </h1>
                   <p className="text-xs text-gray-500 dark:text-neutral-400 max-w-sm mx-auto leading-relaxed">
-                    This portal is restricted to registered administrators only. Customer accounts do not have permission to view or manage the store dashboard.
+                    This portal is restricted to authorized store staff (Administrator, Operations Manager, Sales Representative). Retail customer accounts do not have permission to view or manage the dashboard.
                   </p>
                 </div>
 
@@ -405,7 +422,9 @@ export default function AdminDashboardPage() {
                     : currentTab === "shipping"
                     ? "Shipping & Couriers"
                     : currentTab === "customers"
-                    ? "Customer Accounts"
+                    ? "Shoppers & Customer Accounts"
+                    : currentTab === "staff"
+                    ? "Staff & App Roles Management"
                     : currentTab === "coupons"
                     ? "Promo Codes & Discounts"
                     : currentTab === "messages"
@@ -416,6 +435,11 @@ export default function AdminDashboardPage() {
                     ? "Legal Policies & Compliance"
                     : "Store Settings"}
                 </h1>
+                <span
+                  className={`hidden sm:inline-flex px-2.5 py-0.5 rounded-full text-[10px] font-extrabold uppercase border ${roleConfig.badgeClass}`}
+                >
+                  {roleConfig.label}
+                </span>
               </div>
 
               <div className="flex items-center gap-3">
@@ -480,6 +504,7 @@ export default function AdminDashboardPage() {
                       products={products}
                       categories={categories}
                       onRefresh={loadAllAdminData}
+                      canManageProducts={userRole === "admin" || userRole === "manager"}
                     />
                   )}
 
@@ -537,11 +562,14 @@ export default function AdminDashboardPage() {
                     />
                   )}
 
-                  {currentTab === "customers" && (
+                  {(currentTab === "customers" || currentTab === "staff") && (
                     <AdminCustomersTab
                       customers={customers}
                       onRefresh={loadAllAdminData}
                       currentAdminUid={user?.uid}
+                      currentUserRole={userRole}
+                      initialSubView={currentTab === "staff" ? "staff" : "customers"}
+                      onSubViewChange={(sub) => handleSelectTab(sub)}
                     />
                   )}
 

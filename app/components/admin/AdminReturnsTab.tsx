@@ -53,6 +53,7 @@ import {
   DispatchReplacementModal,
   SettleRefundModal,
   RejectTicketModal,
+  DeleteReturnTicketModal,
   getReturnWhatsAppUrl,
   SILKENDRIFT_DROP_OFF_HUBS,
   BANGLADESH_REVERSE_COURIERS,
@@ -168,6 +169,10 @@ export const AdminReturnsTab: React.FC<AdminReturnsTabProps> = ({
 
   // 7. Decline / Reject Ticket Modal
   const [rejectModalTicket, setRejectModalTicket] = useState<ReturnExchangeRequest | null>(null);
+
+  // 8. Delete Ticket Confirmation Modal Alert
+  const [deleteModalTicket, setDeleteModalTicket] = useState<ReturnExchangeRequest | null>(null);
+  const [isDeletingTicket, setIsDeletingTicket] = useState(false);
 
   // Handlers for Guided Lifecycle Actions
   const handleSelectPickupFromChoice = (ticket: ReturnExchangeRequest) => {
@@ -505,17 +510,26 @@ export const AdminReturnsTab: React.FC<AdminReturnsTabProps> = ({
     }
   };
 
-  // Delete Ticket
-  const handleDeleteTicket = async (ticket: ReturnExchangeRequest) => {
-    if (!window.confirm(`Are you sure you want to permanently delete return ticket ${ticket.ticketNumber}?`)) {
-      return;
-    }
+  // Open Delete Ticket Confirmation Modal Alert
+  const handleOpenDeleteTicket = (ticket: ReturnExchangeRequest) => {
+    setDeleteModalTicket(ticket);
+  };
+
+  // Confirm Delete Ticket from Modal Alert
+  const handleConfirmDeleteTicket = async (ticket: ReturnExchangeRequest) => {
+    setIsDeletingTicket(true);
     try {
       await deleteReturnRequest(ticket.id);
       toast.success(`Deleted ticket ${ticket.ticketNumber}.`);
+      setDeleteModalTicket(null);
+      if (selectedTicket?.id === ticket.id) {
+        setSelectedTicket(null);
+      }
       onRefresh();
     } catch {
       toast.error("Failed to delete ticket.");
+    } finally {
+      setIsDeletingTicket(false);
     }
   };
 
@@ -1300,7 +1314,7 @@ export const AdminReturnsTab: React.FC<AdminReturnsTabProps> = ({
                       {/* Delete */}
                       <button
                         type="button"
-                        onClick={() => handleDeleteTicket(ticket)}
+                        onClick={() => handleOpenDeleteTicket(ticket)}
                         className="p-1.5 text-gray-400 hover:text-red-500 rounded-lg hover:bg-red-50 dark:hover:bg-red-950/40 cursor-pointer"
                         title="Delete ticket"
                       >
@@ -1892,31 +1906,47 @@ export const AdminReturnsTab: React.FC<AdminReturnsTabProps> = ({
                       </div>
 
                       {/* Modal Footer */}
-                      <div className="flex items-center justify-end gap-3 pt-4 border-t border-stone-200 dark:border-neutral-800">
+                      <div className="flex items-center justify-between gap-3 pt-4 border-t border-stone-200 dark:border-neutral-800">
                         <button
                           type="button"
-                          onClick={() => setSelectedTicket(null)}
-                          className="px-4 py-2.5 rounded-xl border border-stone-300 dark:border-neutral-700 text-gray-700 dark:text-neutral-300 text-xs font-bold hover:bg-stone-100 transition cursor-pointer"
+                          onClick={() => {
+                            const target = selectedTicket;
+                            setSelectedTicket(null);
+                            handleOpenDeleteTicket(target);
+                          }}
+                          className="px-3.5 py-2 rounded-xl text-rose-600 hover:text-rose-700 hover:bg-rose-50 dark:hover:bg-rose-950/40 text-xs font-bold transition flex items-center gap-1.5 cursor-pointer"
+                          title="Delete return ticket"
                         >
-                          Cancel
+                          <TrashIcon className="size-4" />
+                          <span>Delete Ticket</span>
                         </button>
-                        <button
-                          type="submit"
-                          disabled={isUpdating}
-                          className="px-6 py-2.5 rounded-xl bg-orange-600 hover:bg-orange-700 active:scale-98 text-white font-bold text-xs shadow-md transition flex items-center gap-2 cursor-pointer disabled:opacity-50"
-                        >
-                          {isUpdating ? (
-                            <>
-                              <Spinner className="size-4 text-white animate-spin" />
-                              <span>Saving...</span>
-                            </>
-                          ) : (
-                            <>
-                              <CheckIcon className="size-4" />
-                              <span>Save Ticket Updates</span>
-                            </>
-                          )}
-                        </button>
+
+                        <div className="flex items-center gap-2">
+                          <button
+                            type="button"
+                            onClick={() => setSelectedTicket(null)}
+                            className="px-4 py-2.5 rounded-xl border border-stone-300 dark:border-neutral-700 text-gray-700 dark:text-neutral-300 text-xs font-bold hover:bg-stone-100 transition cursor-pointer"
+                          >
+                            Cancel
+                          </button>
+                          <button
+                            type="submit"
+                            disabled={isUpdating}
+                            className="px-6 py-2.5 rounded-xl bg-orange-600 hover:bg-orange-700 active:scale-98 text-white font-bold text-xs shadow-md transition flex items-center gap-2 cursor-pointer disabled:opacity-50"
+                          >
+                            {isUpdating ? (
+                              <>
+                                <Spinner className="size-4 text-white animate-spin" />
+                                <span>Saving...</span>
+                              </>
+                            ) : (
+                              <>
+                                <CheckIcon className="size-4" />
+                                <span>Save Ticket Updates</span>
+                              </>
+                            )}
+                          </button>
+                        </div>
                       </div>
                     </form>
                   )}
@@ -2476,6 +2506,15 @@ export const AdminReturnsTab: React.FC<AdminReturnsTabProps> = ({
         isOpen={!!rejectModalTicket}
         onClose={() => setRejectModalTicket(null)}
         onConfirm={handleConfirmReject}
+      />
+
+      {/* 8. Delete Ticket Confirmation Modal Alert */}
+      <DeleteReturnTicketModal
+        ticket={deleteModalTicket}
+        isOpen={!!deleteModalTicket}
+        onClose={() => !isDeletingTicket && setDeleteModalTicket(null)}
+        onConfirm={handleConfirmDeleteTicket}
+        isDeleting={isDeletingTicket}
       />
     </div>
   );

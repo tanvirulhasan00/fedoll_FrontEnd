@@ -6,3 +6,4 @@ export * from "./QualityInspectionModal";
 export * from "./DispatchReplacementModal";
 export * from "./SettleRefundModal";
 export * from "./RejectTicketModal";
+export * from "./DeleteReturnTicketModal";

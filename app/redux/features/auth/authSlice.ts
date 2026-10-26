@@ -12,7 +12,7 @@ export interface AuthUser {
   email: string | null;
   displayName: string | null;
   photoURL: string | null;
-  role?: "customer" | "admin" | string;
+  role?: "customer" | "admin" | "manager" | "salesman" | string;
   phoneNumber?: string | null;
   deliveryAddress?: UserDeliveryAddress | null;
   createdAt?: string | null;

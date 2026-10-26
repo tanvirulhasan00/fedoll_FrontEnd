@@ -31,12 +31,14 @@ googleProvider.setCustomParameters({
   prompt: "select_account",
 });
 
+import { type AppRole } from "./roles";
+
 export interface FirestoreUserProfile {
   uid: string;
   email: string;
   displayName: string;
   photoURL: string;
-  role: "customer" | "admin" | string;
+  role: AppRole | string;
   phoneNumber?: string;
   deliveryAddress?: {
     street?: string;
@@ -324,11 +326,11 @@ export const fetchAllCustomersFromFirestore = async (): Promise<
 };
 
 /**
- * Admin: Update customer role (e.g. promote to admin or switch to customer)
+ * Admin: Update customer or staff role (e.g. promote to manager, salesman, admin, or demote to customer)
  */
 export const updateCustomerRoleInFirestore = async (
   uid: string,
-  role: "customer" | "admin" | string
+  role: AppRole | string
 ): Promise<boolean> => {
   try {
     const userRef = doc(db, "users", uid);

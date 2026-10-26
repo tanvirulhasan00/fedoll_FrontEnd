@@ -1,4 +1,5 @@
-import React, { useState } from "react";
+import React, { useState, Fragment } from "react";
+import { Dialog, Transition } from "@headlessui/react";
 import {
   ChatBubbleLeftRightIcon,
   EnvelopeIcon,
@@ -6,6 +7,7 @@ import {
   CheckCircleIcon,
   ClockIcon,
   ExclamationCircleIcon,
+  ExclamationTriangleIcon,
   MagnifyingGlassIcon,
   TrashIcon,
   ArrowTopRightOnSquareIcon,
@@ -17,6 +19,7 @@ import {
   SparklesIcon,
 } from "@heroicons/react/24/outline";
 import { toast } from "sonner";
+import { Spinner } from "~/components/ui/spinner";
 import {
   type ContactMessageRecord,
   updateContactMessageStatusInFirestore,
@@ -38,7 +41,8 @@ export const AdminMessagesTab: React.FC<AdminMessagesTabProps> = ({
   const [selectedMessage, setSelectedMessage] = useState<ContactMessageRecord | null>(null);
   const [adminNote, setAdminNote] = useState("");
   const [savingNote, setSavingNote] = useState(false);
-  const [deletingId, setDeletingId] = useState<string | null>(null);
+  const [inquiryToDelete, setInquiryToDelete] = useState<ContactMessageRecord | null>(null);
+  const [isDeletingInquiry, setIsDeletingInquiry] = useState(false);
 
   // Status Counts
   const totalCount = messages.length;
@@ -121,25 +125,27 @@ export const AdminMessagesTab: React.FC<AdminMessagesTabProps> = ({
     }
   };
 
-  const handleDelete = async (id?: string) => {
-    if (!id) return;
-    if (!window.confirm("Are you sure you want to permanently delete this customer inquiry?")) {
-      return;
-    }
+  const handleOpenDelete = (inquiry: ContactMessageRecord) => {
+    setInquiryToDelete(inquiry);
+  };
 
-    setDeletingId(id);
+  const handleConfirmDelete = async () => {
+    if (!inquiryToDelete?.id) return;
+
+    setIsDeletingInquiry(true);
     try {
-      await deleteContactMessageFromFirestore(id);
+      await deleteContactMessageFromFirestore(inquiryToDelete.id);
       toast.success("Customer message deleted successfully");
-      if (selectedMessage?.id === id) {
+      if (selectedMessage?.id === inquiryToDelete.id) {
         setSelectedMessage(null);
       }
+      setInquiryToDelete(null);
       onRefresh();
     } catch (err: unknown) {
       const error = err as Error;
       toast.error(error.message || "Failed to delete message");
     } finally {
-      setDeletingId(null);
+      setIsDeletingInquiry(false);
     }
   };
 
@@ -460,10 +466,9 @@ export const AdminMessagesTab: React.FC<AdminMessagesTabProps> = ({
 
                     <button
                       type="button"
-                      disabled={deletingId === msg.id}
-                      onClick={() => handleDelete(msg.id)}
+                      onClick={() => handleOpenDelete(msg)}
                       title="Delete Inquiry"
-                      className="p-1.5 rounded-xl text-gray-400 hover:text-red-600 hover:bg-red-50 dark:hover:bg-red-950/30 transition"
+                      className="p-1.5 rounded-xl text-gray-400 hover:text-red-600 hover:bg-red-50 dark:hover:bg-red-950/30 transition cursor-pointer"
                     >
                       <TrashIcon className="size-4" />
                     </button>
@@ -617,8 +622,8 @@ export const AdminMessagesTab: React.FC<AdminMessagesTabProps> = ({
               <div className="flex items-center justify-between pt-1">
                 <button
                   type="button"
-                  onClick={() => handleDelete(selectedMessage.id)}
-                  className="text-xs font-semibold text-red-600 hover:text-red-700 flex items-center gap-1"
+                  onClick={() => handleOpenDelete(selectedMessage)}
+                  className="text-xs font-semibold text-red-600 hover:text-red-700 flex items-center gap-1 cursor-pointer"
                 >
                   <TrashIcon className="size-3.5" />
                   Delete Inquiry
@@ -638,6 +643,140 @@ export const AdminMessagesTab: React.FC<AdminMessagesTabProps> = ({
           </div>
         </div>
       )}
+
+      {/* Delete Customer Inquiry Confirmation Modal Alert */}
+      <Transition appear show={Boolean(inquiryToDelete)} as={Fragment}>
+        <Dialog
+          as="div"
+          className="relative z-50"
+          onClose={() => {
+            if (!isDeletingInquiry) setInquiryToDelete(null);
+          }}
+        >
+          <Transition.Child
+            as={Fragment}
+            enter="ease-out duration-200"
+            enterFrom="opacity-0"
+            enterTo="opacity-100"
+            leave="ease-in duration-150"
+            leaveFrom="opacity-100"
+            leaveTo="opacity-0"
+          >
+            <div className="fixed inset-0 bg-black/60 backdrop-blur-xs" />
+          </Transition.Child>
+
+          <div className="fixed inset-0 overflow-y-auto">
+            <div className="flex min-h-full items-center justify-center p-4 text-center">
+              <Transition.Child
+                as={Fragment}
+                enter="ease-out duration-200"
+                enterFrom="opacity-0 scale-95"
+                enterTo="opacity-100 scale-100"
+                leave="ease-in duration-150"
+                leaveFrom="opacity-100 scale-100"
+                leaveTo="opacity-0 scale-95"
+              >
+                <Dialog.Panel className="w-full max-w-md transform overflow-hidden rounded-3xl bg-white dark:bg-neutral-900 border border-stone-200 dark:border-neutral-800 p-6 sm:p-7 text-left align-middle shadow-2xl transition-all">
+                  <div className="flex items-start gap-4">
+                    <div className="size-12 shrink-0 rounded-2xl bg-rose-50 dark:bg-rose-950/50 border border-rose-200 dark:border-rose-900/60 flex items-center justify-center text-rose-600 dark:text-rose-400 shadow-xs">
+                      <ExclamationTriangleIcon className="size-6" />
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <Dialog.Title
+                        as="h3"
+                        className="text-lg font-bold text-gray-900 dark:text-white tracking-tight"
+                      >
+                        Delete Customer Inquiry
+                      </Dialog.Title>
+                      <p className="mt-1 text-xs text-gray-500 dark:text-neutral-400">
+                        Are you sure you want to permanently delete this customer inquiry? This action is irreversible.
+                      </p>
+                    </div>
+                  </div>
+
+                  {inquiryToDelete && (
+                    <div className="mt-5 space-y-3">
+                      <div className="p-4 rounded-2xl bg-stone-50 dark:bg-neutral-950 border border-stone-200/80 dark:border-neutral-800 space-y-2.5">
+                        <div className="flex items-start justify-between gap-2">
+                          <div className="min-w-0">
+                            <p className="font-bold text-sm text-gray-900 dark:text-white truncate">
+                              {inquiryToDelete.name}
+                            </p>
+                            <p className="text-xs text-gray-500 dark:text-neutral-400 font-mono truncate">
+                              {inquiryToDelete.email}
+                            </p>
+                          </div>
+                          <span className="shrink-0 px-2.5 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider bg-orange-100 text-orange-700 dark:bg-orange-950/60 dark:text-orange-400">
+                            {inquiryToDelete.category || "General"}
+                          </span>
+                        </div>
+
+                        <div className="pt-2 border-t border-stone-200/60 dark:border-neutral-800/80 space-y-1">
+                          <p className="text-xs font-semibold text-gray-800 dark:text-neutral-200">
+                            {inquiryToDelete.subject}
+                          </p>
+                          <p className="text-xs text-gray-600 dark:text-neutral-400 line-clamp-2 italic">
+                            &ldquo;{inquiryToDelete.message}&rdquo;
+                          </p>
+                        </div>
+
+                        {(inquiryToDelete.phone || inquiryToDelete.orderNumber) && (
+                          <div className="pt-2 border-t border-stone-200/60 dark:border-neutral-800/80 flex flex-wrap gap-3 text-[11px] text-gray-500 dark:text-neutral-400">
+                            {inquiryToDelete.phone && (
+                              <span className="flex items-center gap-1">
+                                <PhoneIcon className="size-3 text-gray-400" />
+                                {inquiryToDelete.phone}
+                              </span>
+                            )}
+                            {inquiryToDelete.orderNumber && (
+                              <span className="flex items-center gap-1 font-mono text-orange-600 dark:text-orange-400">
+                                Order #{inquiryToDelete.orderNumber}
+                              </span>
+                            )}
+                          </div>
+                        )}
+                      </div>
+
+                      <div className="p-3 rounded-xl bg-rose-50/70 dark:bg-rose-950/30 border border-rose-200/60 dark:border-rose-900/40 text-[11px] text-rose-800 dark:text-rose-300">
+                        <strong>Warning:</strong> Deleting will remove this customer message, any internal resolution notes, and contact history from Cloud Firestore.
+                      </div>
+                    </div>
+                  )}
+
+                  <div className="mt-6 flex items-center justify-end gap-3">
+                    <button
+                      type="button"
+                      disabled={isDeletingInquiry}
+                      onClick={() => setInquiryToDelete(null)}
+                      className="px-4 py-2.5 rounded-xl border border-stone-200 dark:border-neutral-700 text-xs font-bold text-gray-700 dark:text-neutral-300 hover:bg-stone-50 dark:hover:bg-neutral-800 transition cursor-pointer disabled:opacity-50"
+                    >
+                      Cancel
+                    </button>
+                    <button
+                      type="button"
+                      disabled={isDeletingInquiry}
+                      onClick={handleConfirmDelete}
+                      className="px-5 py-2.5 rounded-xl bg-rose-600 hover:bg-rose-700 text-white text-xs font-bold shadow-md shadow-rose-600/20 transition flex items-center gap-2 cursor-pointer disabled:opacity-50"
+                    >
+                      {isDeletingInquiry ? (
+                        <>
+                          <Spinner className="size-4 text-white" />
+                          <span>Deleting...</span>
+                        </>
+                      ) : (
+                        <>
+                          <TrashIcon className="size-4" />
+                          <span>Delete Inquiry</span>
+                        </>
+                      )}
+                    </button>
+                  </div>
+                </Dialog.Panel>
+              </Transition.Child>
+            </div>
+          </div>
+        </Dialog>
+      </Transition>
     </div>
   );
 };

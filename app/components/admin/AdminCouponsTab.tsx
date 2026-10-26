@@ -9,6 +9,7 @@ import {
   TruckIcon,
   SparklesIcon,
   BanknotesIcon,
+  ExclamationTriangleIcon,
 } from "@heroicons/react/24/outline";
 import { Dialog, DialogPanel, DialogTitle, Transition, TransitionChild } from "@headlessui/react";
 import { toast } from "sonner";
@@ -27,6 +28,10 @@ export const AdminCouponsTab: React.FC<AdminCouponsTabProps> = ({
 }) => {
   const [modalOpen, setModalOpen] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
+
+  // Delete Coupon Modal State
+  const [couponToDelete, setCouponToDelete] = useState<CouponItem | null>(null);
+  const [isDeletingCoupon, setIsDeletingCoupon] = useState(false);
 
   // Form Fields
   const [code, setCode] = useState("");
@@ -99,17 +104,26 @@ export const AdminCouponsTab: React.FC<AdminCouponsTabProps> = ({
     }
   };
 
-  const handleDeleteCoupon = async (id: string, couponCode: string) => {
-    const confirmDelete = window.confirm(`Delete coupon "${couponCode}"?`);
-    if (!confirmDelete) return;
+  // Open Delete Coupon Modal
+  const handleOpenDeleteCoupon = (coupon: CouponItem) => {
+    setCouponToDelete(coupon);
+  };
 
+  // Confirm Delete Coupon from Modal Alert
+  const handleConfirmDeleteCoupon = async () => {
+    if (!couponToDelete) return;
+
+    setIsDeletingCoupon(true);
     try {
-      await deleteCouponFromFirestore(id);
-      toast.success(`Coupon "${couponCode}" deleted.`);
+      await deleteCouponFromFirestore(couponToDelete.id);
+      toast.success(`Coupon "${couponToDelete.code}" deleted.`);
+      setCouponToDelete(null);
       onRefresh();
     } catch (err: unknown) {
       const error = err as Error;
       toast.error(error.message || "Could not delete coupon.");
+    } finally {
+      setIsDeletingCoupon(false);
     }
   };
 
@@ -233,7 +247,7 @@ export const AdminCouponsTab: React.FC<AdminCouponsTabProps> = ({
               <div className="pt-3 border-t border-gray-100 dark:border-neutral-800 flex justify-end">
                 <button
                   type="button"
-                  onClick={() => handleDeleteCoupon(c.id, c.code)}
+                  onClick={() => handleOpenDeleteCoupon(c)}
                   className="px-3 py-1.5 rounded-xl border border-rose-200 dark:border-rose-900/60 text-rose-600 dark:text-rose-400 hover:bg-rose-50 text-xs font-semibold transition cursor-pointer"
                 >
                   Delete
@@ -558,6 +572,137 @@ export const AdminCouponsTab: React.FC<AdminCouponsTabProps> = ({
                       </button>
                     </div>
                   </form>
+                </DialogPanel>
+              </TransitionChild>
+            </div>
+          </div>
+        </Dialog>
+      </Transition>
+
+      {/* Delete Coupon Confirmation Modal Alert */}
+      <Transition appear show={!!couponToDelete} as={React.Fragment}>
+        <Dialog
+          as="div"
+          className="relative z-50 font-sans"
+          onClose={() => !isDeletingCoupon && setCouponToDelete(null)}
+        >
+          <TransitionChild
+            as={React.Fragment}
+            enter="ease-out duration-300"
+            enterFrom="opacity-0"
+            enterTo="opacity-100"
+            leave="ease-in duration-200"
+            leaveFrom="opacity-100"
+            leaveTo="opacity-0"
+          >
+            <div className="fixed inset-0 bg-stone-900/60 backdrop-blur-xs" />
+          </TransitionChild>
+
+          <div className="fixed inset-0 overflow-y-auto">
+            <div className="flex min-h-full items-center justify-center p-4 text-center sm:p-6">
+              <TransitionChild
+                as={React.Fragment}
+                enter="ease-out duration-300"
+                enterFrom="opacity-0 scale-95"
+                enterTo="opacity-100 scale-100"
+                leave="ease-in duration-200"
+                leaveFrom="opacity-100 scale-100"
+                leaveTo="opacity-0 scale-95"
+              >
+                <DialogPanel className="w-full max-w-md transform overflow-hidden rounded-3xl bg-white dark:bg-neutral-900 p-6 sm:p-8 text-left shadow-2xl transition-all border border-stone-200/80 dark:border-neutral-800 space-y-5 text-gray-900 dark:text-white">
+                  {/* Header */}
+                  <div className="flex items-start justify-between gap-3">
+                    <div className="flex items-center gap-3.5">
+                      <div className="size-12 rounded-2xl bg-rose-100 dark:bg-rose-950/60 text-rose-600 dark:text-rose-400 flex items-center justify-center shrink-0 ring-4 ring-rose-50 dark:ring-rose-950/20">
+                        <ExclamationTriangleIcon className="size-6" />
+                      </div>
+                      <div>
+                        <DialogTitle className="text-base font-bold text-gray-900 dark:text-white">
+                          Delete Discount Voucher
+                        </DialogTitle>
+                        <p className="text-xs text-gray-500 dark:text-neutral-400 mt-0.5">
+                          This action permanently removes this coupon code from Firestore.
+                        </p>
+                      </div>
+                    </div>
+
+                    <button
+                      type="button"
+                      disabled={isDeletingCoupon}
+                      onClick={() => setCouponToDelete(null)}
+                      className="p-1.5 text-stone-400 hover:text-stone-700 dark:hover:text-stone-200 rounded-lg hover:bg-stone-100 dark:hover:bg-neutral-800 transition cursor-pointer disabled:opacity-50"
+                    >
+                      <XMarkIcon className="size-5" />
+                    </button>
+                  </div>
+
+                  {/* Coupon Preview Box */}
+                  {couponToDelete && (
+                    <div className="p-4 rounded-2xl bg-stone-50 dark:bg-neutral-800/60 border border-stone-200/80 dark:border-neutral-700/80 space-y-2">
+                      <div className="flex items-center justify-between">
+                        <div className="flex items-center gap-2">
+                          <TagIcon className="size-4 text-orange-600" />
+                          <span className="font-mono text-sm font-black text-gray-900 dark:text-white">
+                            {couponToDelete.code}
+                          </span>
+                        </div>
+                        <span
+                          className={`inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-bold ${
+                            couponToDelete.active
+                              ? "bg-emerald-100 text-emerald-700 dark:bg-emerald-950/50 dark:text-emerald-400"
+                              : "bg-stone-200 text-stone-600 dark:bg-neutral-700 dark:text-neutral-400"
+                          }`}
+                        >
+                          {couponToDelete.active ? "Active" : "Disabled"}
+                        </span>
+                      </div>
+                      {couponToDelete.description && (
+                        <p className="text-xs text-gray-600 dark:text-neutral-300">
+                          {couponToDelete.description}
+                        </p>
+                      )}
+                      <div className="text-[11px] text-gray-500 dark:text-neutral-400 flex items-center justify-between pt-1">
+                        <span>Min Spend: {couponToDelete.minSpend > 0 ? `৳${couponToDelete.minSpend.toLocaleString()}` : "None"}</span>
+                        <span>Redeemed: {couponToDelete.usedCount || 0} times</span>
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Danger Notice */}
+                  <div className="p-3.5 rounded-2xl bg-rose-50 dark:bg-rose-950/30 border border-rose-200/80 dark:border-rose-900/50 text-xs text-rose-900 dark:text-rose-300 leading-relaxed">
+                    Are you sure you want to permanently delete coupon{" "}
+                    <strong className="font-bold">&quot;{couponToDelete?.code}&quot;</strong>? Customers will immediately lose the ability to apply this discount at checkout.
+                  </div>
+
+                  {/* Actions */}
+                  <div className="flex items-center justify-end gap-2.5 pt-2 border-t border-gray-100 dark:border-neutral-800">
+                    <button
+                      type="button"
+                      disabled={isDeletingCoupon}
+                      onClick={() => setCouponToDelete(null)}
+                      className="px-4 py-2.5 rounded-xl border border-gray-200 dark:border-neutral-700 text-gray-700 dark:text-neutral-300 font-semibold text-xs hover:bg-stone-50 dark:hover:bg-neutral-800 transition cursor-pointer disabled:opacity-50"
+                    >
+                      Cancel
+                    </button>
+                    <button
+                      type="button"
+                      disabled={isDeletingCoupon}
+                      onClick={handleConfirmDeleteCoupon}
+                      className="px-5 py-2.5 rounded-xl bg-rose-600 hover:bg-rose-700 active:scale-98 text-white font-bold text-xs shadow-md transition flex items-center gap-1.5 cursor-pointer disabled:opacity-50"
+                    >
+                      {isDeletingCoupon ? (
+                        <>
+                          <Spinner className="size-3.5 text-white" />
+                          <span>Deleting Coupon...</span>
+                        </>
+                      ) : (
+                        <>
+                          <TrashIcon className="size-3.5" />
+                          <span>Delete Coupon</span>
+                        </>
+                      )}
+                    </button>
+                  </div>
                 </DialogPanel>
               </TransitionChild>
             </div>

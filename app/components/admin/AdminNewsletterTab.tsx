@@ -1,4 +1,5 @@
-import React, { useState, useMemo } from "react";
+import React, { useState, useMemo, Fragment } from "react";
+import { Dialog, Transition } from "@headlessui/react";
 import {
   EnvelopeIcon,
   EnvelopeOpenIcon,
@@ -18,6 +19,7 @@ import {
   XMarkIcon,
   ShieldCheckIcon,
   ClockIcon,
+  ExclamationTriangleIcon,
 } from "@heroicons/react/24/outline";
 import { toast } from "sonner";
 import { Spinner } from "~/components/ui/spinner";
@@ -47,6 +49,10 @@ export const AdminNewsletterTab: React.FC<AdminNewsletterTabProps> = ({
   // Modals
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
   const [isCampaignModalOpen, setIsCampaignModalOpen] = useState(false);
+  const [subscriberToDelete, setSubscriberToDelete] = useState<NewsletterSubscriber | null>(null);
+  const [isDeletingSubscriber, setIsDeletingSubscriber] = useState(false);
+  const [isBulkDeleteModalOpen, setIsBulkDeleteModalOpen] = useState(false);
+  const [isDeletingBulk, setIsDeletingBulk] = useState(false);
 
   // Add Subscriber Form state
   const [newEmail, setNewEmail] = useState("");
@@ -209,23 +215,25 @@ export const AdminNewsletterTab: React.FC<AdminNewsletterTabProps> = ({
   };
 
   // Delete single
-  const handleDeleteSubscriber = async (subscriber: NewsletterSubscriber) => {
-    const confirmDelete = window.confirm(
-      `Remove "${subscriber.email}" from newsletter list permanently?`
-    );
-    if (!confirmDelete) return;
+  const handleOpenDeleteSubscriber = (subscriber: NewsletterSubscriber) => {
+    setSubscriberToDelete(subscriber);
+  };
 
-    setProcessingId(subscriber.id);
+  const handleConfirmDeleteSubscriber = async () => {
+    if (!subscriberToDelete) return;
+
+    setIsDeletingSubscriber(true);
     try {
-      await deleteNewsletterSubscriber(subscriber.id);
-      toast.success(`Subscriber "${subscriber.email}" deleted.`);
-      setSelectedIds((prev) => prev.filter((id) => id !== subscriber.id));
+      await deleteNewsletterSubscriber(subscriberToDelete.id);
+      toast.success(`Subscriber "${subscriberToDelete.email}" deleted.`);
+      setSelectedIds((prev) => prev.filter((id) => id !== subscriberToDelete.id));
+      setSubscriberToDelete(null);
       onRefresh();
     } catch (err: unknown) {
       const error = err as Error;
       toast.error(error.message || "Failed to delete subscriber.");
     } finally {
-      setProcessingId(null);
+      setIsDeletingSubscriber(false);
     }
   };
 
@@ -244,20 +252,25 @@ export const AdminNewsletterTab: React.FC<AdminNewsletterTabProps> = ({
     }
   };
 
-  const handleBulkDelete = async () => {
+  const handleOpenBulkDelete = () => {
     if (selectedIds.length === 0) return;
-    const confirm = window.confirm(
-      `Permanently delete ${selectedIds.length} selected subscribers?`
-    );
-    if (!confirm) return;
+    setIsBulkDeleteModalOpen(true);
+  };
 
+  const handleConfirmBulkDelete = async () => {
+    if (selectedIds.length === 0) return;
+
+    setIsDeletingBulk(true);
     try {
       await bulkDeleteNewsletterSubscribers(selectedIds);
       toast.success(`Deleted ${selectedIds.length} subscribers.`);
       setSelectedIds([]);
+      setIsBulkDeleteModalOpen(false);
       onRefresh();
     } catch {
       toast.error("Failed to delete selected subscribers.");
+    } finally {
+      setIsDeletingBulk(false);
     }
   };
 
@@ -598,7 +611,7 @@ export const AdminNewsletterTab: React.FC<AdminNewsletterTabProps> = ({
               </button>
               <button
                 type="button"
-                onClick={handleBulkDelete}
+                onClick={handleOpenBulkDelete}
                 className="px-3 py-1.5 rounded-lg bg-rose-600 hover:bg-rose-700 text-white text-xs font-semibold shadow-xs transition cursor-pointer"
               >
                 Delete Selected
@@ -776,16 +789,11 @@ export const AdminNewsletterTab: React.FC<AdminNewsletterTabProps> = ({
 
                           <button
                             type="button"
-                            disabled={isProcessing}
-                            onClick={() => handleDeleteSubscriber(subscriber)}
+                            onClick={() => handleOpenDeleteSubscriber(subscriber)}
                             className="p-1.5 rounded-lg border border-rose-200 dark:border-rose-900/40 text-rose-600 hover:bg-rose-50 dark:hover:bg-rose-950/40 transition cursor-pointer"
                             title="Delete Subscriber"
                           >
-                            {isProcessing ? (
-                              <Spinner className="size-4 text-rose-600" />
-                            ) : (
-                              <TrashIcon className="size-4" />
-                            )}
+                            <TrashIcon className="size-4" />
                           </button>
                         </div>
                       </td>
@@ -1020,6 +1028,258 @@ export const AdminNewsletterTab: React.FC<AdminNewsletterTabProps> = ({
           </div>
         </div>
       )}
+
+      {/* Delete Single Subscriber Confirmation Modal Alert */}
+      <Transition appear show={Boolean(subscriberToDelete)} as={Fragment}>
+        <Dialog
+          as="div"
+          className="relative z-50"
+          onClose={() => {
+            if (!isDeletingSubscriber) setSubscriberToDelete(null);
+          }}
+        >
+          <Transition.Child
+            as={Fragment}
+            enter="ease-out duration-200"
+            enterFrom="opacity-0"
+            enterTo="opacity-100"
+            leave="ease-in duration-150"
+            leaveFrom="opacity-100"
+            leaveTo="opacity-0"
+          >
+            <div className="fixed inset-0 bg-black/60 backdrop-blur-xs" />
+          </Transition.Child>
+
+          <div className="fixed inset-0 overflow-y-auto">
+            <div className="flex min-h-full items-center justify-center p-4 text-center">
+              <Transition.Child
+                as={Fragment}
+                enter="ease-out duration-200"
+                enterFrom="opacity-0 scale-95"
+                enterTo="opacity-100 scale-100"
+                leave="ease-in duration-150"
+                leaveFrom="opacity-100 scale-100"
+                leaveTo="opacity-0 scale-95"
+              >
+                <Dialog.Panel className="w-full max-w-md transform overflow-hidden rounded-3xl bg-white dark:bg-neutral-900 border border-stone-200 dark:border-neutral-800 p-6 sm:p-7 text-left align-middle shadow-2xl transition-all">
+                  <div className="flex items-start gap-4">
+                    <div className="size-12 shrink-0 rounded-2xl bg-rose-50 dark:bg-rose-950/50 border border-rose-200 dark:border-rose-900/60 flex items-center justify-center text-rose-600 dark:text-rose-400 shadow-xs">
+                      <ExclamationTriangleIcon className="size-6" />
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <Dialog.Title
+                        as="h3"
+                        className="text-lg font-bold text-gray-900 dark:text-white tracking-tight"
+                      >
+                        Delete Newsletter Subscriber
+                      </Dialog.Title>
+                      <p className="mt-1 text-xs text-gray-500 dark:text-neutral-400">
+                        Are you sure you want to permanently remove this subscriber? This action cannot be undone.
+                      </p>
+                    </div>
+                  </div>
+
+                  {subscriberToDelete && (
+                    <div className="mt-5 space-y-3">
+                      <div className="p-4 rounded-2xl bg-stone-50 dark:bg-neutral-950 border border-stone-200/80 dark:border-neutral-800 space-y-2.5">
+                        <div className="flex items-start justify-between gap-2">
+                          <div className="min-w-0">
+                            <p className="font-bold text-sm text-gray-900 dark:text-white truncate">
+                              {subscriberToDelete.email}
+                            </p>
+                            <p className="text-xs text-gray-500 dark:text-neutral-400">
+                              Source: {subscriberToDelete.source || "Direct Website Signup"}
+                            </p>
+                          </div>
+                          <span
+                            className={`shrink-0 px-2.5 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider ${
+                              subscriberToDelete.status === "active"
+                                ? "bg-emerald-100 text-emerald-800 dark:bg-emerald-950/60 dark:text-emerald-400"
+                                : "bg-stone-200 text-stone-700 dark:bg-neutral-800 dark:text-neutral-400"
+                            }`}
+                          >
+                            {subscriberToDelete.status}
+                          </span>
+                        </div>
+
+                        <div className="pt-2 border-t border-stone-200/60 dark:border-neutral-800/80 flex items-center gap-1.5 text-[11px] text-gray-500 dark:text-neutral-400">
+                          <ClockIcon className="size-3.5 text-gray-400" />
+                          <span>
+                            Subscribed:{" "}
+                            {subscriberToDelete.subscribedAt
+                              ? new Date(subscriberToDelete.subscribedAt).toLocaleDateString("en-GB", {
+                                  day: "numeric",
+                                  month: "short",
+                                  year: "numeric",
+                                })
+                              : "Unknown"}
+                          </span>
+                        </div>
+
+                        {subscriberToDelete.notes && (
+                          <div className="pt-2 border-t border-stone-200/60 dark:border-neutral-800/80 text-xs text-gray-600 dark:text-neutral-400 italic">
+                            &ldquo;{subscriberToDelete.notes}&rdquo;
+                          </div>
+                        )}
+                      </div>
+
+                      <div className="p-3 rounded-xl bg-rose-50/70 dark:bg-rose-950/30 border border-rose-200/60 dark:border-rose-900/40 text-[11px] text-rose-800 dark:text-rose-300">
+                        <strong>Warning:</strong> Deleting will permanently remove this email address and all subscriber records from Cloud Firestore. They will no longer receive campaigns or promotional announcements.
+                      </div>
+                    </div>
+                  )}
+
+                  <div className="mt-6 flex items-center justify-end gap-3">
+                    <button
+                      type="button"
+                      disabled={isDeletingSubscriber}
+                      onClick={() => setSubscriberToDelete(null)}
+                      className="px-4 py-2.5 rounded-xl border border-stone-200 dark:border-neutral-700 text-xs font-bold text-gray-700 dark:text-neutral-300 hover:bg-stone-50 dark:hover:bg-neutral-800 transition cursor-pointer disabled:opacity-50"
+                    >
+                      Cancel
+                    </button>
+                    <button
+                      type="button"
+                      disabled={isDeletingSubscriber}
+                      onClick={handleConfirmDeleteSubscriber}
+                      className="px-5 py-2.5 rounded-xl bg-rose-600 hover:bg-rose-700 text-white text-xs font-bold shadow-md shadow-rose-600/20 transition flex items-center gap-2 cursor-pointer disabled:opacity-50"
+                    >
+                      {isDeletingSubscriber ? (
+                        <>
+                          <Spinner className="size-4 text-white" />
+                          <span>Deleting...</span>
+                        </>
+                      ) : (
+                        <>
+                          <TrashIcon className="size-4" />
+                          <span>Delete Subscriber</span>
+                        </>
+                      )}
+                    </button>
+                  </div>
+                </Dialog.Panel>
+              </Transition.Child>
+            </div>
+          </div>
+        </Dialog>
+      </Transition>
+
+      {/* Delete Multiple Selected Subscribers Confirmation Modal Alert */}
+      <Transition appear show={isBulkDeleteModalOpen} as={Fragment}>
+        <Dialog
+          as="div"
+          className="relative z-50"
+          onClose={() => {
+            if (!isDeletingBulk) setIsBulkDeleteModalOpen(false);
+          }}
+        >
+          <Transition.Child
+            as={Fragment}
+            enter="ease-out duration-200"
+            enterFrom="opacity-0"
+            enterTo="opacity-100"
+            leave="ease-in duration-150"
+            leaveFrom="opacity-100"
+            leaveTo="opacity-0"
+          >
+            <div className="fixed inset-0 bg-black/60 backdrop-blur-xs" />
+          </Transition.Child>
+
+          <div className="fixed inset-0 overflow-y-auto">
+            <div className="flex min-h-full items-center justify-center p-4 text-center">
+              <Transition.Child
+                as={Fragment}
+                enter="ease-out duration-200"
+                enterFrom="opacity-0 scale-95"
+                enterTo="opacity-100 scale-100"
+                leave="ease-in duration-150"
+                leaveFrom="opacity-100 scale-100"
+                leaveTo="opacity-0 scale-95"
+              >
+                <Dialog.Panel className="w-full max-w-md transform overflow-hidden rounded-3xl bg-white dark:bg-neutral-900 border border-stone-200 dark:border-neutral-800 p-6 sm:p-7 text-left align-middle shadow-2xl transition-all">
+                  <div className="flex items-start gap-4">
+                    <div className="size-12 shrink-0 rounded-2xl bg-rose-50 dark:bg-rose-950/50 border border-rose-200 dark:border-rose-900/60 flex items-center justify-center text-rose-600 dark:text-rose-400 shadow-xs">
+                      <ExclamationTriangleIcon className="size-6" />
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <Dialog.Title
+                        as="h3"
+                        className="text-lg font-bold text-gray-900 dark:text-white tracking-tight"
+                      >
+                        Delete Selected Subscribers
+                      </Dialog.Title>
+                      <p className="mt-1 text-xs text-gray-500 dark:text-neutral-400">
+                        Permanently delete {selectedIds.length} selected subscriber records from your mailing list?
+                      </p>
+                    </div>
+                  </div>
+
+                  <div className="mt-5 space-y-3">
+                    <div className="p-4 rounded-2xl bg-stone-50 dark:bg-neutral-950 border border-stone-200/80 dark:border-neutral-800 space-y-2">
+                      <div className="flex items-center justify-between">
+                        <span className="text-xs font-bold text-gray-700 dark:text-neutral-300">
+                          Selected Records:
+                        </span>
+                        <span className="px-2.5 py-0.5 rounded-full text-xs font-mono font-bold bg-rose-100 text-rose-700 dark:bg-rose-950/60 dark:text-rose-400">
+                          {selectedIds.length} Subscribers
+                        </span>
+                      </div>
+                      <div className="pt-2 border-t border-stone-200/60 dark:border-neutral-800/80 max-h-32 overflow-y-auto space-y-1">
+                        {subscribers
+                          .filter((s) => selectedIds.includes(s.id))
+                          .slice(0, 6)
+                          .map((s) => (
+                            <p key={s.id} className="text-xs text-gray-600 dark:text-neutral-400 font-mono truncate">
+                              • {s.email}
+                            </p>
+                          ))}
+                        {selectedIds.length > 6 && (
+                          <p className="text-[11px] text-gray-400 italic">
+                            ...and {selectedIds.length - 6} more
+                          </p>
+                        )}
+                      </div>
+                    </div>
+
+                    <div className="p-3 rounded-xl bg-rose-50/70 dark:bg-rose-950/30 border border-rose-200/60 dark:border-rose-900/40 text-[11px] text-rose-800 dark:text-rose-300">
+                      <strong>Warning:</strong> This bulk action is irreversible. All {selectedIds.length} subscriber emails will be permanently deleted from Cloud Firestore.
+                    </div>
+                  </div>
+
+                  <div className="mt-6 flex items-center justify-end gap-3">
+                    <button
+                      type="button"
+                      disabled={isDeletingBulk}
+                      onClick={() => setIsBulkDeleteModalOpen(false)}
+                      className="px-4 py-2.5 rounded-xl border border-stone-200 dark:border-neutral-700 text-xs font-bold text-gray-700 dark:text-neutral-300 hover:bg-stone-50 dark:hover:bg-neutral-800 transition cursor-pointer disabled:opacity-50"
+                    >
+                      Cancel
+                    </button>
+                    <button
+                      type="button"
+                      disabled={isDeletingBulk}
+                      onClick={handleConfirmBulkDelete}
+                      className="px-5 py-2.5 rounded-xl bg-rose-600 hover:bg-rose-700 text-white text-xs font-bold shadow-md shadow-rose-600/20 transition flex items-center gap-2 cursor-pointer disabled:opacity-50"
+                    >
+                      {isDeletingBulk ? (
+                        <>
+                          <Spinner className="size-4 text-white" />
+                          <span>Deleting...</span>
+                        </>
+                      ) : (
+                        <>
+                          <TrashIcon className="size-4" />
+                          <span>Delete ({selectedIds.length})</span>
+                        </>
+                      )}
+                    </button>
+                  </div>
+                </Dialog.Panel>
+              </Transition.Child>
+            </div>
+          </div>
+        </Dialog>
+      </Transition>
     </div>
   );
 };

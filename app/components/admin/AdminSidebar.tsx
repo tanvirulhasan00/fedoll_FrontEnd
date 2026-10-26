@@ -21,23 +21,14 @@ import {
 } from "@heroicons/react/24/outline";
 import type { AuthUser } from "~/redux/features/auth/authSlice";
 import { useAppSelector } from "~/redux/hooks/hook";
-import { normalizeGoogleDriveImageUrl } from "~/firebase";
+import {
+  normalizeGoogleDriveImageUrl,
+  getRoleAllowedTabs,
+  getRoleConfig,
+  type AdminTab,
+} from "~/firebase";
 
-export type AdminTab =
-  | "overview"
-  | "products"
-  | "categories"
-  | "inventory"
-  | "orders"
-  | "returns"
-  | "blogs"
-  | "shipping"
-  | "customers"
-  | "coupons"
-  | "messages"
-  | "newsletters"
-  | "legal"
-  | "settings";
+export type { AdminTab };
 
 interface AdminSidebarProps {
   currentTab: AdminTab;
@@ -90,7 +81,8 @@ export const AdminSidebar: React.FC<AdminSidebarProps> = ({
       badge: blogsCount > 0 ? `${blogsCount}` : undefined,
     },
     { id: "shipping", label: "Shipping & Couriers", icon: TruckIcon, badge: "Logistics" },
-    { id: "customers", label: "Customers & Roles", icon: UsersIcon },
+    { id: "customers", label: "Shoppers & Customers", icon: UsersIcon },
+    { id: "staff", label: "Staff & App Users", icon: ShieldCheckIcon, badge: "Roles" },
     { id: "coupons", label: "Coupons & Discounts", icon: TagIcon },
     {
       id: "messages",
@@ -112,6 +104,10 @@ export const AdminSidebar: React.FC<AdminSidebarProps> = ({
     },
     { id: "settings", label: "Store Settings", icon: Cog6ToothIcon },
   ];
+
+  const roleConfig = getRoleConfig(user?.role);
+  const allowedTabs = getRoleAllowedTabs(user?.role);
+  const visibleNavItems = navItems.filter((item) => allowedTabs.includes(item.id));
 
   const { settings } = useAppSelector((state) => state.storeSettings);
   const [logoLoadError, setLogoLoadError] = useState(false);
@@ -151,7 +147,7 @@ export const AdminSidebar: React.FC<AdminSidebarProps> = ({
               {settings?.storeName || "SilkenDrift"}
             </span>
             <span className="block text-[10px] text-orange-400 font-semibold uppercase tracking-wider">
-              Admin Atelier
+              {roleConfig.shortLabel} Atelier
             </span>
           </div>
         </Link>
@@ -167,7 +163,7 @@ export const AdminSidebar: React.FC<AdminSidebarProps> = ({
           Atelier Control
         </div>
 
-        {navItems.map((item) => {
+        {visibleNavItems.map((item) => {
           const Icon = item.icon;
           const isActive = currentTab === item.id;
           return (
@@ -237,9 +233,9 @@ export const AdminSidebar: React.FC<AdminSidebarProps> = ({
             <p className="text-xs font-bold text-white truncate">
               {user?.displayName || "Admin User"}
             </p>
-            <div className="flex items-center gap-1 text-[11px] text-emerald-400">
+            <div className="flex items-center gap-1 text-[11px] font-semibold text-orange-400">
               <ShieldCheckIcon className="size-3" />
-              <span>Full Admin Access</span>
+              <span>{roleConfig.label}</span>
             </div>
           </div>
         </div>

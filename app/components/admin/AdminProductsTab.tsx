@@ -30,12 +30,14 @@ interface AdminProductsTabProps {
   onRefresh: () => void;
   isAddModalOpen?: boolean;
   onCloseAddModal?: () => void;
+  canManageProducts?: boolean;
 }
 
 export const AdminProductsTab: React.FC<AdminProductsTabProps> = ({
   products,
   categories,
   onRefresh,
+  canManageProducts = true,
 }) => {
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedCategory, setSelectedCategory] = useState("all");
@@ -178,13 +180,15 @@ export const AdminProductsTab: React.FC<AdminProductsTabProps> = ({
             <ArchiveBoxIcon className="size-4 text-orange-600" />
             <span>Stock &amp; Ledger</span>
           </Link>
-          <Link
-            to="/admin/products/new"
-            className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl bg-orange-600 hover:bg-orange-700 text-white font-bold text-xs shadow-md transition cursor-pointer"
-          >
-            <PlusIcon className="size-4" />
-            <span>Add New Product</span>
-          </Link>
+          {canManageProducts && (
+            <Link
+              to="/admin/products/new"
+              className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl bg-orange-600 hover:bg-orange-700 text-white font-bold text-xs shadow-md transition cursor-pointer"
+            >
+              <PlusIcon className="size-4" />
+              <span>Add New Product</span>
+            </Link>
+          )}
         </div>
       </div>
 
@@ -460,21 +464,25 @@ export const AdminProductsTab: React.FC<AdminProductsTabProps> = ({
                           >
                             <ArchiveBoxIcon className="size-4" />
                           </Link>
-                          <Link
-                            to={`/admin/products/${p.id}/edit`}
-                            className="p-1.5 rounded-lg border border-gray-200 dark:border-neutral-700 text-gray-600 dark:text-neutral-300 hover:text-orange-600 dark:hover:text-orange-400 hover:bg-stone-50 dark:hover:bg-neutral-800 transition cursor-pointer"
-                            title="Edit product on dedicated page"
-                          >
-                            <PencilSquareIcon className="size-4" />
-                          </Link>
-                          <button
-                            type="button"
-                            onClick={() => handleOpenDeleteConfirm(p)}
-                            className="p-1.5 rounded-lg border border-rose-200 dark:border-rose-900/60 text-rose-600 dark:text-rose-400 hover:bg-rose-50 dark:hover:bg-rose-950/40 transition cursor-pointer"
-                            title="Delete product from catalog"
-                          >
-                            <TrashIcon className="size-4" />
-                          </button>
+                          {canManageProducts && (
+                            <>
+                              <Link
+                                to={`/admin/products/${p.id}/edit`}
+                                className="p-1.5 rounded-lg border border-gray-200 dark:border-neutral-700 text-gray-600 dark:text-neutral-300 hover:text-orange-600 dark:hover:text-orange-400 hover:bg-stone-50 dark:hover:bg-neutral-800 transition cursor-pointer"
+                                title="Edit product on dedicated page"
+                              >
+                                <PencilSquareIcon className="size-4" />
+                              </Link>
+                              <button
+                                type="button"
+                                onClick={() => handleOpenDeleteConfirm(p)}
+                                className="p-1.5 rounded-lg border border-rose-200 dark:border-rose-900/60 text-rose-600 dark:text-rose-400 hover:bg-rose-50 dark:hover:bg-rose-950/40 transition cursor-pointer"
+                                title="Delete product from catalog"
+                              >
+                                <TrashIcon className="size-4" />
+                              </button>
+                            </>
+                          )}
                         </div>
                       </td>
                     </tr>

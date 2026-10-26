@@ -75,6 +75,10 @@ export const AdminOrdersTab: React.FC<AdminOrdersTabProps> = ({
   const [stickerOrder, setStickerOrder] = useState<Order | null>(null);
   const [isStickerOpen, setIsStickerOpen] = useState(false);
 
+  // Delete Order Modal State
+  const [orderToDelete, setOrderToDelete] = useState<Order | null>(null);
+  const [isDeletingOrder, setIsDeletingOrder] = useState(false);
+
   const handleOpenSticker = (order: Order) => {
     setStickerOrder(order);
     setIsStickerOpen(true);
@@ -159,18 +163,27 @@ export const AdminOrdersTab: React.FC<AdminOrdersTabProps> = ({
     }
   };
 
-  const handleDeleteOrder = async (id: string, orderNumber: string) => {
-    const confirmDelete = window.confirm(`Delete Order #${orderNumber}? This will remove it permanently.`);
-    if (!confirmDelete) return;
+  // Open Delete Order Confirmation Modal
+  const handleOpenDeleteOrder = (order: Order) => {
+    setOrderToDelete(order);
+  };
 
+  // Confirm Delete Order from Modal Alert
+  const handleConfirmDeleteOrder = async () => {
+    if (!orderToDelete) return;
+
+    setIsDeletingOrder(true);
     try {
-      await deleteOrderInFirestore(id);
-      toast.success(`Order #${orderNumber} deleted.`);
-      if (selectedOrder?.id === id) setSelectedOrder(null);
+      await deleteOrderInFirestore(orderToDelete.id);
+      toast.success(`Order #${orderToDelete.orderNumber} deleted.`);
+      if (selectedOrder?.id === orderToDelete.id) setSelectedOrder(null);
+      setOrderToDelete(null);
       onRefresh();
     } catch (err: unknown) {
       const error = err as Error;
       toast.error(error.message || "Could not delete order.");
+    } finally {
+      setIsDeletingOrder(false);
     }
   };
 
@@ -453,7 +466,7 @@ export const AdminOrdersTab: React.FC<AdminOrdersTabProps> = ({
                         )}
                         <button
                           type="button"
-                          onClick={() => handleDeleteOrder(o.id, o.orderNumber)}
+                          onClick={() => handleOpenDeleteOrder(o)}
                           className="p-1.5 rounded-lg border border-rose-200 dark:border-rose-900/60 text-rose-600 dark:text-rose-400 hover:bg-rose-50 transition cursor-pointer"
                           title="Delete order"
                         >
@@ -943,7 +956,21 @@ export const AdminOrdersTab: React.FC<AdminOrdersTabProps> = ({
                           </div>
                         </div>
 
-                        <div className="pt-2 flex justify-end">
+                        <div className="pt-2 flex items-center justify-between">
+                          <button
+                            type="button"
+                            onClick={() => {
+                              const target = selectedOrder;
+                              setSelectedOrder(null);
+                              handleOpenDeleteOrder(target);
+                            }}
+                            className="px-3.5 py-2 rounded-xl text-rose-600 hover:text-rose-700 hover:bg-rose-50 dark:hover:bg-rose-950/40 text-xs font-bold transition flex items-center gap-1.5 cursor-pointer"
+                            title="Delete this order"
+                          >
+                            <TrashIcon className="size-4" />
+                            <span>Delete Order</span>
+                          </button>
+
                           <button
                             type="submit"
                             disabled={isUpdating}
@@ -970,6 +997,136 @@ export const AdminOrdersTab: React.FC<AdminOrdersTabProps> = ({
         onClose={handleCloseSticker}
         storeSettings={storeSettings}
       />
+
+      {/* Delete Order Confirmation Modal Alert */}
+      <Transition appear show={!!orderToDelete} as={React.Fragment}>
+        <Dialog
+          as="div"
+          className="relative z-50 font-sans"
+          onClose={() => !isDeletingOrder && setOrderToDelete(null)}
+        >
+          <TransitionChild
+            as={React.Fragment}
+            enter="ease-out duration-300"
+            enterFrom="opacity-0"
+            enterTo="opacity-100"
+            leave="ease-in duration-200"
+            leaveFrom="opacity-100"
+            leaveTo="opacity-0"
+          >
+            <div className="fixed inset-0 bg-stone-900/60 backdrop-blur-xs" />
+          </TransitionChild>
+
+          <div className="fixed inset-0 overflow-y-auto">
+            <div className="flex min-h-full items-center justify-center p-4 text-center sm:p-6">
+              <TransitionChild
+                as={React.Fragment}
+                enter="ease-out duration-300"
+                enterFrom="opacity-0 scale-95"
+                enterTo="opacity-100 scale-100"
+                leave="ease-in duration-200"
+                leaveFrom="opacity-100 scale-100"
+                leaveTo="opacity-0 scale-95"
+              >
+                <DialogPanel className="w-full max-w-md transform overflow-hidden rounded-3xl bg-white dark:bg-neutral-900 p-6 sm:p-8 text-left shadow-2xl transition-all border border-stone-200/80 dark:border-neutral-800 space-y-5 text-gray-900 dark:text-white">
+                  {/* Header */}
+                  <div className="flex items-start justify-between gap-3">
+                    <div className="flex items-center gap-3.5">
+                      <div className="size-12 rounded-2xl bg-rose-100 dark:bg-rose-950/60 text-rose-600 dark:text-rose-400 flex items-center justify-center shrink-0 ring-4 ring-rose-50 dark:ring-rose-950/20">
+                        <ExclamationTriangleIcon className="size-6" />
+                      </div>
+                      <div>
+                        <DialogTitle className="text-base font-bold text-gray-900 dark:text-white">
+                          Delete Customer Order
+                        </DialogTitle>
+                        <p className="text-xs text-gray-500 dark:text-neutral-400 mt-0.5">
+                          This action permanently removes this order from Firestore.
+                        </p>
+                      </div>
+                    </div>
+
+                    <button
+                      type="button"
+                      disabled={isDeletingOrder}
+                      onClick={() => setOrderToDelete(null)}
+                      className="p-1.5 text-stone-400 hover:text-stone-700 dark:hover:text-stone-200 rounded-lg hover:bg-stone-100 dark:hover:bg-neutral-800 transition cursor-pointer disabled:opacity-50"
+                    >
+                      <XMarkIcon className="size-5" />
+                    </button>
+                  </div>
+
+                  {/* Order Preview Box */}
+                  {orderToDelete && (
+                    <div className="p-4 rounded-2xl bg-stone-50 dark:bg-neutral-800/60 border border-stone-200/80 dark:border-neutral-700/80 space-y-2.5">
+                      <div className="flex items-center justify-between">
+                        <span className="font-mono text-xs font-black text-gray-900 dark:text-white">
+                          #{orderToDelete.orderNumber}
+                        </span>
+                        <span className="text-xs font-bold text-orange-600 dark:text-orange-400">
+                          ৳{orderToDelete.totalAmount.toLocaleString()}
+                        </span>
+                      </div>
+
+                      <div className="text-xs text-gray-600 dark:text-neutral-300">
+                        <p className="font-semibold">{orderToDelete.customerName}</p>
+                        <p className="text-[11px] text-gray-500 dark:text-neutral-400 font-mono">
+                          {orderToDelete.customerPhone}
+                        </p>
+                      </div>
+
+                      <div className="pt-2 border-t border-stone-200/60 dark:border-neutral-700/60 flex items-center justify-between text-[11px]">
+                        <span className="text-gray-500 dark:text-neutral-400">
+                          {orderToDelete.items.length} item{orderToDelete.items.length > 1 ? "s" : ""} (
+                          {orderToDelete.items.reduce((s, i) => s + i.quantity, 0)} pcs)
+                        </span>
+                        <span className="capitalize font-bold text-gray-700 dark:text-neutral-300">
+                          Status: {orderToDelete.orderStatus}
+                        </span>
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Danger Notice */}
+                  <div className="p-3.5 rounded-2xl bg-rose-50 dark:bg-rose-950/30 border border-rose-200/80 dark:border-rose-900/50 text-xs text-rose-900 dark:text-rose-300 leading-relaxed">
+                    Are you sure you want to permanently delete Order{" "}
+                    <strong className="font-bold">#{orderToDelete?.orderNumber}</strong>? Once deleted, customer shipment history, tracking codes, and billing ledger entries cannot be restored.
+                  </div>
+
+                  {/* Action Buttons */}
+                  <div className="flex items-center justify-end gap-2.5 pt-2 border-t border-gray-100 dark:border-neutral-800">
+                    <button
+                      type="button"
+                      disabled={isDeletingOrder}
+                      onClick={() => setOrderToDelete(null)}
+                      className="px-4 py-2.5 rounded-xl border border-gray-200 dark:border-neutral-700 text-gray-700 dark:text-neutral-300 font-semibold text-xs hover:bg-stone-50 dark:hover:bg-neutral-800 transition cursor-pointer disabled:opacity-50"
+                    >
+                      Cancel
+                    </button>
+                    <button
+                      type="button"
+                      disabled={isDeletingOrder}
+                      onClick={handleConfirmDeleteOrder}
+                      className="px-5 py-2.5 rounded-xl bg-rose-600 hover:bg-rose-700 active:scale-98 text-white font-bold text-xs shadow-md transition flex items-center gap-1.5 cursor-pointer disabled:opacity-50"
+                    >
+                      {isDeletingOrder ? (
+                        <>
+                          <Spinner className="size-3.5 text-white" />
+                          <span>Deleting Order...</span>
+                        </>
+                      ) : (
+                        <>
+                          <TrashIcon className="size-3.5" />
+                          <span>Delete Order</span>
+                        </>
+                      )}
+                    </button>
+                  </div>
+                </DialogPanel>
+              </TransitionChild>
+            </div>
+          </div>
+        </Dialog>
+      </Transition>
     </div>
   );
 };

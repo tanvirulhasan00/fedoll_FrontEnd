@@ -11,6 +11,7 @@ import {
   PhoneIcon,
   MapPinIcon,
   BanknotesIcon,
+  ExclamationTriangleIcon,
 } from "@heroicons/react/24/outline";
 import { Dialog, DialogPanel, DialogTitle, Transition, TransitionChild } from "@headlessui/react";
 import { toast } from "sonner";
@@ -41,6 +42,10 @@ export const AdminShippingTab: React.FC<AdminShippingTabProps> = ({
   const [modalOpen, setModalOpen] = useState(false);
   const [editingProvider, setEditingProvider] = useState<ShippingProvider | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
+
+  // Delete Provider Modal State
+  const [providerToDelete, setProviderToDelete] = useState<ShippingProvider | null>(null);
+  const [isDeletingProvider, setIsDeletingProvider] = useState(false);
 
   // Provider Form Fields
   const [name, setName] = useState("");
@@ -123,17 +128,30 @@ export const AdminShippingTab: React.FC<AdminShippingTabProps> = ({
     }
   };
 
-  const handleDeleteProvider = async (id: string, providerName: string) => {
-    const confirmDelete = window.confirm(`Remove shipping provider "${providerName}"?`);
-    if (!confirmDelete) return;
+  // Open Delete Provider Modal
+  const handleOpenDeleteProvider = (provider: ShippingProvider) => {
+    setProviderToDelete(provider);
+  };
 
+  // Confirm Delete Provider from Modal Alert
+  const handleConfirmDeleteProvider = async () => {
+    if (!providerToDelete) return;
+
+    setIsDeletingProvider(true);
     try {
-      await deleteShippingProvider(id);
-      toast.success(`Shipping provider "${providerName}" deleted.`);
+      await deleteShippingProvider(providerToDelete.id);
+      toast.success(`Shipping provider "${providerToDelete.name}" deleted.`);
+      setProviderToDelete(null);
+      if (editingProvider?.id === providerToDelete.id) {
+        setEditingProvider(null);
+        setModalOpen(false);
+      }
       onRefresh();
     } catch (err: unknown) {
       const error = err as Error;
       toast.error(error.message || "Could not delete shipping provider.");
+    } finally {
+      setIsDeletingProvider(false);
     }
   };
 
@@ -259,7 +277,7 @@ export const AdminShippingTab: React.FC<AdminShippingTabProps> = ({
                 </button>
                 <button
                   type="button"
-                  onClick={() => handleDeleteProvider(p.id, p.name)}
+                  onClick={() => handleOpenDeleteProvider(p)}
                   className="px-3 py-1.5 rounded-xl border border-rose-200 dark:border-rose-900/60 text-rose-600 dark:text-rose-400 hover:bg-rose-50 text-xs font-semibold transition cursor-pointer"
                 >
                   Delete
@@ -561,24 +579,176 @@ export const AdminShippingTab: React.FC<AdminShippingTabProps> = ({
                       </label>
                     </div>
 
-                    <div className="pt-4 flex justify-end gap-2 border-t border-gray-100 dark:border-neutral-800">
-                      <button
-                        type="button"
-                        onClick={() => setModalOpen(false)}
-                        className="px-4 py-2 rounded-xl border border-gray-200 dark:border-neutral-700 text-gray-700 dark:text-neutral-300 font-semibold text-xs"
-                      >
-                        Cancel
-                      </button>
-                      <button
-                        type="submit"
-                        disabled={isSubmitting}
-                        className="px-6 py-2 rounded-xl bg-orange-600 hover:bg-orange-700 text-white font-bold text-xs shadow-md transition flex items-center gap-1.5 cursor-pointer"
-                      >
-                        {isSubmitting && <Spinner className="size-3.5 text-white" />}
-                        <span>Save Courier Provider</span>
-                      </button>
+                    <div className="pt-4 flex justify-between items-center border-t border-gray-100 dark:border-neutral-800">
+                      {editingProvider ? (
+                        <button
+                          type="button"
+                          onClick={() => {
+                            const target = editingProvider;
+                            setModalOpen(false);
+                            handleOpenDeleteProvider(target);
+                          }}
+                          className="px-3 py-2 rounded-xl text-rose-600 hover:text-rose-700 hover:bg-rose-50 dark:hover:bg-rose-950/40 text-xs font-bold transition flex items-center gap-1.5 cursor-pointer"
+                          title="Delete provider"
+                        >
+                          <TrashIcon className="size-4" />
+                          <span>Delete Provider</span>
+                        </button>
+                      ) : (
+                        <div />
+                      )}
+
+                      <div className="flex gap-2">
+                        <button
+                          type="button"
+                          onClick={() => setModalOpen(false)}
+                          className="px-4 py-2 rounded-xl border border-gray-200 dark:border-neutral-700 text-gray-700 dark:text-neutral-300 font-semibold text-xs cursor-pointer hover:bg-stone-50 dark:hover:bg-neutral-800"
+                        >
+                          Cancel
+                        </button>
+                        <button
+                          type="submit"
+                          disabled={isSubmitting}
+                          className="px-6 py-2 rounded-xl bg-orange-600 hover:bg-orange-700 text-white font-bold text-xs shadow-md transition flex items-center gap-1.5 cursor-pointer"
+                        >
+                          {isSubmitting && <Spinner className="size-3.5 text-white" />}
+                          <span>Save Courier Provider</span>
+                        </button>
+                      </div>
                     </div>
                   </form>
+                </DialogPanel>
+              </TransitionChild>
+            </div>
+          </div>
+        </Dialog>
+      </Transition>
+
+      {/* Delete Provider Confirmation Modal Alert */}
+      <Transition appear show={!!providerToDelete} as={React.Fragment}>
+        <Dialog
+          as="div"
+          className="relative z-50 font-sans"
+          onClose={() => !isDeletingProvider && setProviderToDelete(null)}
+        >
+          <TransitionChild
+            as={React.Fragment}
+            enter="ease-out duration-300"
+            enterFrom="opacity-0"
+            enterTo="opacity-100"
+            leave="ease-in duration-200"
+            leaveFrom="opacity-100"
+            leaveTo="opacity-0"
+          >
+            <div className="fixed inset-0 bg-stone-900/60 backdrop-blur-xs" />
+          </TransitionChild>
+
+          <div className="fixed inset-0 overflow-y-auto">
+            <div className="flex min-h-full items-center justify-center p-4 text-center sm:p-6">
+              <TransitionChild
+                as={React.Fragment}
+                enter="ease-out duration-300"
+                enterFrom="opacity-0 scale-95"
+                enterTo="opacity-100 scale-100"
+                leave="ease-in duration-200"
+                leaveFrom="opacity-100 scale-100"
+                leaveTo="opacity-0 scale-95"
+              >
+                <DialogPanel className="w-full max-w-md transform overflow-hidden rounded-3xl bg-white dark:bg-neutral-900 p-6 sm:p-8 text-left shadow-2xl transition-all border border-stone-200/80 dark:border-neutral-800 space-y-5 text-gray-900 dark:text-white">
+                  {/* Header */}
+                  <div className="flex items-start justify-between gap-3">
+                    <div className="flex items-center gap-3.5">
+                      <div className="size-12 rounded-2xl bg-rose-100 dark:bg-rose-950/60 text-rose-600 dark:text-rose-400 flex items-center justify-center shrink-0 ring-4 ring-rose-50 dark:ring-rose-950/20">
+                        <ExclamationTriangleIcon className="size-6" />
+                      </div>
+                      <div>
+                        <DialogTitle className="text-base font-bold text-gray-900 dark:text-white">
+                          Delete Shipping Provider
+                        </DialogTitle>
+                        <p className="text-xs text-gray-500 dark:text-neutral-400 mt-0.5">
+                          This action permanently removes this courier partner from Firestore.
+                        </p>
+                      </div>
+                    </div>
+
+                    <button
+                      type="button"
+                      disabled={isDeletingProvider}
+                      onClick={() => setProviderToDelete(null)}
+                      className="p-1.5 text-stone-400 hover:text-stone-700 dark:hover:text-stone-200 rounded-lg hover:bg-stone-100 dark:hover:bg-neutral-800 transition cursor-pointer disabled:opacity-50"
+                    >
+                      <XMarkIcon className="size-5" />
+                    </button>
+                  </div>
+
+                  {/* Provider Preview */}
+                  {providerToDelete && (
+                    <div className="p-4 rounded-2xl bg-stone-50 dark:bg-neutral-800/60 border border-stone-200/80 dark:border-neutral-700/80 space-y-2">
+                      <div className="flex items-center justify-between">
+                        <div className="flex items-center gap-2">
+                          <TruckIcon className="size-4 text-orange-600" />
+                          <h4 className="font-bold text-sm text-gray-900 dark:text-white">
+                            {providerToDelete.name}
+                          </h4>
+                        </div>
+                        <span
+                          className={`inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-bold ${
+                            providerToDelete.active
+                              ? "bg-emerald-100 text-emerald-700 dark:bg-emerald-950/50 dark:text-emerald-400"
+                              : "bg-stone-200 text-stone-600 dark:bg-neutral-700 dark:text-neutral-400"
+                          }`}
+                        >
+                          {providerToDelete.active ? "Active" : "Inactive"}
+                        </span>
+                      </div>
+                      <div className="text-xs text-gray-500 dark:text-neutral-400 flex items-center gap-3">
+                        <span>Base Rate: ৳{providerToDelete.baseRate}</span>
+                        <span>•</span>
+                        <span>ETA: {providerToDelete.estimatedDays}</span>
+                      </div>
+                      {providerToDelete.hubCoverage && (
+                        <p className="text-[11px] text-gray-500 dark:text-neutral-400">
+                          Coverage: {providerToDelete.hubCoverage}
+                        </p>
+                      )}
+                    </div>
+                  )}
+
+                  {/* Danger Notice */}
+                  <div className="p-3.5 rounded-2xl bg-rose-50 dark:bg-rose-950/30 border border-rose-200/80 dark:border-rose-900/50 text-xs text-rose-900 dark:text-rose-300 leading-relaxed">
+                    Are you sure you want to remove shipping provider{" "}
+                    <strong className="font-bold">&quot;{providerToDelete?.name}&quot;</strong>? This courier will no longer be available for dispatching customer shipments or reverse returns.
+                  </div>
+
+                  {/* Actions */}
+                  <div className="flex items-center justify-end gap-2.5 pt-2 border-t border-gray-100 dark:border-neutral-800">
+                    <button
+                      type="button"
+                      disabled={isDeletingProvider}
+                      onClick={() => setProviderToDelete(null)}
+                      className="px-4 py-2.5 rounded-xl border border-gray-200 dark:border-neutral-700 text-gray-700 dark:text-neutral-300 font-semibold text-xs hover:bg-stone-50 dark:hover:bg-neutral-800 transition cursor-pointer disabled:opacity-50"
+                    >
+                      Cancel
+                    </button>
+                    <button
+                      type="button"
+                      disabled={isDeletingProvider}
+                      onClick={handleConfirmDeleteProvider}
+                      className="px-5 py-2.5 rounded-xl bg-rose-600 hover:bg-rose-700 active:scale-98 text-white font-bold text-xs shadow-md transition flex items-center gap-1.5 cursor-pointer disabled:opacity-50"
+                    >
+                      {isDeletingProvider ? (
+                        <>
+                          <Spinner className="size-3.5 text-white" />
+                          <span>Deleting Provider...</span>
+                        </>
+                      ) : (
+                        <>
+                          <TrashIcon className="size-3.5" />
+                          <span>Delete Provider</span>
+                        </>
+                      )}
+                    </button>
+                  </div>
                 </DialogPanel>
               </TransitionChild>
             </div>

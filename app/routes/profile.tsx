@@ -9,6 +9,8 @@ import {
   fetchOrderByTrackingOrNumber,
   cancelOrderInFirestore,
   type Order,
+  isStaffRole,
+  getRoleConfig,
 } from "~/firebase";
 import { addToCart } from "~/redux/features/cart/cartSlice";
 import {
@@ -172,7 +174,7 @@ export default function ProfilePage() {
           !found.userId ||
           found.userId === user?.uid ||
           (found.customerEmail && user?.email && found.customerEmail.toLowerCase() === user.email.toLowerCase()) ||
-          user?.role === "admin";
+          isStaffRole(user?.role);
 
         if (!isOwner) {
           setTrackingError(
@@ -430,12 +432,10 @@ export default function ProfilePage() {
                         <h1 className="text-xl sm:text-2xl font-black text-gray-900 dark:text-white">
                           {user.displayName || "Valued Customer"}
                         </h1>
-                        <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full bg-emerald-100 dark:bg-emerald-950/60 text-emerald-800 dark:text-emerald-300 text-xs font-bold border border-emerald-200/80 dark:border-emerald-800/40">
+                        <span className={`inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-bold border ${getRoleConfig(user.role).badgeClass}`}>
                           <ShieldCheckIcon className="size-3.5" />
                           <span>
-                            {user.role === "admin"
-                              ? "Admin Account"
-                              : "Registered Customer"}
+                            {getRoleConfig(user.role).label}
                           </span>
                         </span>
                       </div>

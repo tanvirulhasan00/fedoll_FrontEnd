@@ -7,6 +7,7 @@ import {
   fetchOrderByTrackingOrNumber,
   fetchCustomerOrders,
   type Order,
+  isStaffRole,
 } from "~/firebase";
 import { useAppSelector } from "~/redux/hooks/hook";
 import {
@@ -77,7 +78,7 @@ export default function TrackOrderPage() {
           !found.userId ||
           found.userId === user.uid ||
           (found.customerEmail && user.email && found.customerEmail.toLowerCase() === user.email.toLowerCase()) ||
-          user.role === "admin";
+          isStaffRole(user.role);
 
         if (!isOwner) {
           setError(

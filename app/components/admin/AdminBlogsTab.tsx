@@ -21,6 +21,7 @@ import {
   PhotoIcon,
   DocumentTextIcon,
   CommandLineIcon,
+  ExclamationTriangleIcon,
 } from "@heroicons/react/24/outline";
 import { StarIcon as StarSolidIcon } from "@heroicons/react/24/solid";
 import { Dialog, DialogPanel, DialogTitle, Transition, TransitionChild } from "@headlessui/react";
@@ -107,6 +108,10 @@ export const AdminBlogsTab: React.FC<AdminBlogsTabProps> = ({
   const [editingBlog, setEditingBlog] = useState<BlogItem | null>(null);
   const [isSaving, setIsSaving] = useState(false);
   const [modalTab, setModalTab] = useState<"editor" | "preview">("editor");
+
+  // Delete Modal State
+  const [blogToDelete, setBlogToDelete] = useState<BlogItem | null>(null);
+  const [isDeletingBlog, setIsDeletingBlog] = useState(false);
 
   // Form Fields
   const [title, setTitle] = useState("");
@@ -391,19 +396,28 @@ export const AdminBlogsTab: React.FC<AdminBlogsTabProps> = ({
     }
   };
 
-  // Delete Blog
-  const handleDeleteBlog = async (blog: BlogItem) => {
-    const confirmed = window.confirm(
-      `Are you sure you want to permanently delete article "${blog.title}"?`
-    );
-    if (!confirmed) return;
+  // Open Delete Confirm Modal
+  const handleOpenDeleteConfirm = (blog: BlogItem) => {
+    setBlogToDelete(blog);
+  };
 
+  // Confirm Delete Blog from Modal Alert
+  const handleConfirmDeleteBlog = async () => {
+    if (!blogToDelete) return;
+    setIsDeletingBlog(true);
     try {
-      await deleteBlogFromFirestore(blog.id);
-      toast.success(`Deleted article "${blog.title}".`);
+      await deleteBlogFromFirestore(blogToDelete.id);
+      toast.success(`Deleted article "${blogToDelete.title}".`);
+      setBlogToDelete(null);
+      if (editingBlog?.id === blogToDelete.id) {
+        setEditingBlog(null);
+        setIsModalOpen(false);
+      }
       onRefresh();
     } catch {
       toast.error("Could not delete article.");
+    } finally {
+      setIsDeletingBlog(false);
     }
   };
 
@@ -741,7 +755,7 @@ export const AdminBlogsTab: React.FC<AdminBlogsTabProps> = ({
                     {/* Delete button */}
                     <button
                       type="button"
-                      onClick={() => handleDeleteBlog(blog)}
+                      onClick={() => handleOpenDeleteConfirm(blog)}
                       className="p-1.5 rounded-lg border border-stone-200 dark:border-neutral-700 text-gray-400 hover:text-red-600 hover:bg-red-50 dark:hover:bg-red-950/30 transition cursor-pointer"
                       title="Delete article"
                     >
@@ -1395,34 +1409,189 @@ export const AdminBlogsTab: React.FC<AdminBlogsTabProps> = ({
                     )}
 
                     {/* Modal Footer Controls */}
-                    <div className="flex items-center justify-end gap-3 pt-4 border-t border-stone-200 dark:border-neutral-800 shrink-0">
-                      <button
-                        type="button"
-                        onClick={() => setIsModalOpen(false)}
-                        className="px-4 py-2.5 rounded-xl border border-stone-300 dark:border-neutral-700 text-gray-700 dark:text-neutral-300 text-xs font-bold hover:bg-stone-100 dark:hover:bg-neutral-800 transition cursor-pointer"
-                      >
-                        Cancel
-                      </button>
+                    <div className="flex items-center justify-between gap-3 pt-4 border-t border-stone-200 dark:border-neutral-800 shrink-0">
+                      {editingBlog ? (
+                        <button
+                          type="button"
+                          onClick={() => {
+                            const target = editingBlog;
+                            setIsModalOpen(false);
+                            handleOpenDeleteConfirm(target);
+                          }}
+                          className="px-3.5 py-2 rounded-xl text-rose-600 hover:text-rose-700 hover:bg-rose-50 dark:hover:bg-rose-950/40 text-xs font-bold transition flex items-center gap-1.5 cursor-pointer"
+                          title="Delete article"
+                        >
+                          <TrashIcon className="size-4" />
+                          <span>Delete Article</span>
+                        </button>
+                      ) : (
+                        <div />
+                      )}
 
-                      <button
-                        type="submit"
-                        disabled={isSaving}
-                        className="px-6 py-2.5 rounded-xl bg-orange-600 hover:bg-orange-700 active:scale-98 text-white font-bold text-xs shadow-md transition flex items-center gap-2 cursor-pointer disabled:opacity-50"
-                      >
-                        {isSaving ? (
-                          <>
-                            <Spinner className="size-4 text-white animate-spin" />
-                            <span>Saving Article...</span>
-                          </>
-                        ) : (
-                          <>
-                            <CheckIcon className="size-4" />
-                            <span>{editingBlog ? "Save Updates" : "Publish Article Live"}</span>
-                          </>
-                        )}
-                      </button>
+                      <div className="flex items-center gap-2">
+                        <button
+                          type="button"
+                          onClick={() => setIsModalOpen(false)}
+                          className="px-4 py-2.5 rounded-xl border border-stone-300 dark:border-neutral-700 text-gray-700 dark:text-neutral-300 text-xs font-bold hover:bg-stone-100 dark:hover:bg-neutral-800 transition cursor-pointer"
+                        >
+                          Cancel
+                        </button>
+
+                        <button
+                          type="submit"
+                          disabled={isSaving}
+                          className="px-6 py-2.5 rounded-xl bg-orange-600 hover:bg-orange-700 active:scale-98 text-white font-bold text-xs shadow-md transition flex items-center gap-2 cursor-pointer disabled:opacity-50"
+                        >
+                          {isSaving ? (
+                            <>
+                              <Spinner className="size-4 text-white animate-spin" />
+                              <span>Saving Article...</span>
+                            </>
+                          ) : (
+                            <>
+                              <CheckIcon className="size-4" />
+                              <span>{editingBlog ? "Save Updates" : "Publish Article Live"}</span>
+                            </>
+                          )}
+                        </button>
+                      </div>
                     </div>
                   </form>
+                </DialogPanel>
+              </TransitionChild>
+            </div>
+          </div>
+        </Dialog>
+      </Transition>
+
+      {/* Delete Blog Confirmation Modal Alert */}
+      <Transition appear show={!!blogToDelete} as={React.Fragment}>
+        <Dialog
+          as="div"
+          className="relative z-50 font-sans"
+          onClose={() => !isDeletingBlog && setBlogToDelete(null)}
+        >
+          <TransitionChild
+            as={React.Fragment}
+            enter="ease-out duration-300"
+            enterFrom="opacity-0"
+            enterTo="opacity-100"
+            leave="ease-in duration-200"
+            leaveFrom="opacity-100"
+            leaveTo="opacity-0"
+          >
+            <div className="fixed inset-0 bg-stone-900/60 backdrop-blur-xs" />
+          </TransitionChild>
+
+          <div className="fixed inset-0 overflow-y-auto">
+            <div className="flex min-h-full items-center justify-center p-4 text-center sm:p-6">
+              <TransitionChild
+                as={React.Fragment}
+                enter="ease-out duration-300"
+                enterFrom="opacity-0 scale-95"
+                enterTo="opacity-100 scale-100"
+                leave="ease-in duration-200"
+                leaveFrom="opacity-100 scale-100"
+                leaveTo="opacity-0 scale-95"
+              >
+                <DialogPanel className="w-full max-w-md transform overflow-hidden rounded-3xl bg-white dark:bg-neutral-900 p-6 sm:p-8 text-left shadow-2xl transition-all border border-stone-200/80 dark:border-neutral-800 space-y-5 text-gray-900 dark:text-white">
+                  {/* Header */}
+                  <div className="flex items-start justify-between gap-3">
+                    <div className="flex items-center gap-3.5">
+                      <div className="size-12 rounded-2xl bg-rose-100 dark:bg-rose-950/60 text-rose-600 dark:text-rose-400 flex items-center justify-center shrink-0 ring-4 ring-rose-50 dark:ring-rose-950/20">
+                        <ExclamationTriangleIcon className="size-6" />
+                      </div>
+                      <div>
+                        <DialogTitle className="text-base font-bold text-gray-900 dark:text-white">
+                          Delete Blog Article
+                        </DialogTitle>
+                        <p className="text-xs text-gray-500 dark:text-neutral-400 mt-0.5">
+                          This action permanently removes this lifestyle story from Firestore.
+                        </p>
+                      </div>
+                    </div>
+
+                    <button
+                      type="button"
+                      disabled={isDeletingBlog}
+                      onClick={() => setBlogToDelete(null)}
+                      className="p-1.5 text-stone-400 hover:text-stone-700 dark:hover:text-stone-200 rounded-lg hover:bg-stone-100 dark:hover:bg-neutral-800 transition cursor-pointer disabled:opacity-50"
+                    >
+                      <XMarkIcon className="size-5" />
+                    </button>
+                  </div>
+
+                  {/* Article Details Preview Box */}
+                  {blogToDelete && (
+                    <div className="p-4 rounded-2xl bg-stone-50 dark:bg-neutral-800/60 border border-stone-200/80 dark:border-neutral-700/80 flex items-center gap-3.5">
+                      <div className="relative size-16 rounded-xl overflow-hidden bg-stone-200 dark:bg-neutral-700 shrink-0 border border-stone-200 dark:border-neutral-700">
+                        <img
+                          src={blogToDelete.coverImage}
+                          alt={blogToDelete.title}
+                          className="w-full h-full object-cover"
+                          onError={(e) => {
+                            (e.target as HTMLImageElement).src =
+                              "https://images.unsplash.com/photo-1544441893-675973e31985?auto=format&fit=crop&w=200&q=80";
+                          }}
+                        />
+                      </div>
+
+                      <div className="min-w-0 flex-1">
+                        <h4 className="font-bold text-sm text-gray-900 dark:text-white line-clamp-2 leading-snug">
+                          {blogToDelete.title}
+                        </h4>
+                        <div className="flex items-center gap-2 mt-1.5 flex-wrap">
+                          <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-stone-200 dark:bg-neutral-700 text-gray-700 dark:text-neutral-300">
+                            {blogToDelete.category}
+                          </span>
+                          <span className="text-[11px] text-gray-500 dark:text-neutral-400">
+                            {blogToDelete.readTime}
+                          </span>
+                          {blogToDelete.featured && (
+                            <span className="text-[10px] font-bold text-amber-600 dark:text-amber-400">
+                              ★ Featured
+                            </span>
+                          )}
+                        </div>
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Danger Alert Notice */}
+                  <div className="p-3.5 rounded-2xl bg-rose-50 dark:bg-rose-950/30 border border-rose-200/80 dark:border-rose-900/50 text-xs text-rose-900 dark:text-rose-300 leading-relaxed">
+                    Are you sure you want to permanently delete{" "}
+                    <strong className="font-bold">&quot;{blogToDelete?.title}&quot;</strong>? Once deleted, the article, reader views, and public storefront slug (<code className="font-mono text-[11px]">/blogs/{blogToDelete?.slug}</code>) cannot be restored.
+                  </div>
+
+                  {/* Action Buttons */}
+                  <div className="flex items-center justify-end gap-2.5 pt-2 border-t border-gray-100 dark:border-neutral-800">
+                    <button
+                      type="button"
+                      disabled={isDeletingBlog}
+                      onClick={() => setBlogToDelete(null)}
+                      className="px-4 py-2.5 rounded-xl border border-gray-200 dark:border-neutral-700 text-gray-700 dark:text-neutral-300 font-semibold text-xs hover:bg-stone-50 dark:hover:bg-neutral-800 transition cursor-pointer disabled:opacity-50"
+                    >
+                      Cancel
+                    </button>
+                    <button
+                      type="button"
+                      disabled={isDeletingBlog}
+                      onClick={handleConfirmDeleteBlog}
+                      className="px-5 py-2.5 rounded-xl bg-rose-600 hover:bg-rose-700 active:scale-98 text-white font-bold text-xs shadow-md transition flex items-center gap-1.5 cursor-pointer disabled:opacity-50"
+                    >
+                      {isDeletingBlog ? (
+                        <>
+                          <Spinner className="size-3.5 text-white" />
+                          <span>Deleting Article...</span>
+                        </>
+                      ) : (
+                        <>
+                          <TrashIcon className="size-3.5" />
+                          <span>Delete Article</span>
+                        </>
+                      )}
+                    </button>
+                  </div>
                 </DialogPanel>
               </TransitionChild>
             </div>
