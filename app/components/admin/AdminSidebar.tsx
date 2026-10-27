@@ -18,6 +18,7 @@ import {
   ArrowPathRoundedSquareIcon,
   BookOpenIcon,
   ArchiveBoxIcon,
+  SparklesIcon,
 } from "@heroicons/react/24/outline";
 import type { AuthUser } from "~/redux/features/auth/authSlice";
 import { useAppSelector } from "~/redux/hooks/hook";
@@ -91,6 +92,7 @@ export const AdminSidebar: React.FC<AdminSidebarProps> = ({
       badge: normalizeRole(user?.role) === "salesman" ? undefined : "Roles",
     },
     { id: "coupons", label: "Coupons & Discounts", icon: TagIcon },
+    { id: "banners", label: "Campaign Banners", icon: SparklesIcon, badge: "Slider" },
     {
       id: "messages",
       label: "Customer Inquiries",

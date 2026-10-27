@@ -12,6 +12,7 @@ import {
   initialTestimonials,
   initialValueProps,
   initialSpotlightBanner,
+  initialSpotlightBanners,
   convertProductToHeroBanner,
   type HeroBanner,
   type FeaturedCategory,
@@ -30,6 +31,8 @@ export interface HomeState {
   testimonials: TestimonialItem[];
   valueProps: ValueProp[];
   spotlightBanner: SpotlightBanner | null;
+  spotlightBanners: SpotlightBanner[];
+  activeSpotlightIndex: number;
   activeProductTab: string;
   activeHeroIndex: number;
   quickViewProduct: ProductItem | null;
@@ -88,13 +91,33 @@ const getInitialHeroBanners = (cached: ProductItem[]): HeroBanner[] => {
   return initialHeroBanners;
 };
 
+const HOME_SPOTLIGHT_CACHE_KEY = "fedoll_spotlight_banners";
+
+const loadInitialSpotlightBanners = (): SpotlightBanner[] => {
+  if (typeof window === "undefined") return initialSpotlightBanners;
+  try {
+    const raw = localStorage.getItem(HOME_SPOTLIGHT_CACHE_KEY);
+    if (raw) {
+      const parsed = JSON.parse(raw);
+      if (Array.isArray(parsed) && parsed.length > 0) return parsed;
+    }
+  } catch {
+    // fallback
+  }
+  return initialSpotlightBanners;
+};
+
+const cachedSpotlightBanners = loadInitialSpotlightBanners();
+
 const initialState: HomeState = {
   heroBanners: getInitialHeroBanners(cachedHomeProducts),
   featuredCategories: initialFeaturedCategories,
   products: cachedHomeProducts,
   testimonials: initialTestimonials,
   valueProps: initialValueProps,
-  spotlightBanner: initialSpotlightBanner,
+  spotlightBanner: cachedSpotlightBanners[0] || initialSpotlightBanner,
+  spotlightBanners: cachedSpotlightBanners,
+  activeSpotlightIndex: 0,
   activeProductTab: "All",
   activeHeroIndex: 0,
   quickViewProduct: null,
@@ -208,6 +231,74 @@ export const homeSlice = createSlice({
         state.heroBanners = initialHeroBanners;
       }
     },
+    setSpotlightBanners: (state, action: PayloadAction<SpotlightBanner[]>) => {
+      const banners =
+        action.payload && action.payload.length > 0
+          ? action.payload
+          : initialSpotlightBanners;
+      state.spotlightBanners = banners;
+      if (typeof window !== "undefined") {
+        try {
+          localStorage.setItem(HOME_SPOTLIGHT_CACHE_KEY, JSON.stringify(banners));
+        } catch {
+          // ignore
+        }
+      }
+      if (state.activeSpotlightIndex >= banners.length) {
+        state.activeSpotlightIndex = 0;
+      }
+      state.spotlightBanner =
+        banners[state.activeSpotlightIndex] || banners[0];
+    },
+    setActiveSpotlightIndex: (state, action: PayloadAction<number>) => {
+      state.activeSpotlightIndex = action.payload;
+      if (state.spotlightBanners[action.payload]) {
+        state.spotlightBanner = state.spotlightBanners[action.payload];
+      }
+    },
+    nextSpotlightSlide: (state) => {
+      if (state.spotlightBanners.length > 0) {
+        state.activeSpotlightIndex =
+          (state.activeSpotlightIndex + 1) % state.spotlightBanners.length;
+        state.spotlightBanner = state.spotlightBanners[state.activeSpotlightIndex];
+      }
+    },
+    prevSpotlightSlide: (state) => {
+      if (state.spotlightBanners.length > 0) {
+        state.activeSpotlightIndex =
+          (state.activeSpotlightIndex - 1 + state.spotlightBanners.length) %
+          state.spotlightBanners.length;
+        state.spotlightBanner = state.spotlightBanners[state.activeSpotlightIndex];
+      }
+    },
+    addOrUpdateSpotlightBanner: (
+      state,
+      action: PayloadAction<SpotlightBanner>
+    ) => {
+      const banner = action.payload;
+      const idx = state.spotlightBanners.findIndex((b) => b.id === banner.id);
+      if (idx >= 0) {
+        state.spotlightBanners[idx] = banner;
+      } else {
+        state.spotlightBanners.push(banner);
+      }
+      state.spotlightBanners.sort(
+        (a, b) => (a.order ?? 999) - (b.order ?? 999)
+      );
+      state.spotlightBanner =
+        state.spotlightBanners[state.activeSpotlightIndex] ||
+        state.spotlightBanners[0];
+    },
+    removeSpotlightBanner: (state, action: PayloadAction<string>) => {
+      state.spotlightBanners = state.spotlightBanners.filter(
+        (b) => b.id !== action.payload
+      );
+      if (state.activeSpotlightIndex >= state.spotlightBanners.length) {
+        state.activeSpotlightIndex = Math.max(0, state.spotlightBanners.length - 1);
+      }
+      state.spotlightBanner =
+        state.spotlightBanners[state.activeSpotlightIndex] || null;
+    },
   },
   extraReducers: (builder) => {
     builder
@@ -233,6 +324,26 @@ export const homeSlice = createSlice({
           state.testimonials = action.payload.testimonials;
           state.valueProps = action.payload.valueProps;
           state.spotlightBanner = action.payload.spotlightBanner;
+          if (
+            Array.isArray(action.payload.spotlightBanners) &&
+            action.payload.spotlightBanners.length > 0
+          ) {
+            state.spotlightBanners = action.payload.spotlightBanners;
+          } else if (action.payload.spotlightBanner) {
+            state.spotlightBanners = [action.payload.spotlightBanner];
+          } else {
+            state.spotlightBanners = initialSpotlightBanners;
+          }
+          if (typeof window !== "undefined") {
+            try {
+              localStorage.setItem(
+                HOME_SPOTLIGHT_CACHE_KEY,
+                JSON.stringify(state.spotlightBanners)
+              );
+            } catch {
+              // ignore
+            }
+          }
         }
       })
       .addCase(fetchHomeData.rejected, (state, action) => {
@@ -311,6 +422,12 @@ export const {
   toggleWishlist,
   setHeroBanners,
   setHeroBannersFromProducts,
+  setSpotlightBanners,
+  setActiveSpotlightIndex,
+  nextSpotlightSlide,
+  prevSpotlightSlide,
+  addOrUpdateSpotlightBanner,
+  removeSpotlightBanner,
 } = homeSlice.actions;
 
 export default homeSlice.reducer;

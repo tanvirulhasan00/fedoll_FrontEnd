@@ -3,6 +3,9 @@ import {
   doc,
   getDocs,
   setDoc,
+  deleteDoc,
+  onSnapshot,
+  query,
   serverTimestamp,
   type DocumentData,
 } from "firebase/firestore";
@@ -55,6 +58,23 @@ export interface TestimonialItem {
   productName: string;
 }
 
+export type SpotlightBadgeColor =
+  | "orange"
+  | "amber"
+  | "emerald"
+  | "blue"
+  | "rose"
+  | "purple"
+  | "stone";
+
+export type SpotlightThemeStyle =
+  | "dark-stone"
+  | "gradient-sunset"
+  | "gradient-ocean"
+  | "gradient-emerald"
+  | "gradient-royal"
+  | "clean-light";
+
 export interface SpotlightBanner {
   id: string;
   tag: string;
@@ -64,6 +84,14 @@ export interface SpotlightBanner {
   ctaLink: string;
   image: string;
   discountCode?: string;
+  discountPercent?: string;
+  badgeColor?: SpotlightBadgeColor;
+  themeStyle?: SpotlightThemeStyle;
+  secondaryCtaText?: string;
+  secondaryCtaLink?: string;
+  isActive?: boolean;
+  order?: number;
+  updatedAt?: any;
 }
 
 /**
@@ -454,17 +482,199 @@ export const initialTestimonials: TestimonialItem[] = [
   },
 ];
 
-export const initialSpotlightBanner: SpotlightBanner = {
-  id: "spotlight-denim-capsule",
-  tag: "Special Offer • Bangladesh",
-  title: "Premium Selvedge Denim & Winter Coats",
-  description:
-    "Order online today and enjoy 15% discount with voucher SILKENDRIFT2026. Use voucher FREEDELIVERY for free courier delivery all across Bangladesh.",
-  ctaText: "Shop The Collection",
-  ctaLink: "/products?category=Denim",
-  image:
-    "https://images.unsplash.com/photo-1490481651871-ab68de25d43d?auto=format&fit=crop&w=1200&q=80",
-  discountCode: "SILKENDRIFT2026",
+export const initialSpotlightBanners: SpotlightBanner[] = [
+  {
+    id: "spotlight-denim-capsule",
+    tag: "Special Offer • Bangladesh",
+    title: "Premium Selvedge Denim & Winter Coats",
+    description:
+      "Order online today and enjoy 15% discount with voucher SILKENDRIFT2026. Use voucher FREEDELIVERY for free courier delivery all across Bangladesh.",
+    ctaText: "Shop The Collection",
+    ctaLink: "/products?category=Denim",
+    secondaryCtaText: "Explore Outerwear",
+    secondaryCtaLink: "/products?category=Outerwear",
+    image:
+      "https://images.unsplash.com/photo-1490481651871-ab68de25d43d?auto=format&fit=crop&w=1200&q=80",
+    discountCode: "SILKENDRIFT2026",
+    discountPercent: "15% OFF",
+    badgeColor: "orange",
+    themeStyle: "dark-stone",
+    isActive: true,
+    order: 1,
+  },
+  {
+    id: "spotlight-winter-trench",
+    tag: "Flash Campaign • Outerwear Drop",
+    title: "Hand-Tailored Wool Trench & Overcoats",
+    description:
+      "Designed for sharp modern tailoring and winter defense. Engineered with luxury double-layer wool and horn buttons. Limited seasonal run.",
+    ctaText: "Shop Outerwear",
+    ctaLink: "/products?category=Outerwear",
+    secondaryCtaText: "View Lookbook",
+    secondaryCtaLink: "/blogs",
+    image:
+      "https://images.unsplash.com/photo-1544441893-675973e31985?auto=format&fit=crop&w=1200&q=80",
+    discountCode: "WINTER2026",
+    discountPercent: "20% OFF",
+    badgeColor: "amber",
+    themeStyle: "gradient-sunset",
+    isActive: true,
+    order: 2,
+  },
+  {
+    id: "spotlight-heritage-rmg",
+    tag: "Artisan Heritage • Dhaka Atelier",
+    title: "Export-Certified Heavyweight Knitwear",
+    description:
+      "Every knitwear and denim piece is sewn in ethical Bangladeshi facilities by generational craft masters. 100% natural organic cotton.",
+    ctaText: "Discover Knitwear",
+    ctaLink: "/products?category=Knitwear",
+    secondaryCtaText: "Our Story",
+    secondaryCtaLink: "/about-us",
+    image:
+      "https://images.unsplash.com/photo-1558769132-cb1aea458c5e?auto=format&fit=crop&w=1200&q=80",
+    discountCode: "FREEDELIVERY",
+    discountPercent: "FREE SHIPPING",
+    badgeColor: "emerald",
+    themeStyle: "gradient-ocean",
+    isActive: true,
+    order: 3,
+  },
+];
+
+export const initialSpotlightBanner: SpotlightBanner = initialSpotlightBanners[0];
+
+/**
+ * Merge Firestore documents with initial presets so that there is never a flash
+ * where the slider collapses into a single static banner.
+ */
+export const mergeWithDefaultBanners = (
+  fetched: SpotlightBanner[]
+): SpotlightBanner[] => {
+  if (!fetched || fetched.length === 0) return initialSpotlightBanners;
+
+  // If only 1 banner exists in DB (legacy state from before multi-banner feature),
+  // merge the remaining preset banners so the slider has multiple slides and never glitches
+  if (fetched.length < 2) {
+    const existingIds = new Set(fetched.map((b) => b.id));
+    const missing = initialSpotlightBanners.filter((b) => !existingIds.has(b.id));
+    const merged = [...fetched, ...missing].map((b, idx) => ({
+      ...b,
+      order: typeof b.order === "number" ? b.order : idx + 1,
+      isActive: b.isActive !== false,
+    }));
+    merged.sort((a, b) => (a.order ?? 999) - (b.order ?? 999));
+    return merged;
+  }
+
+  const result = fetched.map((b, idx) => ({
+    ...b,
+    order: typeof b.order === "number" ? b.order : idx + 1,
+    isActive: b.isActive !== false,
+  }));
+  result.sort((a, b) => (a.order ?? 999) - (b.order ?? 999));
+  return result;
+};
+
+/**
+ * Fetch all spotlight campaign banners from Firebase Firestore
+ */
+export const fetchSpotlightBannersFromFirestore = async (): Promise<SpotlightBanner[]> => {
+  try {
+    const bannerSnap = await getDocs(collection(db, "spotlight_banners"));
+    if (bannerSnap.empty) {
+      seedSpotlightBannersToFirestore(false).catch(() => {});
+      return initialSpotlightBanners;
+    }
+    const banners = bannerSnap.docs.map(
+      (d) => ({ id: d.id, ...(d.data() as DocumentData) } as SpotlightBanner)
+    );
+    const merged = mergeWithDefaultBanners(banners);
+    if (banners.length < 2) {
+      seedSpotlightBannersToFirestore(false).catch(() => {});
+    }
+    return merged;
+  } catch (err) {
+    console.warn("Failed to fetch spotlight banners from Firestore, using fallback:", err);
+    return initialSpotlightBanners;
+  }
+};
+
+/**
+ * Real-time listener for spotlight banners from Firebase Firestore
+ */
+export const subscribeToSpotlightBannersFromFirestore = (
+  callback: (banners: SpotlightBanner[]) => void
+) => {
+  try {
+    const q = query(collection(db, "spotlight_banners"));
+    return onSnapshot(
+      q,
+      (snapshot) => {
+        if (snapshot.empty) {
+          seedSpotlightBannersToFirestore(false).catch(() => {});
+          callback(initialSpotlightBanners);
+          return;
+        }
+        const banners = snapshot.docs.map(
+          (d) => ({ id: d.id, ...(d.data() as DocumentData) } as SpotlightBanner)
+        );
+        const merged = mergeWithDefaultBanners(banners);
+        if (banners.length < 2) {
+          seedSpotlightBannersToFirestore(false).catch(() => {});
+        }
+        callback(merged);
+      },
+      (error) => {
+        console.warn("Error subscribing to spotlight banners:", error);
+        callback(initialSpotlightBanners);
+      }
+    );
+  } catch (err) {
+    console.warn("Failed to setup spotlight banner listener:", err);
+    callback(initialSpotlightBanners);
+    return () => {};
+  }
+};
+
+/**
+ * Create or update a spotlight campaign banner in Firestore
+ */
+export const saveSpotlightBannerToFirestore = async (banner: SpotlightBanner) => {
+  const bannerId = banner.id || `spotlight-${Date.now()}`;
+  const bannerRef = doc(db, "spotlight_banners", bannerId);
+  const dataToSave = {
+    ...banner,
+    id: bannerId,
+    order: typeof banner.order === "number" ? banner.order : 1,
+    isActive: banner.isActive !== false,
+    updatedAt: serverTimestamp(),
+  };
+  await setDoc(bannerRef, dataToSave, { merge: true });
+  return { success: true, id: bannerId };
+};
+
+/**
+ * Delete a spotlight banner from Firestore
+ */
+export const deleteSpotlightBannerFromFirestore = async (bannerId: string) => {
+  const bannerRef = doc(db, "spotlight_banners", bannerId);
+  await deleteDoc(bannerRef);
+  return { success: true };
+};
+
+/**
+ * Seed or restore default spotlight banners to Firestore
+ */
+export const seedSpotlightBannersToFirestore = async (force: boolean = false) => {
+  for (const item of initialSpotlightBanners) {
+    await setDoc(
+      doc(db, "spotlight_banners", item.id),
+      { ...item, updatedAt: serverTimestamp() },
+      { merge: !force }
+    );
+  }
+  return { success: true, count: initialSpotlightBanners.length };
 };
 
 /**
@@ -498,7 +708,6 @@ export const fetchHomeDataFromFirestore = async () => {
     }
 
     // Build hero slider slideshow: fetch products from DB and show two products in random order.
-    // If there is no product in DB, keep the default static data (initialHeroBanners).
     let heroBanners: HeroBanner[] = initialHeroBanners;
     if (products && products.length > 0) {
       const candidates = products.filter((p) => p.images && p.images.length > 0);
@@ -520,13 +729,16 @@ export const fetchHomeDataFromFirestore = async () => {
       ? initialValueProps
       : valSnap.docs.map((d) => ({ id: d.id, ...(d.data() as DocumentData) } as ValueProp));
 
+    const spotlightBanners = await fetchSpotlightBannersFromFirestore();
+
     return {
       heroBanners,
       featuredCategories,
       products: products || [],
       testimonials,
       valueProps,
-      spotlightBanner: initialSpotlightBanner,
+      spotlightBanner: spotlightBanners[0] || initialSpotlightBanner,
+      spotlightBanners: spotlightBanners.length > 0 ? spotlightBanners : initialSpotlightBanners,
     };
   } catch (error) {
     console.warn("Failed to fetch home data from Firestore, using initial fallback:", error);
@@ -555,6 +767,7 @@ export const fetchHomeDataFromFirestore = async () => {
       testimonials: initialTestimonials,
       valueProps: initialValueProps,
       spotlightBanner: initialSpotlightBanner,
+      spotlightBanners: initialSpotlightBanners,
     };
   }
 };
@@ -595,11 +808,13 @@ export const seedHomeDataToFirestore = async (force: boolean = false) => {
     );
   }
 
-  await setDoc(
-    doc(db, "spotlight_banners", initialSpotlightBanner.id),
-    { ...initialSpotlightBanner, updatedAt: serverTimestamp() },
-    { merge: !force }
-  );
+  for (const item of initialSpotlightBanners) {
+    await setDoc(
+      doc(db, "spotlight_banners", item.id),
+      { ...item, updatedAt: serverTimestamp() },
+      { merge: !force }
+    );
+  }
 
   return { success: true, message: "Home page data in BDT successfully saved to Firebase!" };
 };

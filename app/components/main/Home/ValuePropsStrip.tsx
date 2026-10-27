@@ -27,7 +27,7 @@ export default function ValuePropsStrip() {
   if (!valueProps || valueProps.length === 0) return null;
 
   return (
-    <section className="bg-stone-50 dark:bg-neutral-900 border-y border-stone-200/80 dark:border-neutral-800 py-8 transition-colors duration-200">
+    <section className="hidden sm:block bg-stone-50 dark:bg-neutral-900 border-y border-stone-200/80 dark:border-neutral-800 py-8 transition-colors duration-200">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 lg:gap-8">
           {valueProps.map((prop) => (

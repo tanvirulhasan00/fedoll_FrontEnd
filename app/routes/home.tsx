@@ -11,14 +11,17 @@ import TestimonialsSection from "~/components/main/Home/TestimonialsSection";
 import JournalPreviewSection from "~/components/main/Home/JournalPreviewSection";
 import CommunityGallery from "~/components/main/Home/CommunityGallery";
 import { useAppDispatch } from "~/redux/hooks/hook";
-import { fetchHomeData } from "~/redux/features/homeSlice";
+import { fetchHomeData, setSpotlightBanners } from "~/redux/features/homeSlice";
 import { fetchBlogs } from "~/redux/features/blogSlice";
 import {
   fetchProducts,
   fetchProductCategories,
   setProductCategories,
 } from "~/redux/features/productSlice";
-import { subscribeToCategoriesFromFirestore } from "~/firebase";
+import {
+  subscribeToCategoriesFromFirestore,
+  subscribeToSpotlightBannersFromFirestore,
+} from "~/firebase";
 
 const Home = () => {
   const dispatch = useAppDispatch();
@@ -35,8 +38,14 @@ const Home = () => {
       dispatch(setProductCategories(liveCats));
     });
 
+    // Subscribe to realtime campaign spotlight banners
+    const unsubscribeSpotlight = subscribeToSpotlightBannersFromFirestore((liveBanners) => {
+      dispatch(setSpotlightBanners(liveBanners));
+    });
+
     return () => {
       unsubscribeCategories();
+      unsubscribeSpotlight();
     };
   }, [dispatch]);
 

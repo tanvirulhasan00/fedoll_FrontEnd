@@ -41,6 +41,8 @@ import {
   isSuperAdmin,
   getRoleAllowedTabs,
   getRoleConfig,
+  fetchSpotlightBannersFromFirestore,
+  type SpotlightBanner,
 } from "~/firebase";
 import AdminSidebar, { type AdminTab } from "~/components/admin/AdminSidebar";
 import AdminOverviewTab from "~/components/admin/AdminOverviewTab";
@@ -53,6 +55,7 @@ import AdminBlogsTab from "~/components/admin/AdminBlogsTab";
 import AdminShippingTab from "~/components/admin/AdminShippingTab";
 import AdminCustomersTab from "~/components/admin/AdminCustomersTab";
 import AdminCouponsTab from "~/components/admin/AdminCouponsTab";
+import AdminBannersTab from "~/components/admin/AdminBannersTab";
 import AdminMessagesTab from "~/components/admin/AdminMessagesTab";
 import AdminNewsletterTab from "~/components/admin/AdminNewsletterTab";
 import AdminLegalTab from "~/components/admin/AdminLegalTab";
@@ -111,6 +114,7 @@ export default function AdminDashboardPage() {
     "customers",
     "staff",
     "coupons",
+    "banners",
     "messages",
     "newsletters",
     "legal",
@@ -138,6 +142,7 @@ export default function AdminDashboardPage() {
   const [shippingProviders, setShippingProviders] = useState<ShippingProvider[]>([]);
   const [shippingSettings, setShippingSettings] = useState<ShippingSettings>(defaultShippingSettings);
   const [coupons, setCoupons] = useState<CouponItem[]>([]);
+  const [spotlightBanners, setSpotlightBanners] = useState<SpotlightBanner[]>([]);
   const [messages, setMessages] = useState<ContactMessageRecord[]>([]);
   const [subscribers, setSubscribers] = useState<NewsletterSubscriber[]>([]);
   const [storeSettings, setStoreSettings] = useState<StoreGeneralSettings>(defaultStoreSettings);
@@ -174,6 +179,7 @@ export default function AdminDashboardPage() {
         fetchedProviders,
         fetchedShipSettings,
         fetchedCoupons,
+        fetchedSpotlightBanners,
         fetchedStoreSettings,
         fetchedMessages,
         fetchedSubscribers,
@@ -188,6 +194,7 @@ export default function AdminDashboardPage() {
         fetchShippingProviders(),
         fetchShippingSettings(),
         fetchCouponsFromFirestore(),
+        fetchSpotlightBannersFromFirestore(),
         fetchStoreSettings(),
         fetchContactMessagesFromFirestore(),
         fetchAllNewsletterSubscribers(),
@@ -204,6 +211,7 @@ export default function AdminDashboardPage() {
       setShippingProviders(fetchedProviders);
       setShippingSettings(fetchedShipSettings);
       setCoupons(fetchedCoupons);
+      setSpotlightBanners(fetchedSpotlightBanners);
       setStoreSettings(fetchedStoreSettings);
       dispatch(setReduxStoreSettings(fetchedStoreSettings));
       setMessages(fetchedMessages);
@@ -571,6 +579,13 @@ export default function AdminDashboardPage() {
                   {currentTab === "coupons" && (
                     <AdminCouponsTab
                       coupons={coupons}
+                      onRefresh={loadAllAdminData}
+                    />
+                  )}
+
+                  {currentTab === "banners" && (
+                    <AdminBannersTab
+                      banners={spotlightBanners}
                       onRefresh={loadAllAdminData}
                     />
                   )}
