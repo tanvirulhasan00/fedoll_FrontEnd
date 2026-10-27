@@ -34,6 +34,8 @@ import {
   seedBlogsToFirestore,
   slugifyBlogTitle,
 } from "~/firebase";
+import AdminAiBlogModal from "~/components/admin/AdminAiBlogModal";
+import type { GeneratedBlogResult } from "~/services/geminiBlogService";
 
 // Curated high-res fashion editorial stock imagery presets for 1-click selection
 const COVER_IMAGE_PRESETS = [
@@ -132,6 +134,7 @@ export const AdminBlogsTab: React.FC<AdminBlogsTabProps> = ({
   const [tags, setTags] = useState<string[]>([]);
   const [tagInput, setTagInput] = useState("");
   const [autoSlug, setAutoSlug] = useState(true);
+  const [isAiModalOpen, setIsAiModalOpen] = useState(false);
 
   // Textarea Ref for inserting Markdown tags
   const contentTextareaRef = useRef<HTMLTextAreaElement>(null);
@@ -241,6 +244,36 @@ export const AdminBlogsTab: React.FC<AdminBlogsTabProps> = ({
     setFeatured(Boolean(blog.featured));
     setTags(Array.isArray(blog.tags) ? [...blog.tags] : []);
     setTagInput("");
+    setAutoSlug(false);
+    setModalTab("editor");
+    setIsModalOpen(true);
+  };
+
+  // Auto-fill from AI generator
+  const handleAiGenerated = (result: GeneratedBlogResult) => {
+    setTitle(result.title);
+    setSlug(result.slug || slugifyBlogTitle(result.title));
+    if (DEFAULT_CATEGORIES.includes(result.category)) {
+      setCategory(result.category);
+      setCustomCategory("");
+    } else {
+      setCategory("other");
+      setCustomCategory(result.category);
+    }
+    setExcerpt(result.excerpt);
+    setContent(result.content);
+    if (result.coverImage) {
+      setCoverImage(result.coverImage);
+    }
+    setTags(Array.isArray(result.tags) ? result.tags : []);
+    setReadTime(result.readTime || "4 min read");
+    setPublishedAt(
+      new Date().toLocaleDateString("en-US", {
+        month: "long",
+        day: "numeric",
+        year: "numeric",
+      })
+    );
     setAutoSlug(false);
     setModalTab("editor");
     setIsModalOpen(true);
@@ -470,6 +503,16 @@ export const AdminBlogsTab: React.FC<AdminBlogsTabProps> = ({
           >
             <ArrowPathIcon className="size-3.5" />
             <span className="hidden md:inline">Reset Defaults</span>
+          </button>
+
+          <button
+            type="button"
+            onClick={() => setIsAiModalOpen(true)}
+            className="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-gradient-to-r from-purple-600 via-indigo-600 to-orange-500 hover:opacity-95 active:scale-98 text-white font-bold text-xs shadow-md shadow-purple-600/20 transition cursor-pointer"
+            title="Auto-generate complete article with Gemini AI"
+          >
+            <SparklesIcon className="size-4 animate-pulse" />
+            <span>Write with AI</span>
           </button>
 
           <button
@@ -824,6 +867,17 @@ export const AdminBlogsTab: React.FC<AdminBlogsTabProps> = ({
                     </div>
 
                     <div className="flex items-center gap-2">
+                      {/* AI Draft quick button inside modal */}
+                      <button
+                        type="button"
+                        onClick={() => setIsAiModalOpen(true)}
+                        className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-purple-50 dark:bg-purple-950/40 hover:bg-purple-100 dark:hover:bg-purple-900/50 text-purple-700 dark:text-purple-300 border border-purple-200 dark:border-purple-800 text-xs font-bold transition cursor-pointer"
+                        title="Auto-generate or re-draft with Gemini AI"
+                      >
+                        <SparklesIcon className="size-3.5 text-purple-600 dark:text-purple-400 animate-pulse" />
+                        <span className="hidden sm:inline">Draft with AI</span>
+                      </button>
+
                       {/* Sub-tab switcher: Editor vs Preview */}
                       <div className="flex items-center rounded-xl bg-stone-200/80 dark:bg-neutral-800 p-1 text-xs">
                         <button
@@ -1333,6 +1387,26 @@ export const AdminBlogsTab: React.FC<AdminBlogsTabProps> = ({
                             const trimmed = block.trim();
                             if (!trimmed) return null;
 
+                            // Embedded markdown image
+                            const imgMatch = trimmed.match(/^!\[(.*?)\]\((.*?)\)$/);
+                            if (imgMatch) {
+                              return (
+                                <figure key={idx} className="my-5">
+                                  <img
+                                    src={imgMatch[2]}
+                                    alt={imgMatch[1] || "Article photography"}
+                                    className="w-full max-h-72 object-cover rounded-xl shadow-md border border-stone-200 dark:border-neutral-800"
+                                    loading="lazy"
+                                  />
+                                  {imgMatch[1] && (
+                                    <figcaption className="text-center text-xs text-gray-500 dark:text-neutral-400 mt-1.5 italic">
+                                      {imgMatch[1]}
+                                    </figcaption>
+                                  )}
+                                </figure>
+                              );
+                            }
+
                             if (trimmed.startsWith("## ")) {
                               return (
                                 <h2
@@ -1598,6 +1672,14 @@ export const AdminBlogsTab: React.FC<AdminBlogsTabProps> = ({
           </div>
         </Dialog>
       </Transition>
+
+      {/* AI Blog Generation Modal */}
+      <AdminAiBlogModal
+        isOpen={isAiModalOpen}
+        onClose={() => setIsAiModalOpen(false)}
+        onGenerated={handleAiGenerated}
+        categories={allCategories}
+      />
     </div>
   );
 };

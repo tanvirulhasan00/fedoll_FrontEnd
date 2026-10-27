@@ -34,4 +34,5 @@ export default [
   route("admin/products/edit/:id", "routes/admin-product-form.tsx", { id: "admin-product-edit-alias" }),
   route("dashboard", "routes/admin.tsx", { id: "dashboard-alias" }),
   route("deshboard", "routes/admin.tsx", { id: "deshboard-alias" }),
+  route("api/generate-blog", "routes/api.generate-blog.ts"),
 ] satisfies RouteConfig;

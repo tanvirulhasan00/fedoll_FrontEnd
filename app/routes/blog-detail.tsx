@@ -50,6 +50,28 @@ function ArticleBodyRenderer({ content }: { content: string }) {
         const trimmed = block.trim();
         if (!trimmed) return null;
 
+        // Embedded Markdown image: ![alt](url)
+        const imgMatch = trimmed.match(/^!\[(.*?)\]\((.*?)\)$/);
+        if (imgMatch) {
+          const altText = imgMatch[1];
+          const imgUrl = imgMatch[2];
+          return (
+            <figure key={index} className="my-8">
+              <img
+                src={imgUrl}
+                alt={altText || "Editorial photography"}
+                className="w-full max-h-[480px] object-cover rounded-2xl sm:rounded-3xl shadow-lg border border-stone-200/60 dark:border-neutral-800"
+                loading="lazy"
+              />
+              {altText && (
+                <figcaption className="text-center text-xs text-gray-500 dark:text-neutral-400 mt-2.5 italic">
+                  {altText}
+                </figcaption>
+              )}
+            </figure>
+          );
+        }
+
         if (trimmed.startsWith("## ")) {
           return (
             <h2
