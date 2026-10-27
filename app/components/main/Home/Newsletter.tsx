@@ -81,11 +81,11 @@ export default function NewsLetter() {
   };
 
   return (
-    <div className="relative isolate overflow-hidden rounded-3xl bg-gradient-to-b from-neutral-900 via-neutral-900 to-neutral-950 border border-neutral-800 p-8 sm:p-12 lg:p-16 shadow-2xl">
+    <div className="relative isolate overflow-hidden rounded-3xl bg-gradient-to-b from-stone-50 via-white to-stone-100/70 dark:from-neutral-900 dark:via-neutral-900 dark:to-neutral-950 border border-stone-200/90 dark:border-neutral-800 p-8 sm:p-12 lg:p-16 shadow-xl dark:shadow-2xl transition-colors duration-200">
       {/* Decorative ambient glowing gradients */}
       <div
         aria-hidden="true"
-        className="pointer-events-none absolute -top-24 -right-24 h-96 w-96 rounded-full bg-orange-600/20 blur-3xl"
+        className="pointer-events-none absolute -top-24 -right-24 h-96 w-96 rounded-full bg-orange-500/10 dark:bg-orange-600/20 blur-3xl"
       />
       <div
         aria-hidden="true"
@@ -95,20 +95,20 @@ export default function NewsLetter() {
       <div className="relative z-10 grid grid-cols-1 gap-12 lg:grid-cols-12 lg:items-center">
         {/* Left Column: Headline, Description & Subscription Form */}
         <div className="lg:col-span-7">
-          <div className="inline-flex items-center gap-2 rounded-full border border-orange-500/30 bg-orange-500/10 px-3.5 py-1.5 text-xs font-semibold uppercase tracking-wider text-orange-400">
-            <SparklesIcon className="size-4 text-orange-400" />
+          <div className="inline-flex items-center gap-2 rounded-full border border-orange-200 dark:border-orange-500/30 bg-orange-100/80 dark:bg-orange-500/10 px-3.5 py-1.5 text-xs font-semibold uppercase tracking-wider text-orange-800 dark:text-orange-400">
+            <SparklesIcon className="size-4 text-orange-600 dark:text-orange-400" />
             <span>Exclusive VIP Circle</span>
           </div>
 
-          <h2 className="mt-4 text-3xl font-extrabold tracking-tight text-white sm:text-4xl lg:text-5xl">
+          <h2 className="mt-4 text-3xl font-extrabold tracking-tight text-gray-900 dark:text-white sm:text-4xl lg:text-5xl">
             Stay Ahead. <br />
-            <span className="bg-gradient-to-r from-orange-400 via-orange-500 to-amber-400 bg-clip-text text-transparent">
+            <span className="bg-gradient-to-r from-orange-600 via-orange-500 to-amber-600 dark:from-orange-400 dark:via-orange-500 dark:to-amber-400 bg-clip-text text-transparent">
               Enjoy 10% Off
             </span>{" "}
             Your Next Order.
           </h2>
 
-          <p className="mt-4 max-w-xl text-base sm:text-lg leading-relaxed text-neutral-400">
+          <p className="mt-4 max-w-xl text-base sm:text-lg leading-relaxed text-gray-600 dark:text-neutral-400">
             Join thousands of global fashion enthusiasts. Receive private seasonal drops,
             limited denim releases, textile craftsmanship stories, and members-only promotions.
           </p>
@@ -117,7 +117,7 @@ export default function NewsLetter() {
           <form onSubmit={handleSubmit} className="mt-8 max-w-xl">
             <div className="flex flex-col sm:flex-row gap-3">
               <div className="relative flex-1">
-                <div className="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-4 text-neutral-400">
+                <div className="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-4 text-gray-400 dark:text-neutral-400">
                   <EnvelopeIcon className="size-5" />
                 </div>
                 <input
@@ -130,14 +130,14 @@ export default function NewsLetter() {
                   disabled={loading}
                   placeholder="Enter your email address..."
                   autoComplete="email"
-                  className="w-full rounded-xl border border-neutral-700 bg-neutral-800/90 py-3.5 pl-11 pr-4 text-sm sm:text-base text-white placeholder-neutral-400 shadow-inner outline-none transition focus:border-orange-500 focus:ring-2 focus:ring-orange-500/30 disabled:opacity-60 disabled:cursor-not-allowed"
+                  className="w-full rounded-xl border border-stone-300 dark:border-neutral-700 bg-white dark:bg-neutral-800/90 py-3.5 pl-11 pr-4 text-sm sm:text-base text-gray-900 dark:text-white placeholder-gray-400 dark:placeholder-neutral-400 shadow-xs outline-none transition focus:border-orange-500 focus:ring-2 focus:ring-orange-500/30 disabled:opacity-60 disabled:cursor-not-allowed"
                 />
               </div>
 
               <button
                 type="submit"
                 disabled={loading}
-                className="group relative inline-flex items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-orange-600 to-orange-700 px-7 py-3.5 text-sm sm:text-base font-semibold text-white shadow-lg shadow-orange-700/30 transition-all duration-200 hover:from-orange-500 hover:to-orange-600 hover:shadow-orange-600/40 hover:-translate-y-0.5 active:translate-y-0 disabled:opacity-60 disabled:cursor-not-allowed cursor-pointer shrink-0"
+                className="group relative inline-flex items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-orange-600 to-orange-700 px-7 py-3.5 text-sm sm:text-base font-semibold text-white shadow-lg shadow-orange-700/25 transition-all duration-200 hover:from-orange-500 hover:to-orange-600 hover:shadow-orange-600/35 hover:-translate-y-0.5 active:translate-y-0 disabled:opacity-60 disabled:cursor-not-allowed cursor-pointer shrink-0"
               >
                 {loading ? (
                   <>
@@ -158,19 +158,19 @@ export default function NewsLetter() {
               <div
                 className={`mt-4 flex flex-col sm:flex-row sm:items-center justify-between gap-3 rounded-2xl border p-4 text-sm transition-all animate-in fade-in duration-300 ${
                   status === "error"
-                    ? "border-red-500/30 bg-red-950/40 text-red-300"
+                    ? "border-red-200 bg-red-50 text-red-800 dark:border-red-500/30 dark:bg-red-950/40 dark:text-red-300"
                     : status === "info"
-                    ? "border-amber-500/30 bg-amber-950/40 text-amber-200"
-                    : "border-emerald-500/30 bg-emerald-950/40 text-emerald-200"
+                    ? "border-amber-200 bg-amber-50 text-amber-800 dark:border-amber-500/30 dark:bg-amber-950/40 dark:text-amber-200"
+                    : "border-emerald-200 bg-emerald-50 text-emerald-800 dark:border-emerald-500/30 dark:bg-emerald-950/40 dark:text-emerald-200"
                 }`}
               >
                 <div className="flex items-center gap-2.5">
                   {status === "error" ? (
-                    <ExclamationCircleIcon className="size-5 shrink-0 text-red-400" />
+                    <ExclamationCircleIcon className="size-5 shrink-0 text-red-500 dark:text-red-400" />
                   ) : status === "info" ? (
-                    <InformationCircleIcon className="size-5 shrink-0 text-amber-400" />
+                    <InformationCircleIcon className="size-5 shrink-0 text-amber-500 dark:text-amber-400" />
                   ) : (
-                    <CheckCircleIcon className="size-5 shrink-0 text-emerald-400" />
+                    <CheckCircleIcon className="size-5 shrink-0 text-emerald-600 dark:text-emerald-400" />
                   )}
                   <span className="font-medium">{message}</span>
                 </div>
@@ -189,8 +189,8 @@ export default function NewsLetter() {
               </div>
             )}
 
-            <p className="mt-3 flex items-center gap-1.5 text-xs text-neutral-400">
-              <ShieldCheckIcon className="size-4 text-neutral-400" />
+            <p className="mt-3 flex items-center gap-1.5 text-xs text-gray-500 dark:text-neutral-400">
+              <ShieldCheckIcon className="size-4 text-gray-400 dark:text-neutral-400" />
               <span>We value your privacy. Strictly zero spam. Unsubscribe anytime with 1 click.</span>
             </p>
           </form>
@@ -198,42 +198,42 @@ export default function NewsLetter() {
 
         {/* Right Column: 3 Value Props Micro-Cards */}
         <div className="lg:col-span-5 flex flex-col gap-4">
-          <div className="group rounded-2xl border border-neutral-800 bg-neutral-800/40 p-4 sm:p-5 backdrop-blur-sm transition-all duration-300 hover:border-neutral-700 hover:bg-neutral-800/70">
+          <div className="group rounded-2xl border border-stone-200/90 dark:border-neutral-800 bg-white/80 dark:bg-neutral-800/40 p-4 sm:p-5 backdrop-blur-xs transition-all duration-300 hover:border-orange-300 dark:hover:border-neutral-700 hover:bg-white dark:hover:bg-neutral-800/70 shadow-xs dark:shadow-none">
             <div className="flex items-start gap-4">
-              <div className="flex size-11 shrink-0 items-center justify-center rounded-xl bg-orange-500/10 text-orange-400 ring-1 ring-orange-500/20 group-hover:bg-orange-500 group-hover:text-white transition-colors duration-300">
+              <div className="flex size-11 shrink-0 items-center justify-center rounded-xl bg-orange-100 dark:bg-orange-500/10 text-orange-600 dark:text-orange-400 ring-1 ring-orange-200 dark:ring-orange-500/20 group-hover:bg-orange-500 group-hover:text-white transition-colors duration-300">
                 <TagIcon className="size-6" />
               </div>
               <div>
-                <h3 className="text-base font-semibold text-white">Instant 10% Welcome Voucher</h3>
-                <p className="mt-1 text-sm text-neutral-400 leading-relaxed">
+                <h3 className="text-base font-semibold text-gray-900 dark:text-white">Instant 10% Welcome Voucher</h3>
+                <p className="mt-1 text-sm text-gray-600 dark:text-neutral-400 leading-relaxed">
                   Receive a personal welcome code for your very first outerwear, workwear, or denim order.
                 </p>
               </div>
             </div>
           </div>
 
-          <div className="group rounded-2xl border border-neutral-800 bg-neutral-800/40 p-4 sm:p-5 backdrop-blur-sm transition-all duration-300 hover:border-neutral-700 hover:bg-neutral-800/70">
+          <div className="group rounded-2xl border border-stone-200/90 dark:border-neutral-800 bg-white/80 dark:bg-neutral-800/40 p-4 sm:p-5 backdrop-blur-xs transition-all duration-300 hover:border-amber-300 dark:hover:border-neutral-700 hover:bg-white dark:hover:bg-neutral-800/70 shadow-xs dark:shadow-none">
             <div className="flex items-start gap-4">
-              <div className="flex size-11 shrink-0 items-center justify-center rounded-xl bg-amber-500/10 text-amber-400 ring-1 ring-amber-500/20 group-hover:bg-amber-500 group-hover:text-white transition-colors duration-300">
+              <div className="flex size-11 shrink-0 items-center justify-center rounded-xl bg-amber-100 dark:bg-amber-500/10 text-amber-600 dark:text-amber-400 ring-1 ring-amber-200 dark:ring-amber-500/20 group-hover:bg-amber-500 group-hover:text-white transition-colors duration-300">
                 <BoltIcon className="size-6" />
               </div>
               <div>
-                <h3 className="text-base font-semibold text-white">VIP Early Drop Access</h3>
-                <p className="mt-1 text-sm text-neutral-400 leading-relaxed">
+                <h3 className="text-base font-semibold text-gray-900 dark:text-white">VIP Early Drop Access</h3>
+                <p className="mt-1 text-sm text-gray-600 dark:text-neutral-400 leading-relaxed">
                   Shop limited-run collections and seasonal drops 24 hours before they open to the public.
                 </p>
               </div>
             </div>
           </div>
 
-          <div className="group rounded-2xl border border-neutral-800 bg-neutral-800/40 p-4 sm:p-5 backdrop-blur-sm transition-all duration-300 hover:border-neutral-700 hover:bg-neutral-800/70">
+          <div className="group rounded-2xl border border-stone-200/90 dark:border-neutral-800 bg-white/80 dark:bg-neutral-800/40 p-4 sm:p-5 backdrop-blur-xs transition-all duration-300 hover:border-emerald-300 dark:hover:border-neutral-700 hover:bg-white dark:hover:bg-neutral-800/70 shadow-xs dark:shadow-none">
             <div className="flex items-start gap-4">
-              <div className="flex size-11 shrink-0 items-center justify-center rounded-xl bg-emerald-500/10 text-emerald-400 ring-1 ring-emerald-500/20 group-hover:bg-emerald-500 group-hover:text-white transition-colors duration-300">
+              <div className="flex size-11 shrink-0 items-center justify-center rounded-xl bg-emerald-100 dark:bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 ring-1 ring-emerald-200 dark:ring-emerald-500/20 group-hover:bg-emerald-500 group-hover:text-white transition-colors duration-300">
                 <ShieldCheckIcon className="size-6" />
               </div>
               <div>
-                <h3 className="text-base font-semibold text-white">Sustainable Craft Stories</h3>
-                <p className="mt-1 text-sm text-neutral-400 leading-relaxed">
+                <h3 className="text-base font-semibold text-gray-900 dark:text-white">Sustainable Craft Stories</h3>
+                <p className="mt-1 text-sm text-gray-600 dark:text-neutral-400 leading-relaxed">
                   Go behind the scenes into our certified Bangladeshi factories, ethical cotton sourcing, and artisan stitchers.
                 </p>
               </div>

@@ -111,16 +111,22 @@ const Footer = () => {
   const { categories } = useAppSelector((state) => state.products);
   const { settings, loading: settingsLoading, initialized: settingsInitialized } =
     useAppSelector((state) => state.storeSettings);
-  const [logoError, setLogoError] = useState(false);
+  const [logoLightError, setLogoLightError] = useState(false);
+  const [logoDarkError, setLogoDarkError] = useState(false);
 
   useEffect(() => {
-    setLogoError(false);
-  }, [settings?.logoDarkUrl, settings?.logoUrl]);
+    setLogoLightError(false);
+    setLogoDarkError(false);
+  }, [settings?.logoLightUrl, settings?.logoDarkUrl, settings?.logoUrl]);
 
+  const customLogoLightUrl = normalizeGoogleDriveImageUrl(
+    settings?.logoLightUrl || settings?.logoUrl
+  );
   const customLogoDarkUrl = normalizeGoogleDriveImageUrl(
     settings?.logoDarkUrl || settings?.logoUrl
   );
-  const hasCustomLogoDark = Boolean(customLogoDarkUrl && !logoError);
+  const hasCustomLogoLight = Boolean(customLogoLightUrl && !logoLightError);
+  const hasCustomLogoDark = Boolean(customLogoDarkUrl && !logoDarkError);
 
   const dynamicShopLinks = useMemo(() => {
     const links = [{ name: "All Products", href: "/products" }];
@@ -141,15 +147,15 @@ const Footer = () => {
   }, [categories]);
 
   return (
-    <footer className="relative bg-[#0c0e12] text-neutral-300 border-t border-neutral-800/80 overflow-hidden">
+    <footer className="relative bg-stone-100/70 dark:bg-[#0c0e12] text-gray-600 dark:text-neutral-300 border-t border-stone-200/80 dark:border-neutral-800/80 overflow-hidden transition-colors duration-200">
       {/* Decorative ambient background glows */}
       <div
         aria-hidden="true"
-        className="pointer-events-none absolute -top-40 left-1/2 -translate-x-1/2 h-[500px] w-[900px] rounded-full bg-orange-600/5 blur-[120px]"
+        className="pointer-events-none absolute -top-40 left-1/2 -translate-x-1/2 h-[500px] w-[900px] rounded-full bg-orange-500/5 dark:bg-orange-600/5 blur-[120px]"
       />
       <div
         aria-hidden="true"
-        className="pointer-events-none absolute bottom-0 right-0 h-[400px] w-[500px] rounded-full bg-amber-600/5 blur-[100px]"
+        className="pointer-events-none absolute bottom-0 right-0 h-[400px] w-[500px] rounded-full bg-amber-500/5 dark:bg-amber-600/5 blur-[100px]"
       />
 
       {/* Top Pre-Footer Newsletter Area */}
@@ -158,19 +164,19 @@ const Footer = () => {
       </div>
 
       {/* Trust Pillars Feature Strip */}
-      <div className="relative border-y border-neutral-800/80 bg-neutral-900/40 backdrop-blur-xs">
+      <div className="hidden sm:block relative border-y border-stone-200/80 dark:border-neutral-800/80 bg-white/70 dark:bg-neutral-900/40 backdrop-blur-xs">
         <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 py-10">
           <div className="grid grid-cols-1 gap-8 sm:grid-cols-2 lg:grid-cols-4">
             {TRUST_PILLARS.map((pillar) => {
               const Icon = pillar.icon;
               return (
                 <div key={pillar.title} className="flex items-start gap-4">
-                  <div className="flex size-12 shrink-0 items-center justify-center rounded-xl bg-orange-500/10 text-orange-400 ring-1 ring-orange-500/20">
+                  <div className="flex size-12 shrink-0 items-center justify-center rounded-xl bg-orange-100 dark:bg-orange-500/10 text-orange-600 dark:text-orange-400 ring-1 ring-orange-200 dark:ring-orange-500/20">
                     <Icon className="size-6" />
                   </div>
                   <div>
-                    <h4 className="text-sm font-semibold text-white">{pillar.title}</h4>
-                    <p className="mt-1 text-xs text-neutral-400 leading-relaxed">
+                    <h4 className="text-sm font-semibold text-gray-900 dark:text-white">{pillar.title}</h4>
+                    <p className="mt-1 text-xs text-gray-500 dark:text-neutral-400 leading-relaxed">
                       {pillar.description}
                     </p>
                   </div>
@@ -190,65 +196,102 @@ const Footer = () => {
               <Link to="/" className="inline-block group">
                 {settingsLoading || !settingsInitialized ? (
                   <NavbarLogoSkeleton className="h-12 sm:h-14" />
-                ) : hasCustomLogoDark ? (
-                  <img
-                    src={customLogoDarkUrl!}
-                    alt={
-                      settings?.storeName
-                        ? `${settings.storeName} - Export Quality Clothes`
-                        : "SilkenDrift - Export Quality Clothes"
-                    }
-                    className="h-12 sm:h-14 max-h-16 w-auto max-w-[280px] object-contain rounded-md shadow-xs transition-opacity group-hover:opacity-90"
-                    referrerPolicy="no-referrer"
-                    onError={(e) => {
-                      const target = e.currentTarget;
-                      const fileId = extractGoogleDriveFileId(settings?.logoDarkUrl || settings?.logoUrl);
-                      if (fileId && !target.dataset.triedFallback) {
-                        target.dataset.triedFallback = "true";
-                        target.src = `https://lh3.googleusercontent.com/d/${fileId}`;
-                      } else {
-                        setLogoError(true);
-                      }
-                    }}
-                  />
                 ) : (
-                  <BrandLogo variant="dark" className="h-12 sm:h-14 w-auto" />
+                  <>
+                    {hasCustomLogoLight ? (
+                      <img
+                        src={customLogoLightUrl!}
+                        alt={
+                          settings?.storeName
+                            ? `${settings.storeName} - Export Quality Clothes`
+                            : "SilkenDrift - Export Quality Clothes"
+                        }
+                        className="h-12 sm:h-14 max-h-16 w-auto max-w-[280px] object-contain rounded-md transition-opacity group-hover:opacity-90 dark:hidden"
+                        referrerPolicy="no-referrer"
+                        onError={(e) => {
+                          const target = e.currentTarget;
+                          const fileId = extractGoogleDriveFileId(
+                            settings?.logoLightUrl || settings?.logoUrl
+                          );
+                          if (fileId && !target.dataset.triedFallback) {
+                            target.dataset.triedFallback = "true";
+                            target.src = `https://lh3.googleusercontent.com/d/${fileId}`;
+                          } else {
+                            setLogoLightError(true);
+                          }
+                        }}
+                      />
+                    ) : (
+                      <div className="dark:hidden">
+                        <BrandLogo variant="light" className="h-12 sm:h-14 w-auto" />
+                      </div>
+                    )}
+
+                    {hasCustomLogoDark ? (
+                      <img
+                        src={customLogoDarkUrl!}
+                        alt={
+                          settings?.storeName
+                            ? `${settings.storeName} - Export Quality Clothes`
+                            : "SilkenDrift - Export Quality Clothes"
+                        }
+                        className="h-12 sm:h-14 max-h-16 w-auto max-w-[280px] object-contain rounded-md transition-opacity group-hover:opacity-90 hidden dark:block"
+                        referrerPolicy="no-referrer"
+                        onError={(e) => {
+                          const target = e.currentTarget;
+                          const fileId = extractGoogleDriveFileId(
+                            settings?.logoDarkUrl || settings?.logoUrl
+                          );
+                          if (fileId && !target.dataset.triedFallback) {
+                            target.dataset.triedFallback = "true";
+                            target.src = `https://lh3.googleusercontent.com/d/${fileId}`;
+                          } else {
+                            setLogoDarkError(true);
+                          }
+                        }}
+                      />
+                    ) : (
+                      <div className="hidden dark:block">
+                        <BrandLogo variant="dark" className="h-12 sm:h-14 w-auto" />
+                      </div>
+                    )}
+                  </>
                 )}
               </Link>
-              <p className="mt-4 text-sm text-neutral-400 leading-relaxed max-w-sm">
+              <p className="mt-4 text-sm text-gray-600 dark:text-neutral-400 leading-relaxed max-w-sm">
                 {settings?.tagline ||
                   "Export Quality Clothes. Crafted with Pride in Bangladesh. Empowering modern wardrobes with certified sustainable cotton, precision tailoring, and timeless silhouettes."}
               </p>
 
               {/* Contact Snippets */}
-              <div className="mt-6 space-y-3 text-xs text-neutral-400">
+              <div className="mt-6 space-y-3 text-xs text-gray-600 dark:text-neutral-400">
                 <div className="flex items-start gap-2.5">
-                  <MapPinIcon className="size-4 shrink-0 text-orange-500 mt-0.5" />
+                  <MapPinIcon className="size-4 shrink-0 text-orange-600 dark:text-orange-500 mt-0.5" />
                   <span>
                     {settings?.headquartersAddress ||
                       "House 42, Road 11, Block D, Banani, Dhaka-1213, Bangladesh"}
                   </span>
                 </div>
                 <div className="flex items-center gap-2.5">
-                  <EnvelopeIcon className="size-4 shrink-0 text-orange-500" />
+                  <EnvelopeIcon className="size-4 shrink-0 text-orange-600 dark:text-orange-500" />
                   <a
                     href={`mailto:${settings?.contactEmail || "support@silkendrift.com"}`}
-                    className="hover:text-orange-400 transition-colors"
+                    className="hover:text-orange-600 dark:hover:text-orange-400 transition-colors"
                   >
                     {settings?.contactEmail || "support@silkendrift.com"}
                   </a>
                 </div>
                 <div className="flex items-center gap-2.5">
-                  <PhoneIcon className="size-4 shrink-0 text-orange-500" />
+                  <PhoneIcon className="size-4 shrink-0 text-orange-600 dark:text-orange-500" />
                   <a
                     href={`tel:${settings?.contactPhone || "+8801700000000"}`}
-                    className="hover:text-orange-400 transition-colors"
+                    className="hover:text-orange-600 dark:hover:text-orange-400 transition-colors"
                   >
                     {settings?.contactPhone || "+880 1700-000000 / +880 2-9876543"}
                   </a>
                 </div>
                 <div className="flex items-center gap-2.5">
-                  <ClockIcon className="size-4 shrink-0 text-orange-500" />
+                  <ClockIcon className="size-4 shrink-0 text-orange-600 dark:text-orange-500" />
                   <span>
                     {settings?.supportHours || "Mon – Sat: 9:00 AM – 8:00 PM BST"}
                   </span>
@@ -258,7 +301,7 @@ const Footer = () => {
 
             {/* Social Icons */}
             <div className="mt-8">
-              <p className="text-xs font-semibold uppercase tracking-wider text-neutral-400 mb-3">
+              <p className="text-xs font-semibold uppercase tracking-wider text-gray-500 dark:text-neutral-400 mb-3">
                 Follow Our Journey
               </p>
               <div className="flex items-center gap-2.5">
@@ -272,7 +315,7 @@ const Footer = () => {
                       rel="noopener noreferrer"
                       title={social.name}
                       aria-label={social.name}
-                      className={`flex size-9 items-center justify-center rounded-xl border border-neutral-800 bg-neutral-900 text-neutral-400 transition-all duration-300 hover:-translate-y-1 hover:shadow-md ${social.hoverColor}`}
+                      className={`flex size-9 items-center justify-center rounded-xl border border-stone-200 dark:border-neutral-800 bg-white dark:bg-neutral-900 text-gray-600 dark:text-neutral-400 transition-all duration-300 hover:-translate-y-1 hover:shadow-md hover:border-orange-300 dark:hover:border-neutral-700 ${social.hoverColor}`}
                     >
                       <Icon className="size-4" />
                     </a>
@@ -286,7 +329,7 @@ const Footer = () => {
           <div className="lg:col-span-8 grid grid-cols-2 gap-8 sm:grid-cols-3 md:grid-cols-3">
             {/* Column 1: Shop Collections */}
             <div>
-              <h3 className="text-sm font-semibold uppercase tracking-wider text-white">
+              <h3 className="text-sm font-semibold uppercase tracking-wider text-gray-900 dark:text-white">
                 Collections
               </h3>
               <ul className="mt-4 space-y-3">
@@ -294,7 +337,7 @@ const Footer = () => {
                   <li key={link.name}>
                     <Link
                       to={link.href}
-                      className="text-sm text-neutral-400 hover:text-orange-400 transition-colors duration-200 inline-block py-0.5 hover:translate-x-1 transition-transform"
+                      className="text-sm text-gray-600 hover:text-orange-600 dark:text-neutral-400 dark:hover:text-orange-400 transition-colors duration-200 inline-block py-0.5 hover:translate-x-1 transition-transform"
                     >
                       {link.name}
                     </Link>
@@ -305,7 +348,7 @@ const Footer = () => {
 
             {/* Column 2: Our Company */}
             <div>
-              <h3 className="text-sm font-semibold uppercase tracking-wider text-white">
+              <h3 className="text-sm font-semibold uppercase tracking-wider text-gray-900 dark:text-white">
                 Company
               </h3>
               <ul className="mt-4 space-y-3">
@@ -313,7 +356,7 @@ const Footer = () => {
                   <li key={link.name}>
                     <Link
                       to={link.href}
-                      className="text-sm text-neutral-400 hover:text-orange-400 transition-colors duration-200 inline-block py-0.5 hover:translate-x-1 transition-transform"
+                      className="text-sm text-gray-600 hover:text-orange-600 dark:text-neutral-400 dark:hover:text-orange-400 transition-colors duration-200 inline-block py-0.5 hover:translate-x-1 transition-transform"
                     >
                       {link.name}
                     </Link>
@@ -324,7 +367,7 @@ const Footer = () => {
 
             {/* Column 3: Customer Care */}
             <div>
-              <h3 className="text-sm font-semibold uppercase tracking-wider text-white">
+              <h3 className="text-sm font-semibold uppercase tracking-wider text-gray-900 dark:text-white">
                 Customer Care
               </h3>
               <ul className="mt-4 space-y-3">
@@ -332,7 +375,7 @@ const Footer = () => {
                   <li key={link.name}>
                     <Link
                       to={link.href}
-                      className="text-sm text-neutral-400 hover:text-orange-400 transition-colors duration-200 inline-block py-0.5 hover:translate-x-1 transition-transform"
+                      className="text-sm text-gray-600 hover:text-orange-600 dark:text-neutral-400 dark:hover:text-orange-400 transition-colors duration-200 inline-block py-0.5 hover:translate-x-1 transition-transform"
                     >
                       {link.name}
                     </Link>
@@ -341,12 +384,12 @@ const Footer = () => {
               </ul>
 
               {/* Export Certification Badge Card */}
-              <div className="mt-6 rounded-xl border border-neutral-800 bg-neutral-900/60 p-3.5 backdrop-blur-xs">
-                <div className="flex items-center gap-2 text-xs font-semibold text-emerald-400">
-                  <CheckBadgeIcon className="size-4 shrink-0" />
+              <div className="mt-6 rounded-xl border border-stone-200 dark:border-neutral-800 bg-white/80 dark:bg-neutral-900/60 p-3.5 backdrop-blur-xs shadow-xs dark:shadow-none">
+                <div className="flex items-center gap-2 text-xs font-semibold text-emerald-700 dark:text-emerald-400">
+                  <CheckBadgeIcon className="size-4 shrink-0 text-emerald-600 dark:text-emerald-400" />
                   <span>Verified RMG Exporter</span>
                 </div>
-                <p className="mt-1 text-[11px] text-neutral-400 leading-normal">
+                <p className="mt-1 text-[11px] text-gray-500 dark:text-neutral-400 leading-normal">
                   Certified ethical labor & 100% compliant sustainable textile mills.
                 </p>
               </div>
@@ -355,53 +398,53 @@ const Footer = () => {
         </div>
 
         {/* Payment Methods Banner */}
-        <div className="mt-14 pt-8 border-t border-neutral-800/80 flex flex-col md:flex-row items-center justify-between gap-6">
-          <div className="flex flex-wrap items-center justify-center md:justify-start gap-3 text-xs text-neutral-400">
-            <span className="font-semibold text-neutral-300">Accepted Payments:</span>
-            <div className="inline-flex items-center gap-1.5 rounded-lg border border-neutral-800 bg-neutral-900 px-2.5 py-1 text-xs font-medium text-emerald-400">
-              <span className="size-1.5 rounded-full bg-emerald-400" />
+        <div className="mt-8 sm:mt-14 pt-6 sm:pt-8 border-t border-stone-200/80 dark:border-neutral-800/80 flex flex-col md:flex-row items-center justify-between gap-4 sm:gap-6">
+          <div className="hidden sm:flex flex-wrap items-center justify-center md:justify-start gap-3 text-xs text-gray-500 dark:text-neutral-400">
+            <span className="font-semibold text-gray-900 dark:text-neutral-300">Accepted Payments:</span>
+            <div className="inline-flex items-center gap-1.5 rounded-lg border border-emerald-200 dark:border-neutral-800 bg-emerald-50 dark:bg-neutral-900 px-2.5 py-1 text-xs font-medium text-emerald-700 dark:text-emerald-400">
+              <span className="size-1.5 rounded-full bg-emerald-500 dark:bg-emerald-400" />
               Cash on Delivery (COD)
             </div>
-            <div className="inline-flex items-center gap-1.5 rounded-lg border border-pink-900/40 bg-pink-950/30 px-2.5 py-1 text-xs font-bold text-pink-400">
+            <div className="inline-flex items-center gap-1.5 rounded-lg border border-pink-200 dark:border-pink-900/40 bg-pink-50 dark:bg-pink-950/30 px-2.5 py-1 text-xs font-bold text-pink-700 dark:text-pink-400">
               bKash
             </div>
-            <div className="inline-flex items-center gap-1.5 rounded-lg border border-orange-900/40 bg-orange-950/30 px-2.5 py-1 text-xs font-bold text-orange-400">
+            <div className="inline-flex items-center gap-1.5 rounded-lg border border-orange-200 dark:border-orange-900/40 bg-orange-50 dark:bg-orange-950/30 px-2.5 py-1 text-xs font-bold text-orange-700 dark:text-orange-400">
               Nagad
             </div>
-            <div className="inline-flex items-center gap-1.5 rounded-lg border border-blue-900/40 bg-blue-950/30 px-2.5 py-1 text-xs font-bold text-blue-400">
+            <div className="inline-flex items-center gap-1.5 rounded-lg border border-blue-200 dark:border-blue-900/40 bg-blue-50 dark:bg-blue-950/30 px-2.5 py-1 text-xs font-bold text-blue-700 dark:text-blue-400">
               VISA
             </div>
-            <div className="inline-flex items-center gap-1.5 rounded-lg border border-amber-900/40 bg-amber-950/30 px-2.5 py-1 text-xs font-bold text-amber-400">
+            <div className="inline-flex items-center gap-1.5 rounded-lg border border-amber-200 dark:border-amber-900/40 bg-amber-50 dark:bg-amber-950/30 px-2.5 py-1 text-xs font-bold text-amber-700 dark:text-amber-400">
               Mastercard
             </div>
-            <div className="inline-flex items-center gap-1.5 rounded-lg border border-neutral-800 bg-neutral-900 px-2.5 py-1 text-xs font-medium text-neutral-400">
+            <div className="inline-flex items-center gap-1.5 rounded-lg border border-stone-200 dark:border-neutral-800 bg-white dark:bg-neutral-900 px-2.5 py-1 text-xs font-medium text-gray-600 dark:text-neutral-400 shadow-2xs dark:shadow-none">
               🔒 256-Bit SSL Secured
             </div>
           </div>
 
-          <div className="flex flex-wrap items-center justify-center sm:justify-start gap-4 sm:gap-6 text-xs text-neutral-400">
-            <Link to="/privacy-policy" className="hover:text-orange-400 transition-colors">
+          <div className="flex flex-wrap items-center justify-center sm:justify-start gap-4 sm:gap-6 text-xs text-gray-500 dark:text-neutral-400">
+            <Link to="/privacy-policy" className="hover:text-orange-600 dark:hover:text-orange-400 transition-colors">
               Privacy Policy
             </Link>
-            <span className="text-neutral-700">•</span>
-            <Link to="/terms-of-service" className="hover:text-orange-400 transition-colors">
+            <span className="text-stone-300 dark:text-neutral-700">•</span>
+            <Link to="/terms-of-service" className="hover:text-orange-600 dark:hover:text-orange-400 transition-colors">
               Terms of Service
             </Link>
-            <span className="text-neutral-700">•</span>
-            <Link to="/security" className="hover:text-orange-400 transition-colors">
+            <span className="text-stone-300 dark:text-neutral-700">•</span>
+            <Link to="/security" className="hover:text-orange-600 dark:hover:text-orange-400 transition-colors">
               Security &amp; Compliance
             </Link>
           </div>
         </div>
 
         {/* Bottom Copyright */}
-        <div className="mt-8 pt-6 border-t border-neutral-800/40 flex flex-col sm:flex-row items-center justify-between gap-4 text-xs text-neutral-400 text-center sm:text-left">
+        <div className="mt-8 pt-6 border-t border-stone-200/80 dark:border-neutral-800/40 flex flex-col sm:flex-row items-center justify-between gap-4 text-xs text-gray-500 dark:text-neutral-400 text-center sm:text-left">
           <p>
-            &copy; {new Date().getFullYear()} <strong className="text-white">SilkenDrift International Ltd.</strong> All rights reserved.
+            &copy; {new Date().getFullYear()} <strong className="text-gray-900 dark:text-white">SilkenDrift International Ltd.</strong> All rights reserved.
           </p>
           <p className="flex items-center justify-center gap-1.5">
             <span>Crafted with pride in</span>
-            <span className="font-semibold text-emerald-400">Bangladesh 🇧🇩</span>
+            <span className="font-semibold text-emerald-600 dark:text-emerald-400">Bangladesh 🇧🇩</span>
             <span>for global wardrobes.</span>
           </p>
         </div>
