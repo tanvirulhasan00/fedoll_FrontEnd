@@ -10,8 +10,8 @@ import SpotlightSection from "~/components/main/Home/SpotlightSection";
 import TestimonialsSection from "~/components/main/Home/TestimonialsSection";
 import JournalPreviewSection from "~/components/main/Home/JournalPreviewSection";
 import CommunityGallery from "~/components/main/Home/CommunityGallery";
-import { useAppDispatch, useAppSelector } from "~/redux/hooks/hook";
-import { fetchHomeData, seedHomeData } from "~/redux/features/homeSlice";
+import { useAppDispatch } from "~/redux/hooks/hook";
+import { fetchHomeData } from "~/redux/features/homeSlice";
 import { fetchBlogs } from "~/redux/features/blogSlice";
 import {
   fetchProducts,
@@ -19,12 +19,9 @@ import {
   setProductCategories,
 } from "~/redux/features/productSlice";
 import { subscribeToCategoriesFromFirestore } from "~/firebase";
-import { ArrowPathIcon, SparklesIcon } from "@heroicons/react/24/outline";
-import { toast } from "sonner";
 
 const Home = () => {
   const dispatch = useAppDispatch();
-  const { syncing, loading } = useAppSelector((state) => state.home);
 
   useEffect(() => {
     // Fetch all dynamic data from Firebase Firestore
@@ -42,21 +39,6 @@ const Home = () => {
       unsubscribeCategories();
     };
   }, [dispatch]);
-
-  const handleSyncFirebase = async () => {
-    try {
-      await Promise.all([
-        dispatch(fetchHomeData()).unwrap(),
-        dispatch(fetchBlogs()).unwrap(),
-        dispatch(fetchProducts()).unwrap(),
-        dispatch(fetchProductCategories()).unwrap(),
-      ]);
-      toast.success("Home page data synchronized with Cloud Firestore!");
-    } catch (err: unknown) {
-      const error = err as Error;
-      toast.error(error.message || "Failed to sync with Firebase");
-    }
-  };
 
   return (
     <div className="min-h-screen bg-white dark:bg-neutral-950 text-gray-900 dark:text-neutral-100 flex flex-col font-sans selection:bg-orange-500 selection:text-white transition-colors duration-200">
@@ -89,27 +71,6 @@ const Home = () => {
 
         {/* Community #SilkenDriftStyle UGC Gallery */}
         <CommunityGallery />
-
-        {/* Live Firebase Sync Floating Indicator / Utility Pill */}
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 flex items-center justify-between border-t border-stone-200/60 text-xs text-gray-500">
-          <div className="flex items-center gap-2">
-            <span className="size-2 rounded-full bg-emerald-500 animate-pulse" />
-            <span>Connected to Cloud Firestore (Real-Time Database)</span>
-          </div>
-
-          <button
-            type="button"
-            onClick={handleSyncFirebase}
-            disabled={syncing || loading}
-            className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-gray-200 bg-stone-50 hover:bg-stone-100 hover:text-orange-700 transition cursor-pointer disabled:opacity-50"
-            title="Refresh or re-sync all home datasets with Firebase"
-          >
-            <ArrowPathIcon
-              className={`size-3.5 ${syncing ? "animate-spin text-orange-600" : ""}`}
-            />
-            <span>{syncing ? "Syncing..." : "Sync Home Data to Firebase"}</span>
-          </button>
-        </div>
       </main>
 
       {/* Footer */}

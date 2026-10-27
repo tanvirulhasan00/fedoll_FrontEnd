@@ -65,7 +65,7 @@ export const ProfileSettings: React.FC = () => {
       toast.success("Profile and default delivery details updated successfully!");
     } catch (err: unknown) {
       const error = err as Error;
-      toast.error(error.message || "Failed to update profile in Firestore.");
+      toast.error(error.message || "Failed to update profile.");
     } finally {
       setIsSaving(false);
     }

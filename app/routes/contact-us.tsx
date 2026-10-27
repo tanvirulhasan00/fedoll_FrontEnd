@@ -8,7 +8,6 @@ import { useAppDispatch, useAppSelector } from "~/redux/hooks/hook";
 import {
   fetchContactPageData,
   submitContactMessage,
-  seedContactData,
   resetContactFormState,
 } from "~/redux/features/contactSlice";
 import {
@@ -19,7 +18,6 @@ import {
   ClockIcon,
   MapPinIcon,
   CheckCircleIcon,
-  ArrowPathIcon,
   SparklesIcon,
   InformationCircleIcon,
   ArrowTopRightOnSquareIcon,
@@ -72,7 +70,6 @@ export default function ContactUsPage() {
     submitSuccess,
     submitError,
     lastSubmittedId,
-    syncing,
   } = useAppSelector((state) => state.contact);
 
   const [formData, setFormData] = useState({
@@ -91,16 +88,6 @@ export default function ContactUsPage() {
   useEffect(() => {
     dispatch(fetchContactPageData());
   }, [dispatch]);
-
-  const handleSyncFirebase = async () => {
-    try {
-      await dispatch(seedContactData(true)).unwrap();
-      toast.success("Contact page data synchronized with Cloud Firestore!");
-    } catch (err: unknown) {
-      const error = err as Error;
-      toast.error(error.message || "Failed to sync with Firebase");
-    }
-  };
 
   const handleInputChange = (
     e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>
@@ -248,26 +235,6 @@ export default function ContactUsPage() {
                     "Have questions about our garments, sizing, your existing order, or visiting our Dhaka studio? Our friendly support team is always ready to help."}
                 </p>
               </div>
-
-              {/* Live Cloud Firestore Connection Badge & Sync Button */}
-              <div className="flex flex-col items-start md:items-end gap-2 shrink-0">
-                <div className="inline-flex items-center gap-2 text-xs font-medium text-emerald-800 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-950/40 border border-emerald-200 dark:border-emerald-800/60 px-3 py-1.5 rounded-full shadow-xs">
-                  <span className="size-2 rounded-full bg-emerald-500 animate-pulse" />
-                  <span>Real-Time Cloud Firestore</span>
-                </div>
-                <button
-                  type="button"
-                  onClick={handleSyncFirebase}
-                  disabled={syncing || loadingPage}
-                  className="inline-flex items-center gap-1.5 text-xs font-medium text-gray-700 dark:text-neutral-300 bg-white dark:bg-neutral-800 border border-gray-300 dark:border-neutral-700 hover:border-orange-500 hover:text-orange-600 dark:hover:text-orange-400 px-3 py-1.5 rounded-lg shadow-2xs transition disabled:opacity-50 cursor-pointer"
-                  title="Resync contact settings directly with Firebase Firestore"
-                >
-                  <ArrowPathIcon
-                    className={`size-3.5 ${syncing ? "animate-spin text-orange-600 dark:text-orange-400" : ""}`}
-                  />
-                  <span>{syncing ? "Syncing..." : "Sync with Firebase"}</span>
-                </button>
-              </div>
             </div>
           </div>
         </section>
@@ -340,7 +307,7 @@ export default function ContactUsPage() {
                         Inquiry Received, {submittedName}!
                       </h2>
                       <p className="text-sm text-gray-600 dark:text-neutral-300 max-w-md mx-auto leading-relaxed">
-                        Your message has been securely recorded into our Cloud Firestore database.
+                        Your message has been securely recorded.
                         Our Dhaka support team will review your inquiry and respond within 2 to 4
                         hours.
                       </p>
@@ -382,8 +349,7 @@ export default function ContactUsPage() {
                         </span>
                       </div>
                       <p className="mt-2 text-sm text-gray-500 dark:text-neutral-400">
-                        Fill in the details below. Messages are saved directly to Cloud Firestore and
-                        notified to our Dhaka operations team.
+                        Fill in the details below. Messages are sent directly to our Dhaka operations team.
                       </p>
                     </div>
 
@@ -593,7 +559,7 @@ export default function ContactUsPage() {
                       {submitting ? (
                         <>
                           <Spinner className="size-4 text-white" />
-                          <span>Sending Message to Cloud Firestore...</span>
+                          <span>Sending Message...</span>
                         </>
                       ) : (
                         <>

@@ -5,14 +5,13 @@ import Topbar from "~/components/main/Home/Topbar";
 import Header from "~/components/main/Home/Header";
 import Footer from "~/components/main/Home/Footer";
 import { useAppDispatch, useAppSelector } from "~/redux/hooks/hook";
-import { fetchAboutData, seedAboutData } from "~/redux/features/aboutSlice";
+import { fetchAboutData } from "~/redux/features/aboutSlice";
 import {
   SparklesIcon,
   GlobeAmericasIcon,
   CubeTransparentIcon,
   HeartIcon,
   CheckBadgeIcon,
-  ArrowPathIcon,
   EnvelopeIcon,
   PhoneIcon,
   MapPinIcon,
@@ -20,7 +19,6 @@ import {
   ArrowRightIcon,
   BuildingLibraryIcon,
 } from "@heroicons/react/24/outline";
-import { toast } from "sonner";
 import { AboutPageSkeleton } from "~/components/main/Skeletons";
 
 export function meta({}: Route.MetaArgs) {
@@ -36,21 +34,11 @@ export function meta({}: Route.MetaArgs) {
 
 export default function AboutUsPage() {
   const dispatch = useAppDispatch();
-  const { data, loading, syncing } = useAppSelector((state) => state.about);
+  const { data, loading } = useAppSelector((state) => state.about);
 
   useEffect(() => {
     dispatch(fetchAboutData());
   }, [dispatch]);
-
-  const handleSyncFirebase = async () => {
-    try {
-      await dispatch(seedAboutData(true)).unwrap();
-      toast.success("About Us data re-synchronized with Firebase Firestore!");
-    } catch (err: unknown) {
-      const error = err as Error;
-      toast.error(error.message || "Failed to sync with Firebase");
-    }
-  };
 
   const getPillarIcon = (iconName: string) => {
     switch (iconName) {
@@ -96,26 +84,6 @@ export default function AboutUsPage() {
                 <p className="mt-6 text-base sm:text-lg text-gray-600 dark:text-neutral-300 leading-relaxed max-w-2xl">
                   {data?.subtitle}
                 </p>
-              </div>
-
-              {/* Live Firebase Cloud Firestore Status */}
-              <div className="flex flex-col items-start md:items-end gap-2 shrink-0">
-                <div className="inline-flex items-center gap-2 text-xs font-medium text-emerald-800 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-950/40 border border-emerald-200 dark:border-emerald-800/60 px-3 py-1.5 rounded-full shadow-xs">
-                  <span className="size-2 rounded-full bg-emerald-500 animate-pulse" />
-                  Dynamic Cloud Firestore Content
-                </div>
-                <button
-                  type="button"
-                  onClick={handleSyncFirebase}
-                  disabled={syncing || loading}
-                  className="inline-flex items-center gap-1.5 text-xs font-medium text-gray-700 dark:text-neutral-300 bg-white dark:bg-neutral-800 border border-gray-300 dark:border-neutral-700 hover:border-orange-500 hover:text-orange-600 dark:hover:text-orange-400 px-3 py-1.5 rounded-lg shadow-2xs transition disabled:opacity-50 cursor-pointer"
-                  title="Resync data directly with Firebase"
-                >
-                  <ArrowPathIcon
-                    className={`size-3.5 ${syncing ? "animate-spin text-orange-600 dark:text-orange-400" : ""}`}
-                  />
-                  {syncing ? "Syncing..." : "Sync with Firebase"}
-                </button>
               </div>
             </div>
 

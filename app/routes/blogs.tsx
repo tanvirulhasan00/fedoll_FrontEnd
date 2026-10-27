@@ -9,13 +9,11 @@ import {
   fetchBlogs,
   setSelectedCategory,
   setSearchQuery,
-  seedBlogs,
   toggleLikeBlog,
 } from "~/redux/features/blogSlice";
 import {
   MagnifyingGlassIcon,
   XMarkIcon,
-  ArrowPathIcon,
   ClockIcon,
   HeartIcon,
   EyeIcon,
@@ -50,7 +48,7 @@ const DEFAULT_PRESET_CATEGORIES = [
 
 export default function BlogsPage() {
   const dispatch = useAppDispatch();
-  const { blogs, loading, selectedCategory, searchQuery, seeding } =
+  const { blogs, loading, selectedCategory, searchQuery } =
     useAppSelector((state) => state.blogs);
 
   const displayCategories = useMemo(() => {
@@ -64,17 +62,6 @@ export default function BlogsPage() {
   useEffect(() => {
     dispatch(fetchBlogs());
   }, [dispatch]);
-
-  const handleSyncFirebase = async () => {
-    try {
-      await dispatch(seedBlogs(true)).unwrap();
-      await dispatch(fetchBlogs()).unwrap();
-      toast.success("Synchronized successfully with Firebase Firestore!");
-    } catch (err: unknown) {
-      const error = err as Error;
-      toast.error(error.message || "Failed to sync with Firebase");
-    }
-  };
 
   const handleLike = (e: React.MouseEvent, id: string) => {
     e.preventDefault();
@@ -137,26 +124,6 @@ export default function BlogsPage() {
                   Simple, practical styling tips, weather-friendly clothing care guides,
                   and smart wardrobe essentials made for life in Bangladesh.
                 </p>
-              </div>
-
-              {/* Firebase Status & Re-sync */}
-              <div className="flex flex-col items-start md:items-end gap-2">
-                <div className="inline-flex items-center gap-2 text-xs font-medium text-emerald-800 dark:text-emerald-300 bg-emerald-50 dark:bg-emerald-950/50 border border-emerald-200 dark:border-emerald-800 px-3 py-1.5 rounded-full shadow-xs">
-                  <span className="size-2 rounded-full bg-emerald-500 animate-pulse" />
-                  Live Cloud Firestore Database
-                </div>
-                <button
-                  type="button"
-                  onClick={handleSyncFirebase}
-                  disabled={seeding || loading}
-                  className="inline-flex items-center gap-1.5 text-xs font-medium text-gray-700 dark:text-neutral-300 bg-white dark:bg-neutral-900 border border-gray-300 dark:border-neutral-700 hover:border-orange-500 dark:hover:border-orange-500 hover:text-orange-700 dark:hover:text-orange-400 px-3 py-1.5 rounded-lg shadow-2xs transition disabled:opacity-50 cursor-pointer"
-                  title="Reseed or refresh data directly with Firebase"
-                >
-                  <ArrowPathIcon
-                    className={`size-3.5 ${seeding ? "animate-spin text-orange-600" : ""}`}
-                  />
-                  {seeding ? "Syncing..." : "Sync with Firebase"}
-                </button>
               </div>
             </div>
 

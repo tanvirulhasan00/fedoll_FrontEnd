@@ -17,7 +17,6 @@ import {
   TrashIcon,
   ArrowRightIcon,
   SparklesIcon,
-  CheckCircleIcon,
   FunnelIcon,
 } from "@heroicons/react/24/outline";
 import { HeartIcon as HeartSolidIcon, StarIcon } from "@heroicons/react/24/solid";
@@ -264,7 +263,7 @@ export const WishlistView: React.FC = () => {
 
         {/* Stats Strip */}
         {lovedProducts.length > 0 && (
-          <div className="grid grid-cols-2 sm:grid-cols-3 gap-3 pt-6 mt-6 border-t border-gray-100 dark:border-neutral-800 text-xs">
+          <div className="grid grid-cols-2 gap-3 pt-6 mt-6 border-t border-gray-100 dark:border-neutral-800 text-xs">
             <div className="p-3.5 rounded-2xl bg-stone-50/70 dark:bg-neutral-950/60 border border-stone-200/60 dark:border-neutral-800/80">
               <span className="text-[11px] text-gray-400 dark:text-neutral-500 font-semibold uppercase tracking-wider block">
                 Total Saved Value
@@ -280,16 +279,6 @@ export const WishlistView: React.FC = () => {
               </span>
               <span className="text-lg font-black text-emerald-600 dark:text-emerald-400 mt-0.5 block">
                 {lovedProducts.filter((p) => p.inStock !== false).length} Products
-              </span>
-            </div>
-
-            <div className="p-3.5 rounded-2xl bg-stone-50/70 dark:bg-neutral-950/60 border border-stone-200/60 dark:border-neutral-800/80 col-span-2 sm:col-span-1">
-              <span className="text-[11px] text-gray-400 dark:text-neutral-500 font-semibold uppercase tracking-wider block">
-                Cloud Sync Status
-              </span>
-              <span className="text-xs font-bold text-gray-700 dark:text-neutral-300 mt-1 inline-flex items-center gap-1.5">
-                <CheckCircleIcon className="size-4 text-emerald-500" />
-                <span>Saved to Firestore DB</span>
               </span>
             </div>
           </div>

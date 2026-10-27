@@ -809,9 +809,7 @@ export const AdminNewsletterTab: React.FC<AdminNewsletterTabProps> = ({
         <div className="p-4 border-t border-stone-100 dark:border-neutral-800 bg-stone-50/50 dark:bg-neutral-950/40 flex flex-col sm:flex-row items-center justify-between gap-2 text-xs text-stone-500 dark:text-neutral-400">
           <div className="flex items-center gap-2">
             <ShieldCheckIcon className="size-4 text-emerald-600" />
-            <span>
-              Real-time synchronization with Cloud Firestore <code className="font-mono text-orange-600 dark:text-orange-400">newsletters</code> collection.
-            </span>
+            <span>Real-time subscriber management active.</span>
           </div>
           <span>
             Showing {filteredSubscribers.length} of {totalCount} total subscribers

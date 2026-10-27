@@ -364,7 +364,7 @@ export const AdminCustomersTab: React.FC<AdminCustomersTabProps> = ({
     } catch (err: unknown) {
       const error = err as Error;
       if (error.message?.includes("email-already-in-use")) {
-        toast.error("An account with this email already exists in Firebase.");
+        toast.error("An account with this email already exists.");
       } else {
         toast.error(error.message || "Failed to create staff account.");
       }

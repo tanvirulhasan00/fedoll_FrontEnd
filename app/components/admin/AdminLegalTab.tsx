@@ -580,7 +580,7 @@ export const AdminLegalTab: React.FC = () => {
                 {saving ? (
                   <>
                     <Spinner className="size-4 text-white animate-spin" />
-                    <span>Saving to Cloud Firestore...</span>
+                    <span>Saving...</span>
                   </>
                 ) : (
                   <>
@@ -885,7 +885,7 @@ export const AdminLegalTab: React.FC = () => {
                 {saving ? (
                   <>
                     <Spinner className="size-4 text-white animate-spin" />
-                    <span>Saving to Cloud Firestore...</span>
+                    <span>Saving...</span>
                   </>
                 ) : (
                   <>
@@ -1203,7 +1203,7 @@ export const AdminLegalTab: React.FC = () => {
                 {saving ? (
                   <>
                     <Spinner className="size-4 text-white animate-spin" />
-                    <span>Saving to Cloud Firestore...</span>
+                    <span>Saving...</span>
                   </>
                 ) : (
                   <>
@@ -1576,7 +1576,7 @@ export const AdminLegalTab: React.FC = () => {
                   {saving ? (
                     <>
                       <Spinner className="size-4 text-white animate-spin" />
-                      <span>Saving to Cloud Firestore...</span>
+                      <span>Saving...</span>
                     </>
                   ) : (
                     <>

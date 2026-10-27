@@ -10,7 +10,6 @@ import { useAppDispatch, useAppSelector } from "~/redux/hooks/hook";
 import {
   fetchProducts,
   fetchProductCategories,
-  syncProductsFromFirestore,
   setProductCategory,
   setProductSearchQuery,
   setSortBy,
@@ -24,7 +23,6 @@ import {
   MagnifyingGlassIcon,
   XMarkIcon,
   FunnelIcon,
-  ArrowPathIcon,
   EyeIcon,
   ShoppingBagIcon,
   SparklesIcon,
@@ -341,7 +339,6 @@ export default function ProductsPage() {
     sortBy,
     onlyInStock,
     loading,
-    syncing,
   } = useAppSelector((state) => state.products);
 
   const { user } = useAppSelector((state) => state.auth);
@@ -463,16 +460,6 @@ export default function ProductsPage() {
       updated.delete("search");
       return updated;
     });
-  };
-
-  const handleSyncFirebase = async () => {
-    try {
-      await dispatch(syncProductsFromFirestore()).unwrap();
-      toast.success("Products and categories synchronized from Cloud Firestore!");
-    } catch (err: unknown) {
-      const error = err as Error;
-      toast.error(error.message || "Failed to sync products with Firebase");
-    }
   };
 
   const handleQuickAdd = (e: React.MouseEvent, product: (typeof products)[0]) => {
@@ -882,26 +869,6 @@ export default function ProductsPage() {
                   {activeCategoryObj?.tagline ||
                     "Crafted with heavy 14oz shuttle-loom selvedge denim, pure double-layer wool, and 240 GSM combed cotton. Shipped anywhere in Bangladesh with Cash on Delivery."}
                 </p>
-              </div>
-
-              {/* Live Firestore Connection Status & Sync */}
-              <div className="flex flex-col items-start md:items-end gap-2 shrink-0">
-                <div className="inline-flex items-center gap-2 text-xs font-medium text-emerald-800 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-950/40 border border-emerald-200 dark:border-emerald-800/60 px-3 py-1.5 rounded-full shadow-2xs">
-                  <span className="size-2 rounded-full bg-emerald-500 animate-pulse" />
-                  <span>Cloud Firestore Sync</span>
-                </div>
-                <button
-                  type="button"
-                  onClick={handleSyncFirebase}
-                  disabled={syncing || loading}
-                  className="inline-flex items-center gap-1.5 text-xs font-medium text-gray-700 dark:text-neutral-300 bg-white dark:bg-neutral-800 border border-gray-300 dark:border-neutral-700 hover:border-orange-500 hover:text-orange-600 dark:hover:text-orange-400 px-3 py-1.5 rounded-lg shadow-2xs transition disabled:opacity-50 cursor-pointer"
-                  title="Resync products directly with Firebase Firestore"
-                >
-                  <ArrowPathIcon
-                    className={`size-3.5 ${syncing ? "animate-spin text-orange-600 dark:text-orange-400" : ""}`}
-                  />
-                  <span>{syncing ? "Syncing..." : "Sync Products"}</span>
-                </button>
               </div>
             </div>
 
