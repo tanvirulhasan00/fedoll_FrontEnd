@@ -81,7 +81,7 @@ export default function NewsLetter() {
   };
 
   return (
-    <div className="relative isolate overflow-hidden rounded-3xl bg-gradient-to-b from-stone-50 via-white to-stone-100/70 dark:from-neutral-900 dark:via-neutral-900 dark:to-neutral-950 border border-stone-200/90 dark:border-neutral-800 p-8 sm:p-12 lg:p-16 shadow-xl dark:shadow-2xl transition-colors duration-200">
+    <div className="relative isolate overflow-hidden rounded-3xl bg-gradient-to-b from-stone-50 via-white to-stone-100/70 dark:from-neutral-900 dark:via-neutral-900 dark:to-neutral-950 border border-stone-200/90 dark:border-neutral-800 p-6 sm:p-12 lg:p-16 shadow-xl dark:shadow-2xl transition-colors duration-200">
       {/* Decorative ambient glowing gradients */}
       <div
         aria-hidden="true"
@@ -92,7 +92,7 @@ export default function NewsLetter() {
         className="pointer-events-none absolute -bottom-24 -left-24 h-96 w-96 rounded-full bg-amber-500/10 blur-3xl"
       />
 
-      <div className="relative z-10 grid grid-cols-1 gap-12 lg:grid-cols-12 lg:items-center">
+      <div className="relative z-10 grid grid-cols-1 gap-8 lg:grid-cols-12 lg:items-center">
         {/* Left Column: Headline, Description & Subscription Form */}
         <div className="lg:col-span-7">
           <div className="inline-flex items-center gap-2 rounded-full border border-orange-200 dark:border-orange-500/30 bg-orange-100/80 dark:bg-orange-500/10 px-3.5 py-1.5 text-xs font-semibold uppercase tracking-wider text-orange-800 dark:text-orange-400">
@@ -100,25 +100,31 @@ export default function NewsLetter() {
             <span>Exclusive VIP Circle</span>
           </div>
 
-          <h2 className="mt-4 text-3xl font-extrabold tracking-tight text-gray-900 dark:text-white sm:text-4xl lg:text-5xl">
-            Stay Ahead. <br />
+          <h2 className="mt-3 sm:mt-4 text-2xl font-extrabold tracking-tight text-gray-900 dark:text-white sm:text-4xl lg:text-5xl">
+            Stay Ahead. <br className="hidden sm:inline" />
             <span className="bg-gradient-to-r from-orange-600 via-orange-500 to-amber-600 dark:from-orange-400 dark:via-orange-500 dark:to-amber-400 bg-clip-text text-transparent">
               Enjoy 10% Off
             </span>{" "}
             Your Next Order.
           </h2>
 
-          <p className="mt-4 max-w-xl text-base sm:text-lg leading-relaxed text-gray-600 dark:text-neutral-400">
+          {/* Reduced description for mobile only */}
+          <p className="sm:hidden mt-2 text-xs leading-relaxed text-gray-600 dark:text-neutral-400">
+            Subscribe to enjoy 10% off your next order plus exclusive drop access.
+          </p>
+
+          {/* Full description for tablet/desktop */}
+          <p className="hidden sm:block mt-4 max-w-xl text-base sm:text-lg leading-relaxed text-gray-600 dark:text-neutral-400">
             Join thousands of global fashion enthusiasts. Receive private seasonal drops,
             limited denim releases, textile craftsmanship stories, and members-only promotions.
           </p>
 
           {/* Form */}
-          <form onSubmit={handleSubmit} className="mt-8 max-w-xl">
-            <div className="flex flex-col sm:flex-row gap-3">
+          <form onSubmit={handleSubmit} className="mt-5 sm:mt-8 max-w-xl">
+            <div className="flex flex-col sm:flex-row gap-2.5 sm:gap-3">
               <div className="relative flex-1">
-                <div className="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-4 text-gray-400 dark:text-neutral-400">
-                  <EnvelopeIcon className="size-5" />
+                <div className="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-3.5 sm:pl-4 text-gray-400 dark:text-neutral-400">
+                  <EnvelopeIcon className="size-4 sm:size-5" />
                 </div>
                 <input
                   id="newsletter-email"
@@ -130,14 +136,14 @@ export default function NewsLetter() {
                   disabled={loading}
                   placeholder="Enter your email address..."
                   autoComplete="email"
-                  className="w-full rounded-xl border border-stone-300 dark:border-neutral-700 bg-white dark:bg-neutral-800/90 py-3.5 pl-11 pr-4 text-sm sm:text-base text-gray-900 dark:text-white placeholder-gray-400 dark:placeholder-neutral-400 shadow-xs outline-none transition focus:border-orange-500 focus:ring-2 focus:ring-orange-500/30 disabled:opacity-60 disabled:cursor-not-allowed"
+                  className="w-full rounded-xl border border-stone-300 dark:border-neutral-700 bg-white dark:bg-neutral-800/90 py-3 sm:py-3.5 pl-10 sm:pl-11 pr-4 text-sm sm:text-base text-gray-900 dark:text-white placeholder-gray-400 dark:placeholder-neutral-400 shadow-xs outline-none transition focus:border-orange-500 focus:ring-2 focus:ring-orange-500/30 disabled:opacity-60 disabled:cursor-not-allowed"
                 />
               </div>
 
               <button
                 type="submit"
                 disabled={loading}
-                className="group relative inline-flex items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-orange-600 to-orange-700 px-7 py-3.5 text-sm sm:text-base font-semibold text-white shadow-lg shadow-orange-700/25 transition-all duration-200 hover:from-orange-500 hover:to-orange-600 hover:shadow-orange-600/35 hover:-translate-y-0.5 active:translate-y-0 disabled:opacity-60 disabled:cursor-not-allowed cursor-pointer shrink-0"
+                className="group relative inline-flex items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-orange-600 to-orange-700 px-6 sm:px-7 py-3 sm:py-3.5 text-sm sm:text-base font-semibold text-white shadow-lg shadow-orange-700/25 transition-all duration-200 hover:from-orange-500 hover:to-orange-600 hover:shadow-orange-600/35 hover:-translate-y-0.5 active:translate-y-0 disabled:opacity-60 disabled:cursor-not-allowed cursor-pointer shrink-0"
               >
                 {loading ? (
                   <>
@@ -190,14 +196,14 @@ export default function NewsLetter() {
             )}
 
             <p className="mt-3 flex items-center gap-1.5 text-xs text-gray-500 dark:text-neutral-400">
-              <ShieldCheckIcon className="size-4 text-gray-400 dark:text-neutral-400" />
+              <ShieldCheckIcon className="size-4 shrink-0 text-gray-400 dark:text-neutral-400" />
               <span>We value your privacy. Strictly zero spam. Unsubscribe anytime with 1 click.</span>
             </p>
           </form>
         </div>
 
-        {/* Right Column: 3 Value Props Micro-Cards */}
-        <div className="lg:col-span-5 flex flex-col gap-4">
+        {/* Right Column: 3 Value Props Micro-Cards (Hidden on mobile) */}
+        <div className="hidden lg:flex lg:col-span-5 flex-col gap-4">
           <div className="group rounded-2xl border border-stone-200/90 dark:border-neutral-800 bg-white/80 dark:bg-neutral-800/40 p-4 sm:p-5 backdrop-blur-xs transition-all duration-300 hover:border-orange-300 dark:hover:border-neutral-700 hover:bg-white dark:hover:bg-neutral-800/70 shadow-xs dark:shadow-none">
             <div className="flex items-start gap-4">
               <div className="flex size-11 shrink-0 items-center justify-center rounded-xl bg-orange-100 dark:bg-orange-500/10 text-orange-600 dark:text-orange-400 ring-1 ring-orange-200 dark:ring-orange-500/20 group-hover:bg-orange-500 group-hover:text-white transition-colors duration-300">

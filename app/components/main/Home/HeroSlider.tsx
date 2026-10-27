@@ -1,4 +1,4 @@
-import React, { useEffect } from "react";
+import React, { useEffect, useState, useRef } from "react";
 import { Link } from "react-router";
 import { useAppDispatch, useAppSelector } from "~/redux/hooks/hook";
 import {
@@ -32,6 +32,10 @@ export default function HeroSlider() {
     (state) => state.products
   );
 
+  const [isPaused, setIsPaused] = useState(false);
+  const touchStartX = useRef<number | null>(null);
+  const touchEndX = useRef<number | null>(null);
+
   // If heroBanners is currently using static defaults but DB products are available,
   // pick 2 random products from DB and update heroBanners.
   useEffect(() => {
@@ -58,14 +62,43 @@ export default function HeroSlider() {
     }
   }, [activeHeroIndex, heroBanners.length, dispatch]);
 
-  // Auto-slide every 6.5s if multiple banners exist
+  // Auto-slide every 6.5s if multiple banners exist and not paused
   useEffect(() => {
-    if (heroBanners.length <= 1) return;
+    if (heroBanners.length <= 1 || isPaused) return;
     const interval = setInterval(() => {
       dispatch(nextHeroSlide());
     }, 6500);
     return () => clearInterval(interval);
-  }, [dispatch, heroBanners.length]);
+  }, [dispatch, heroBanners.length, isPaused]);
+
+  // Touch Swipe Handlers for mobile view
+  const handleTouchStart = (e: React.TouchEvent) => {
+    setIsPaused(true);
+    touchStartX.current = e.targetTouches[0].clientX;
+  };
+
+  const handleTouchMove = (e: React.TouchEvent) => {
+    touchEndX.current = e.targetTouches[0].clientX;
+  };
+
+  const handleTouchEnd = () => {
+    if (touchStartX.current !== null && touchEndX.current !== null) {
+      const diff = touchStartX.current - touchEndX.current;
+      const minSwipeDistance = 45;
+
+      if (diff > minSwipeDistance) {
+        // Swiped left -> next slide
+        dispatch(nextHeroSlide());
+      } else if (diff < -minSwipeDistance) {
+        // Swiped right -> prev slide
+        dispatch(prevHeroSlide());
+      }
+    }
+
+    touchStartX.current = null;
+    touchEndX.current = null;
+    setTimeout(() => setIsPaused(false), 2000);
+  };
 
   if (loading && (!heroBanners || heroBanners.length === 0)) {
     return <HeroSliderSkeleton />;
@@ -76,7 +109,14 @@ export default function HeroSlider() {
   const currentBanner = heroBanners[activeHeroIndex] || heroBanners[0];
 
   return (
-    <section className="relative overflow-hidden bg-stone-950 text-white min-h-[580px] sm:min-h-[640px] lg:min-h-[700px] flex items-center">
+    <section
+      className="relative overflow-hidden bg-stone-950 text-white min-h-[580px] sm:min-h-[640px] lg:min-h-[700px] flex items-center select-none"
+      onTouchStart={handleTouchStart}
+      onTouchMove={handleTouchMove}
+      onTouchEnd={handleTouchEnd}
+      onMouseEnter={() => setIsPaused(true)}
+      onMouseLeave={() => setIsPaused(false)}
+    >
       {/* Background Images with Crossfade */}
       {heroBanners.map((banner, idx) => (
         <div
@@ -179,10 +219,11 @@ export default function HeroSlider() {
       {/* Slide Navigation Controls */}
       {heroBanners.length > 1 && (
         <>
+          {/* Arrow Buttons - Hidden on Mobile, Visible on Desktop/Tablet (md+) */}
           <button
             type="button"
             onClick={() => dispatch(prevHeroSlide())}
-            className="absolute left-4 sm:left-6 top-1/2 -translate-y-1/2 z-20 size-11 rounded-full bg-black/40 hover:bg-black/70 backdrop-blur-xs border border-white/20 text-white flex items-center justify-center transition hover:scale-105 cursor-pointer"
+            className="hidden md:flex absolute left-4 sm:left-6 top-1/2 -translate-y-1/2 z-20 size-11 rounded-full bg-black/40 hover:bg-black/70 backdrop-blur-xs border border-white/20 text-white items-center justify-center transition hover:scale-105 cursor-pointer shadow-lg"
             aria-label="Previous Banner"
           >
             <ChevronLeftIcon className="size-5" />
@@ -190,11 +231,12 @@ export default function HeroSlider() {
           <button
             type="button"
             onClick={() => dispatch(nextHeroSlide())}
-            className="absolute right-4 sm:right-6 top-1/2 -translate-y-1/2 z-20 size-11 rounded-full bg-black/40 hover:bg-black/70 backdrop-blur-xs border border-white/20 text-white flex items-center justify-center transition hover:scale-105 cursor-pointer"
+            className="hidden md:flex absolute right-4 sm:right-6 top-1/2 -translate-y-1/2 z-20 size-11 rounded-full bg-black/40 hover:bg-black/70 backdrop-blur-xs border border-white/20 text-white items-center justify-center transition hover:scale-105 cursor-pointer shadow-lg"
             aria-label="Next Banner"
           >
             <ChevronRightIcon className="size-5" />
           </button>
+
 
           {/* Dots Indicator */}
           <div className="absolute bottom-6 left-1/2 -translate-x-1/2 z-20 flex items-center gap-2.5">
