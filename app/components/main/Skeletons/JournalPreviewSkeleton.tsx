@@ -19,12 +19,12 @@ export const JournalPreviewSkeleton: React.FC = () => {
         </div>
       </div>
 
-      {/* 5 Blog Cards in slider row */}
+      {/* 4 Blog Cards in slider row */}
       <div className="flex gap-3 sm:gap-4 overflow-hidden pb-3">
-        {[1, 2, 3, 4, 5].map((i) => (
+        {[1, 2, 3, 4].map((i) => (
           <div
             key={i}
-            className="w-full sm:w-[calc((100%-32px)/3)] lg:w-[calc((100%-64px)/5)] shrink-0 flex flex-col rounded-2xl border border-gray-200/90 dark:border-neutral-800 bg-white dark:bg-neutral-900 overflow-hidden shadow-xs"
+            className="w-full sm:w-[calc((100%-16px)/2)] md:w-[calc((100%-32px)/3)] lg:w-[calc((100%-48px)/4)] shrink-0 flex flex-col rounded-2xl border border-gray-200/90 dark:border-neutral-800 bg-white dark:bg-neutral-900 overflow-hidden shadow-xs"
           >
             {/* Image Skeleton */}
             <Skeleton className="h-36 sm:h-44 w-full rounded-none" />

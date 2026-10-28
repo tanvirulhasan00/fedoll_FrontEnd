@@ -212,6 +212,15 @@ export const productSlice = createSlice({
         } catch {}
       }
     },
+    setProducts: (state, action: PayloadAction<ProductItem[]>) => {
+      state.items = action.payload || [];
+      state.loading = false;
+      if (typeof window !== "undefined") {
+        try {
+          localStorage.setItem("fedoll_products_v1", JSON.stringify(state.items));
+        } catch {}
+      }
+    },
   },
   extraReducers: (builder) => {
     builder
@@ -298,6 +307,7 @@ export const {
   resetProductFilters,
   clearCurrentProduct,
   setProductCategories,
+  setProducts,
 } = productSlice.actions;
 
 export default productSlice.reducer;

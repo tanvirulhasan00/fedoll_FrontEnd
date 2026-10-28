@@ -98,7 +98,7 @@ const ShowcaseProductCard: React.FC<ShowcaseProductCardProps> = ({
   };
 
   return (
-    <div className="group flex flex-col rounded-2xl bg-white dark:bg-neutral-900 border border-gray-200/80 dark:border-neutral-800 overflow-hidden shadow-xs hover:shadow-xl transition-all duration-300 w-full sm:w-[calc((100%-32px)/3)] lg:w-[calc((100%-64px)/5)] shrink-0 snap-start">
+    <div className="group flex flex-col rounded-2xl bg-white dark:bg-neutral-900 border border-gray-200/80 dark:border-neutral-800 overflow-hidden shadow-xs hover:shadow-xl transition-all duration-300 w-full sm:w-[calc((100%-16px)/2)] md:w-[calc((100%-32px)/3)] lg:w-[calc((100%-48px)/4)] shrink-0 snap-start">
       {/* Product Card Image Container */}
       <div className="relative aspect-4/5 overflow-hidden bg-stone-100 dark:bg-neutral-800">
         <Link to={`/products/${product.id}`} className="block w-full h-full cursor-pointer">
@@ -341,10 +341,18 @@ export default function ProductShowcase() {
   }, [categories, displayProducts]);
 
   const filteredProducts = useMemo(() => {
-    if (activeProductTab === "All") return displayProducts;
-    return displayProducts.filter(
-      (p) => p.category?.trim().toLowerCase() === activeProductTab.trim().toLowerCase()
-    );
+    let prods = displayProducts;
+    if (activeProductTab !== "All") {
+      prods = displayProducts.filter(
+        (p) => p.category?.trim().toLowerCase() === activeProductTab.trim().toLowerCase()
+      );
+    }
+    // Prioritize products marked as isFeatured
+    return [...prods].sort((a, b) => {
+      if (a.isFeatured && !b.isFeatured) return -1;
+      if (!a.isFeatured && b.isFeatured) return 1;
+      return 0;
+    });
   }, [displayProducts, activeProductTab]);
 
   const checkScroll = useCallback(() => {
@@ -503,10 +511,10 @@ export default function ProductShowcase() {
       {/* Products Slider */}
       {isDataLoading ? (
         <div className="flex gap-4 overflow-hidden pb-4">
-          {[1, 2, 3, 4, 5].map((i) => (
+          {[1, 2, 3, 4].map((i) => (
             <div
               key={i}
-              className="w-full sm:w-[calc((100%-32px)/3)] lg:w-[calc((100%-64px)/5)] shrink-0"
+              className="w-full sm:w-[calc((100%-16px)/2)] md:w-[calc((100%-32px)/3)] lg:w-[calc((100%-48px)/4)] shrink-0"
             >
               <ProductCardSkeleton />
             </div>

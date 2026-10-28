@@ -218,6 +218,17 @@ export const homeSlice = createSlice({
     setHeroBanners: (state, action: PayloadAction<HeroBanner[]>) => {
       state.heroBanners = action.payload;
     },
+    setHomeProducts: (state, action: PayloadAction<ProductItem[]>) => {
+      state.products = action.payload || [];
+      state.loading = false;
+      if (typeof window !== "undefined") {
+        try {
+          localStorage.setItem(HOME_PRODUCTS_CACHE_KEY, JSON.stringify(state.products));
+        } catch {
+          // ignore
+        }
+      }
+    },
     setHeroBannersFromProducts: (state, action: PayloadAction<ProductItem[]>) => {
       const prods = action.payload;
       if (prods && prods.length > 0) {
@@ -421,6 +432,7 @@ export const {
   setWishlist,
   toggleWishlist,
   setHeroBanners,
+  setHomeProducts,
   setHeroBannersFromProducts,
   setSpotlightBanners,
   setActiveSpotlightIndex,

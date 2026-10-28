@@ -1188,6 +1188,50 @@ export const subscribeToCategoriesFromFirestore = (
 };
 
 /**
+ * Real-time listener for products from Cloud Firestore.
+ * Automatically notifies subscribers whenever products are added, updated, or deleted.
+ */
+export const subscribeToProductsFromFirestore = (
+  callback: (products: ProductItem[]) => void,
+  onError?: (error: Error) => void
+): (() => void) => {
+  if (typeof window === "undefined") {
+    return () => {};
+  }
+
+  try {
+    const colRef = collection(db, "products");
+    const unsubscribe = onSnapshot(
+      colRef,
+      (snap) => {
+        if (!snap.empty) {
+          const list = snap.docs.map((d) => {
+            const data = d.data() as DocumentData;
+            return ensureProductHasVariants({
+              id: d.id,
+              ...data,
+            } as ProductItem);
+          });
+          saveAllLocalProducts(list);
+          callback(list);
+        } else {
+          saveAllLocalProducts([]);
+          callback([]);
+        }
+      },
+      (error) => {
+        console.warn("Realtime products subscription error:", error);
+        if (onError) onError(error);
+      }
+    );
+    return unsubscribe;
+  } catch (err) {
+    console.warn("Could not set up realtime products subscription:", err);
+    return () => {};
+  }
+};
+
+/**
  * Seed all products and categories into Firebase Firestore
  */
 export const seedProductsToFirestore = async (force: boolean = false) => {

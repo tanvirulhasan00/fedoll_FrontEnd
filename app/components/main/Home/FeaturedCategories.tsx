@@ -1,4 +1,4 @@
-import React, { useRef, useState, useEffect, useCallback } from "react";
+import React, { useRef, useState, useEffect, useCallback, useMemo } from "react";
 import { Link } from "react-router";
 import { useAppSelector } from "~/redux/hooks/hook";
 import {
@@ -15,11 +15,78 @@ import {
 import { FeaturedCategoriesSkeleton } from "~/components/main/Skeletons";
 
 export default function FeaturedCategories() {
-  const { featuredCategories, loading } = useAppSelector((state) => state.home);
+  const { categories, loading: categoriesLoading } = useAppSelector(
+    (state) => state.products
+  );
+  const {
+    featuredCategories: homeFeaturedCategories,
+    products: homeProducts,
+    loading: homeLoading,
+  } = useAppSelector((state) => state.home);
+  const { items: catalogProducts } = useAppSelector((state) => state.products);
+
   const scrollRef = useRef<HTMLDivElement | null>(null);
   const [canScrollLeft, setCanScrollLeft] = useState(false);
   const [canScrollRight, setCanScrollRight] = useState(false);
   const [activeMobileIndex, setActiveMobileIndex] = useState(0);
+
+  // Combine products for computing accurate category items count
+  const allProducts = useMemo(() => {
+    if (homeProducts && homeProducts.length > 0) return homeProducts;
+    if (catalogProducts && catalogProducts.length > 0) return catalogProducts;
+    return [];
+  }, [homeProducts, catalogProducts]);
+
+  // Display real categories from DB (with fallback to homeFeaturedCategories)
+  const displayCategories = useMemo(() => {
+    if (categories && categories.length > 0) {
+      const valid = categories.filter(
+        (c) =>
+          c.name &&
+          c.name.trim().toLowerCase() !== "uncategorized" &&
+          c.name.trim().toLowerCase() !== "all"
+      );
+      // Prefer root categories (parentId == null or !parentId) if parent/child hierarchy is set
+      const rootCategories = valid.filter((c) => !c.parentId);
+      const activeList = rootCategories.length > 0 ? rootCategories : valid;
+      const sorted = [...activeList].sort((a, b) => (a.order ?? 999) - (b.order ?? 999));
+
+      if (sorted.length > 0) {
+        return sorted.map((cat) => {
+          const matchingCount = allProducts.filter(
+            (p) => p.category?.trim().toLowerCase() === cat.name?.trim().toLowerCase()
+          ).length;
+          const itemCountDisplay =
+            matchingCount > 0
+              ? `${matchingCount} ${matchingCount === 1 ? "Item" : "Items"}`
+              : typeof cat.itemCount === "number" && cat.itemCount > 0
+              ? `${cat.itemCount} Items`
+              : typeof cat.itemCount === "string" && cat.itemCount
+              ? cat.itemCount
+              : "Explore Items";
+
+          return {
+            id: cat.id,
+            name: cat.name,
+            tagline:
+              cat.tagline ||
+              `Discover curated ${cat.name} collection for everyday style and comfort`,
+            image:
+              cat.image ||
+              "https://images.unsplash.com/photo-1544441893-675973e31985?auto=format&fit=crop&w=800&q=80",
+            itemCount: itemCountDisplay,
+            link: `/products?category=${encodeURIComponent(cat.name)}`,
+          };
+        });
+      }
+    }
+
+    if (homeFeaturedCategories && homeFeaturedCategories.length > 0) {
+      return homeFeaturedCategories;
+    }
+
+    return [];
+  }, [categories, allProducts, homeFeaturedCategories]);
 
   const checkScroll = useCallback(() => {
     const el = scrollRef.current;
@@ -30,9 +97,9 @@ export default function FeaturedCategories() {
 
     if (typeof window !== "undefined" && window.innerWidth < 640) {
       const idx = Math.round(scrollLeft / (clientWidth || 1));
-      setActiveMobileIndex(Math.max(0, Math.min(idx, featuredCategories.length - 1)));
+      setActiveMobileIndex(Math.max(0, Math.min(idx, displayCategories.length - 1)));
     }
-  }, [featuredCategories.length]);
+  }, [displayCategories.length]);
 
   useEffect(() => {
     checkScroll();
@@ -46,7 +113,7 @@ export default function FeaturedCategories() {
       el.removeEventListener("scroll", checkScroll);
       window.removeEventListener("resize", checkScroll);
     };
-  }, [checkScroll, featuredCategories]);
+  }, [checkScroll, displayCategories]);
 
   const scrollPrev = () => {
     const el = scrollRef.current;
@@ -70,11 +137,14 @@ export default function FeaturedCategories() {
     el.scrollTo({ left: index * el.clientWidth, behavior: "smooth" });
   };
 
-  if (loading && (!featuredCategories || featuredCategories.length === 0)) {
+  const isDataLoading =
+    (categoriesLoading || homeLoading) && displayCategories.length === 0;
+
+  if (isDataLoading) {
     return <FeaturedCategoriesSkeleton />;
   }
 
-  if (!featuredCategories || featuredCategories.length === 0) return null;
+  if (displayCategories.length === 0) return null;
 
   const getCategoryLink = (cat: { id: string; name: string; link?: string }) => {
     if (cat.link && !cat.link.startsWith("/blogs")) {
@@ -138,11 +208,11 @@ export default function FeaturedCategories() {
         ref={scrollRef}
         className="flex overflow-x-auto snap-x snap-mandatory gap-4 no-scrollbar scroll-smooth pb-3 -mx-4 px-4 sm:mx-0 sm:px-0 touch-pan-x"
       >
-        {featuredCategories.map((cat, idx) => (
+        {displayCategories.map((cat, idx) => (
           <Link
             key={cat.id || idx}
             to={getCategoryLink(cat)}
-            className="group relative shrink-0 snap-start rounded-2xl overflow-hidden bg-stone-100 dark:bg-neutral-900 shadow-xs hover:shadow-xl transition-all duration-500 h-[300px] sm:h-[320px] lg:h-[350px] flex flex-col justify-end p-5 sm:p-5 border border-gray-200/80 dark:border-neutral-800 w-full sm:w-[calc((100%-32px)/3)] lg:w-[calc((100%-64px)/5)] cursor-pointer"
+            className="group relative shrink-0 snap-start rounded-2xl overflow-hidden bg-stone-100 dark:bg-neutral-900 shadow-xs hover:shadow-xl transition-all duration-500 h-[300px] sm:h-[320px] lg:h-[350px] flex flex-col justify-end p-5 sm:p-5 border border-gray-200/80 dark:border-neutral-800 w-full sm:w-[calc((100%-16px)/2)] md:w-[calc((100%-32px)/3)] lg:w-[calc((100%-48px)/4)] cursor-pointer"
           >
             {/* Background Image with Zoom */}
             <img
@@ -191,9 +261,9 @@ export default function FeaturedCategories() {
       </div>
 
       {/* Mobile Dot Indicators */}
-      {featuredCategories.length > 1 && (
+      {displayCategories.length > 1 && (
         <div className="flex sm:hidden items-center justify-center gap-1.5 mt-3">
-          {featuredCategories.map((_, idx) => (
+          {displayCategories.map((_, idx) => (
             <button
               key={idx}
               type="button"

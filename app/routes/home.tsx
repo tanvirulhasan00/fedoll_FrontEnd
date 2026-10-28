@@ -11,16 +11,23 @@ import TestimonialsSection from "~/components/main/Home/TestimonialsSection";
 import JournalPreviewSection from "~/components/main/Home/JournalPreviewSection";
 import CommunityGallery from "~/components/main/Home/CommunityGallery";
 import { useAppDispatch } from "~/redux/hooks/hook";
-import { fetchHomeData, setSpotlightBanners } from "~/redux/features/homeSlice";
-import { fetchBlogs } from "~/redux/features/blogSlice";
+import {
+  fetchHomeData,
+  setSpotlightBanners,
+  setHomeProducts,
+} from "~/redux/features/homeSlice";
+import { fetchBlogs, setBlogs } from "~/redux/features/blogSlice";
 import {
   fetchProducts,
   fetchProductCategories,
   setProductCategories,
+  setProducts,
 } from "~/redux/features/productSlice";
 import {
   subscribeToCategoriesFromFirestore,
   subscribeToSpotlightBannersFromFirestore,
+  subscribeToProductsFromFirestore,
+  subscribeToBlogsFromFirestore,
 } from "~/firebase";
 
 const Home = () => {
@@ -43,9 +50,26 @@ const Home = () => {
       dispatch(setSpotlightBanners(liveBanners));
     });
 
+    // Subscribe to realtime product catalog updates
+    const unsubscribeProducts = subscribeToProductsFromFirestore((liveProducts) => {
+      if (liveProducts && liveProducts.length > 0) {
+        dispatch(setProducts(liveProducts));
+        dispatch(setHomeProducts(liveProducts));
+      }
+    });
+
+    // Subscribe to realtime style journal articles
+    const unsubscribeBlogs = subscribeToBlogsFromFirestore((liveBlogs) => {
+      if (liveBlogs && liveBlogs.length > 0) {
+        dispatch(setBlogs(liveBlogs));
+      }
+    });
+
     return () => {
       unsubscribeCategories();
       unsubscribeSpotlight();
+      unsubscribeProducts();
+      unsubscribeBlogs();
     };
   }, [dispatch]);
 

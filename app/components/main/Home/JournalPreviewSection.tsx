@@ -8,6 +8,11 @@ import {
   ChevronLeftIcon,
   ChevronRightIcon,
 } from "@heroicons/react/24/outline";
+import {
+  normalizeGoogleDriveImageUrl,
+  extractGoogleDriveFileId,
+  getGoogleDriveThumbnailUrl,
+} from "~/firebase";
 import { JournalPreviewSkeleton } from "~/components/main/Skeletons";
 
 export default function JournalPreviewSection() {
@@ -140,14 +145,25 @@ export default function JournalPreviewSection() {
         {blogs.map((blog, idx) => (
           <article
             key={blog.id || idx}
-            className="group flex flex-col rounded-2xl border border-gray-200/90 dark:border-neutral-800 bg-white dark:bg-neutral-900 overflow-hidden shadow-xs hover:shadow-xl hover:-translate-y-1 transition-all duration-300 w-full sm:w-[calc((100%-32px)/3)] lg:w-[calc((100%-64px)/5)] shrink-0 snap-start"
+            className="group flex flex-col rounded-2xl border border-gray-200/90 dark:border-neutral-800 bg-white dark:bg-neutral-900 overflow-hidden shadow-xs hover:shadow-xl hover:-translate-y-1 transition-all duration-300 w-full sm:w-[calc((100%-16px)/2)] md:w-[calc((100%-32px)/3)] lg:w-[calc((100%-48px)/4)] shrink-0 snap-start"
           >
             {/* Image */}
             <div className="relative h-44 sm:h-44 overflow-hidden bg-stone-100 dark:bg-neutral-800">
               <img
-                src={blog.coverImage}
+                src={normalizeGoogleDriveImageUrl(blog.coverImage)}
                 alt={blog.title}
                 className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
+                onError={(e) => {
+                  const target = e.currentTarget;
+                  const fileId = extractGoogleDriveFileId(blog.coverImage);
+                  if (fileId && !target.dataset.triedThumbnail) {
+                    target.dataset.triedThumbnail = "true";
+                    target.src = getGoogleDriveThumbnailUrl(blog.coverImage, 800);
+                    return;
+                  }
+                  target.src =
+                    "https://images.unsplash.com/photo-1490481651871-ab68de25d43d?auto=format&fit=crop&w=800&q=80";
+                }}
               />
               <div className="absolute top-3 left-3 bg-white/90 dark:bg-neutral-900/90 backdrop-blur-xs text-gray-900 dark:text-neutral-100 text-[10px] sm:text-[11px] font-semibold px-2.5 py-0.5 rounded-full shadow-xs">
                 {blog.category}

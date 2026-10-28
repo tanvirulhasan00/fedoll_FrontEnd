@@ -8,6 +8,7 @@ import {
   query,
   where,
   serverTimestamp,
+  onSnapshot,
   type DocumentData,
 } from "firebase/firestore";
 import { db } from "./firebase.config";
@@ -357,6 +358,74 @@ export const fetchBlogsFromFirestore = async (): Promise<BlogItem[]> => {
       }
     }
     return initialBlogs;
+  }
+};
+
+/**
+ * Real-time listener for blogs from Cloud Firestore
+ */
+export const subscribeToBlogsFromFirestore = (
+  callback: (blogs: BlogItem[]) => void,
+  onError?: (error: Error) => void
+): (() => void) => {
+  if (typeof window === "undefined") {
+    return () => {};
+  }
+
+  try {
+    const colRef = collection(db, "blogs");
+    const unsubscribe = onSnapshot(
+      colRef,
+      (snap) => {
+        if (!snap.empty) {
+          const list: BlogItem[] = [];
+          snap.forEach((docSnap) => {
+            const data = docSnap.data() as DocumentData;
+            list.push({
+              id: docSnap.id,
+              slug: data.slug || docSnap.id,
+              title: data.title || "",
+              excerpt: data.excerpt || "",
+              content: data.content || "",
+              coverImage: data.coverImage || "",
+              category: data.category || "Style",
+              tags: Array.isArray(data.tags) ? data.tags : [],
+              author: data.author || {
+                name: "SilkenDrift Editorial",
+                role: "Staff Writer",
+                avatar:
+                  "https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=200&q=80",
+              },
+              readTime: data.readTime || "4 min read",
+              publishedAt: data.publishedAt || "January 2026",
+              featured: Boolean(data.featured),
+              views: typeof data.views === "number" ? data.views : 0,
+              likes: typeof data.likes === "number" ? data.likes : 0,
+              createdAt: data.createdAt ? String(data.createdAt) : undefined,
+            });
+          });
+
+          if (typeof window !== "undefined") {
+            try {
+              localStorage.setItem(BLOGS_CACHE_KEY, JSON.stringify(list));
+            } catch {
+              // ignore
+            }
+          }
+          callback(list);
+        } else {
+          callback([]);
+        }
+      },
+      (error) => {
+        console.warn("Realtime blogs subscription error:", error);
+        if (onError) onError(error);
+      }
+    );
+    return unsubscribe;
+  } catch (err) {
+    console.warn("Could not set up realtime blogs subscription:", err);
+    return () => {};
   }
 };
 
