@@ -247,6 +247,31 @@ A capsule wardrobe solves this: you keep fewer, better items where every piece m
 ### How to Mix & Match:
 With these 10 items, you can create over 30 clean, sophisticated outfit combinations for meetings, casual Fridays, weekend dinners, and travel.`,
   },
+  {
+    id: "essential-oxford-cotton-shirt-guide",
+    slug: "essential-oxford-cotton-shirt-guide",
+    title: "The Ultimate Guide to Oxford Cotton Shirts: Everyday Fit & Style",
+    excerpt:
+      "Why the heavyweight Oxford button-down is the single most versatile shirt you can own in Bangladesh, from work to weekend.",
+    category: "Style Guide",
+    coverImage:
+      "https://images.unsplash.com/photo-1602810318383-e386cc2a3ccf?auto=format&fit=crop&w=1200&q=80",
+    author: {
+      name: "Sophia Chen",
+      role: "Lead Fashion Stylist",
+      avatar:
+        "https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=200&q=80",
+    },
+    readTime: "4 min read",
+    publishedAt: "February 2, 2026",
+    featured: false,
+    views: 1150,
+    likes: 92,
+    tags: ["Oxford Shirt", "Smart Casual", "Everyday Fit", "Cotton"],
+    content: `## The Timeless Oxford Cloth Button-Down
+
+An Oxford cotton shirt strikes the sweet spot between crisp formality and relaxed ease. Made with a basketweave pure cotton fabric, it softens with every wash while holding its clean structure throughout long days.`,
+  },
 ];
 
 const BLOGS_CACHE_KEY = "fedoll_blogs_cache";

@@ -1,4 +1,4 @@
-import React, { useMemo, useState } from "react";
+import React, { useMemo, useState, useRef, useEffect, useCallback } from "react";
 import { Link } from "react-router";
 import { useAppDispatch, useAppSelector } from "~/redux/hooks/hook";
 import {
@@ -14,6 +14,8 @@ import {
   ShoppingBagIcon,
   SparklesIcon,
   ArrowRightIcon,
+  ChevronLeftIcon,
+  ChevronRightIcon,
 } from "@heroicons/react/24/outline";
 import {
   HeartIcon as HeartSolidIcon,
@@ -96,7 +98,7 @@ const ShowcaseProductCard: React.FC<ShowcaseProductCardProps> = ({
   };
 
   return (
-    <div className="group flex flex-col rounded-2xl bg-white dark:bg-neutral-900 border border-gray-200/80 dark:border-neutral-800 overflow-hidden shadow-xs hover:shadow-xl transition-all duration-300">
+    <div className="group flex flex-col rounded-2xl bg-white dark:bg-neutral-900 border border-gray-200/80 dark:border-neutral-800 overflow-hidden shadow-xs hover:shadow-xl transition-all duration-300 w-full sm:w-[calc((100%-32px)/3)] lg:w-[calc((100%-64px)/5)] shrink-0 snap-start">
       {/* Product Card Image Container */}
       <div className="relative aspect-4/5 overflow-hidden bg-stone-100 dark:bg-neutral-800">
         <Link to={`/products/${product.id}`} className="block w-full h-full cursor-pointer">
@@ -199,10 +201,10 @@ const ShowcaseProductCard: React.FC<ShowcaseProductCardProps> = ({
       </div>
 
       {/* Product Info */}
-      <div className="p-5 flex-1 flex flex-col justify-between space-y-3">
+      <div className="p-4 sm:p-4 flex-1 flex flex-col justify-between space-y-2.5">
         <div>
           <div className="flex items-center justify-between text-xs text-gray-500 dark:text-neutral-400 mb-1">
-            <span className="font-semibold text-orange-700 dark:text-orange-500 uppercase tracking-wider text-[11px]">
+            <span className="font-semibold text-orange-700 dark:text-orange-500 uppercase tracking-wider text-[11px] truncate max-w-[120px]">
               {product.category}
             </span>
             <StockAvailabilityBadge
@@ -225,16 +227,12 @@ const ShowcaseProductCard: React.FC<ShowcaseProductCardProps> = ({
             </span>
             <span className="text-[11px] text-gray-400 dark:text-neutral-500">({product.reviewCount})</span>
           </div>
-
-          <p className="mt-1 text-xs text-gray-500 dark:text-neutral-400 line-clamp-2 leading-relaxed">
-            {product.description}
-          </p>
         </div>
 
-        <div className="pt-3 border-t border-gray-100 dark:border-neutral-800 flex items-center justify-between">
+        <div className="pt-2.5 border-t border-gray-100 dark:border-neutral-800 flex items-center justify-between gap-1">
           {/* Pricing in BDT */}
-          <div className="flex items-baseline gap-2">
-            <span className="text-base font-bold text-gray-900 dark:text-white">
+          <div className="flex items-baseline gap-2 flex-wrap">
+            <span className="text-sm sm:text-base font-bold text-gray-900 dark:text-white">
               ৳{product.price.toLocaleString()}
             </span>
             {hasDiscount && (
@@ -246,7 +244,7 @@ const ShowcaseProductCard: React.FC<ShowcaseProductCardProps> = ({
 
           {/* Interactive Color Dots with Dynamic Variant Swapping */}
           <div className="flex items-center gap-1.5">
-            {product.colors.map((c) => {
+            {product.colors.slice(0, 4).map((c) => {
               const isSelected = selectedColor.toLowerCase() === c.name.toLowerCase();
               return (
                 <button
@@ -258,16 +256,19 @@ const ShowcaseProductCard: React.FC<ShowcaseProductCardProps> = ({
                     setSelectedColor(c.name);
                   }}
                   onMouseEnter={() => setSelectedColor(c.name)}
-                  className={`size-3.5 rounded-full border transition cursor-pointer ${
+                  className={`size-3 sm:size-3.5 rounded-full border transition cursor-pointer ${
                     isSelected
                       ? "ring-2 ring-orange-500/60 border-orange-600 scale-125 shadow-xs"
                       : "border-gray-300 dark:border-neutral-700 hover:scale-120"
                   }`}
                   style={{ backgroundColor: c.hex }}
-                  title={`${c.name} (Hover or click to switch variant photo)`}
+                  title={`${c.name}`}
                 />
               );
             })}
+            {product.colors.length > 4 && (
+              <span className="text-[10px] text-gray-400">+{product.colors.length - 4}</span>
+            )}
           </div>
         </div>
       </div>
@@ -289,6 +290,11 @@ export default function ProductShowcase() {
     items: catalogProducts,
     loading: catalogLoading,
   } = useAppSelector((state) => state.products);
+
+  const scrollRef = useRef<HTMLDivElement | null>(null);
+  const [canScrollLeft, setCanScrollLeft] = useState(false);
+  const [canScrollRight, setCanScrollRight] = useState(false);
+  const [activeMobileIndex, setActiveMobileIndex] = useState(0);
 
   // Single source of truth: prefer home products if populated, fallback to catalog products
   const displayProducts = useMemo(() => {
@@ -341,6 +347,62 @@ export default function ProductShowcase() {
     );
   }, [displayProducts, activeProductTab]);
 
+  const checkScroll = useCallback(() => {
+    const el = scrollRef.current;
+    if (!el) return;
+    const { scrollLeft, scrollWidth, clientWidth } = el;
+    setCanScrollLeft(scrollLeft > 6);
+    setCanScrollRight(scrollLeft < scrollWidth - clientWidth - 6);
+
+    if (typeof window !== "undefined" && window.innerWidth < 640) {
+      const idx = Math.round(scrollLeft / (clientWidth || 1));
+      setActiveMobileIndex(Math.max(0, Math.min(idx, filteredProducts.length - 1)));
+    }
+  }, [filteredProducts.length]);
+
+  useEffect(() => {
+    checkScroll();
+    const el = scrollRef.current;
+    if (!el) return;
+
+    el.addEventListener("scroll", checkScroll, { passive: true });
+    window.addEventListener("resize", checkScroll);
+
+    return () => {
+      el.removeEventListener("scroll", checkScroll);
+      window.removeEventListener("resize", checkScroll);
+    };
+  }, [checkScroll, filteredProducts]);
+
+  const handleTabSelect = (tab: string) => {
+    dispatch(setActiveProductTab(tab));
+    if (scrollRef.current) {
+      scrollRef.current.scrollTo({ left: 0, behavior: "smooth" });
+    }
+  };
+
+  const scrollPrev = () => {
+    const el = scrollRef.current;
+    if (!el) return;
+    const isMobile = window.innerWidth < 640;
+    const scrollAmount = isMobile ? el.clientWidth : el.clientWidth * 0.75;
+    el.scrollBy({ left: -scrollAmount, behavior: "smooth" });
+  };
+
+  const scrollNext = () => {
+    const el = scrollRef.current;
+    if (!el) return;
+    const isMobile = window.innerWidth < 640;
+    const scrollAmount = isMobile ? el.clientWidth : el.clientWidth * 0.75;
+    el.scrollBy({ left: scrollAmount, behavior: "smooth" });
+  };
+
+  const scrollToCard = (index: number) => {
+    const el = scrollRef.current;
+    if (!el) return;
+    el.scrollTo({ left: index * el.clientWidth, behavior: "smooth" });
+  };
+
   const handleWishlist = (e: React.MouseEvent, id: string) => {
     e.preventDefault();
     e.stopPropagation();
@@ -354,86 +416,149 @@ export default function ProductShowcase() {
   };
 
   return (
-    <section className="py-16 sm:py-24 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+    <section className="py-12 sm:py-16 lg:py-20 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 select-none">
       {/* Section Header */}
-      <div className="flex flex-col md:flex-row md:items-end md:justify-between gap-6 mb-10">
+      <div className="flex flex-col lg:flex-row lg:items-end lg:justify-between gap-6 mb-8 sm:mb-10">
         <div>
-          <div className="inline-flex items-center gap-1.5 text-xs font-bold uppercase tracking-widest text-orange-700 mb-2">
+          <div className="inline-flex items-center gap-1.5 text-xs font-bold uppercase tracking-widest text-orange-700 dark:text-orange-500 mb-1.5">
             <SparklesIcon className="size-4" />
             Everyday Quality Clothing
           </div>
-          <h2 className="text-3xl sm:text-4xl font-bold tracking-tight text-gray-900 dark:text-white">
+          <h2 className="text-2xl sm:text-3xl lg:text-4xl font-bold tracking-tight text-gray-900 dark:text-white">
             Featured Products
           </h2>
-          <p className="mt-2 text-sm text-gray-500 dark:text-neutral-400 max-w-xl">
+          <p className="mt-1.5 text-xs sm:text-sm text-gray-500 dark:text-neutral-400 max-w-xl">
             Comfortable everyday clothing made with pure cotton, durable selvedge denim, and warm winter fabrics. Cash on delivery available across Bangladesh.
           </p>
         </div>
 
-        {/* Dynamic Category Tabs */}
-        {isDataLoading && tabs.length <= 1 ? (
-          <div className="flex items-center gap-2 overflow-x-auto pb-2 scrollbar-none animate-pulse">
-            <div className="w-16 h-8 rounded-full bg-stone-200 dark:bg-neutral-800" />
-            <div className="w-20 h-8 rounded-full bg-stone-100 dark:bg-neutral-800/60" />
-            <div className="w-24 h-8 rounded-full bg-stone-100 dark:bg-neutral-800/60" />
-            <div className="w-18 h-8 rounded-full bg-stone-100 dark:bg-neutral-800/60" />
+        {/* Right Header: Dynamic Category Tabs + Slider Arrows */}
+        <div className="flex flex-wrap sm:flex-nowrap items-center justify-between sm:justify-end gap-3">
+          {/* Dynamic Category Tabs */}
+          {isDataLoading && tabs.length <= 1 ? (
+            <div className="flex items-center gap-2 overflow-x-auto pb-1 no-scrollbar animate-pulse">
+              <div className="w-14 h-8 rounded-full bg-stone-200 dark:bg-neutral-800" />
+              <div className="w-18 h-8 rounded-full bg-stone-100 dark:bg-neutral-800/60" />
+              <div className="w-20 h-8 rounded-full bg-stone-100 dark:bg-neutral-800/60" />
+            </div>
+          ) : (
+            <div className="flex items-center gap-1.5 sm:gap-2 overflow-x-auto pb-1 no-scrollbar max-w-full sm:max-w-md">
+              {tabs.map((tab, tabIdx) => {
+                const isActive =
+                  tab === "All"
+                    ? !activeProductTab || activeProductTab === "All"
+                    : activeProductTab.trim().toLowerCase() === tab.trim().toLowerCase();
+                return (
+                  <button
+                    key={`${tab}-${tabIdx}`}
+                    type="button"
+                    onClick={() => handleTabSelect(tab)}
+                    className={`whitespace-nowrap px-3.5 py-1.5 rounded-full text-xs sm:text-sm font-semibold transition cursor-pointer shrink-0 ${
+                      isActive
+                        ? "bg-gray-900 dark:bg-orange-700 text-white shadow-xs"
+                        : "bg-stone-100 dark:bg-neutral-800 text-gray-600 dark:text-neutral-300 hover:bg-stone-200 dark:hover:bg-neutral-700 hover:text-gray-900 dark:hover:text-white"
+                    }`}
+                  >
+                    {tab}
+                  </button>
+                );
+              })}
+            </div>
+          )}
+
+          {/* Navigation Arrows */}
+          <div className="flex items-center gap-1.5 shrink-0 ml-auto sm:ml-0">
+            <button
+              type="button"
+              id="featured-products-prev"
+              onClick={scrollPrev}
+              disabled={!canScrollLeft}
+              aria-label="Previous products"
+              className={`size-8 sm:size-9 rounded-full flex items-center justify-center border transition-all duration-200 ${
+                canScrollLeft
+                  ? "bg-white dark:bg-neutral-800 border-gray-300 dark:border-neutral-700 text-gray-800 dark:text-white hover:bg-orange-600 hover:border-orange-600 hover:text-white cursor-pointer shadow-xs active:scale-95"
+                  : "bg-gray-100 dark:bg-neutral-900 border-gray-200 dark:border-neutral-800 text-gray-400 dark:text-neutral-600 cursor-not-allowed opacity-50"
+              }`}
+            >
+              <ChevronLeftIcon className="size-4" />
+            </button>
+            <button
+              type="button"
+              id="featured-products-next"
+              onClick={scrollNext}
+              disabled={!canScrollRight}
+              aria-label="Next products"
+              className={`size-8 sm:size-9 rounded-full flex items-center justify-center border transition-all duration-200 ${
+                canScrollRight
+                  ? "bg-white dark:bg-neutral-800 border-gray-300 dark:border-neutral-700 text-gray-800 dark:text-white hover:bg-orange-600 hover:border-orange-600 hover:text-white cursor-pointer shadow-xs active:scale-95"
+                  : "bg-gray-100 dark:bg-neutral-900 border-gray-200 dark:border-neutral-800 text-gray-400 dark:text-neutral-600 cursor-not-allowed opacity-50"
+              }`}
+            >
+              <ChevronRightIcon className="size-4" />
+            </button>
           </div>
-        ) : (
-          <div className="flex items-center gap-2 overflow-x-auto pb-2 scrollbar-none">
-            {tabs.map((tab) => {
-              const isActive =
-                tab === "All"
-                  ? !activeProductTab || activeProductTab === "All"
-                  : activeProductTab.trim().toLowerCase() === tab.trim().toLowerCase();
-              return (
-                <button
-                  key={tab}
-                  type="button"
-                  onClick={() => dispatch(setActiveProductTab(tab))}
-                  className={`whitespace-nowrap px-4 py-2 rounded-full text-xs sm:text-sm font-semibold transition cursor-pointer ${
-                    isActive
-                      ? "bg-gray-900 dark:bg-orange-700 text-white shadow-sm"
-                      : "bg-stone-100 dark:bg-neutral-800 text-gray-600 dark:text-neutral-300 hover:bg-stone-200 dark:hover:bg-neutral-700 hover:text-gray-900 dark:hover:text-white"
-                  }`}
-                >
-                  {tab}
-                </button>
-              );
-            })}
-          </div>
-        )}
+        </div>
       </div>
 
-      {/* Products Grid */}
+      {/* Products Slider */}
       {isDataLoading ? (
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 lg:gap-8">
-          {[1, 2, 3, 4].map((i) => (
-            <ProductCardSkeleton key={i} />
+        <div className="flex gap-4 overflow-hidden pb-4">
+          {[1, 2, 3, 4, 5].map((i) => (
+            <div
+              key={i}
+              className="w-full sm:w-[calc((100%-32px)/3)] lg:w-[calc((100%-64px)/5)] shrink-0"
+            >
+              <ProductCardSkeleton />
+            </div>
           ))}
         </div>
       ) : filteredProducts.length === 0 ? (
-        <div className="py-16 text-center text-gray-500 dark:text-neutral-400">
+        <div className="py-16 text-center text-gray-500 dark:text-neutral-400 bg-stone-50 dark:bg-neutral-900/50 rounded-2xl border border-dashed border-gray-200 dark:border-neutral-800">
           No featured products found in this category.
         </div>
       ) : (
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 lg:gap-8">
-          {filteredProducts.map((product) => (
-            <ShowcaseProductCard
-              key={product.id}
-              product={product}
-              isWishlisted={wishlistIds.includes(product.id)}
-              onWishlist={handleWishlist}
-              onQuickView={(p) => dispatch(setQuickViewProduct(p))}
-            />
-          ))}
-        </div>
+        <>
+          <div
+            ref={scrollRef}
+            className="flex overflow-x-auto snap-x snap-mandatory gap-4 no-scrollbar scroll-smooth pb-3 -mx-4 px-4 sm:mx-0 sm:px-0 touch-pan-x"
+          >
+            {filteredProducts.map((product, idx) => (
+              <ShowcaseProductCard
+                key={product.id || idx}
+                product={product}
+                isWishlisted={wishlistIds.includes(product.id)}
+                onWishlist={handleWishlist}
+                onQuickView={(p) => dispatch(setQuickViewProduct(p))}
+              />
+            ))}
+          </div>
+
+          {/* Mobile Dot Indicators */}
+          {filteredProducts.length > 1 && (
+            <div className="flex sm:hidden items-center justify-center gap-1.5 mt-3">
+              {filteredProducts.slice(0, 8).map((_, idx) => (
+                <button
+                  key={idx}
+                  type="button"
+                  onClick={() => scrollToCard(idx)}
+                  className={`h-1.5 rounded-full transition-all duration-300 cursor-pointer ${
+                    idx === activeMobileIndex
+                      ? "w-6 bg-orange-600 shadow-xs"
+                      : "w-1.5 bg-stone-300 dark:bg-neutral-700 hover:bg-stone-400"
+                  }`}
+                  aria-label={`Go to product slide ${idx + 1}`}
+                />
+              ))}
+            </div>
+          )}
+        </>
       )}
 
       {/* View All Products CTA Button */}
-      <div className="mt-12 text-center">
+      <div className="mt-10 sm:mt-12 text-center">
         <Link
           to="/products"
-          className="inline-flex items-center gap-2 px-8 py-3.5 rounded-full bg-stone-900 hover:bg-orange-700 text-white text-sm font-semibold shadow-md hover:shadow-lg transition-all duration-300"
+          className="inline-flex items-center gap-2 px-7 py-3 rounded-full bg-stone-900 hover:bg-orange-700 text-white text-xs sm:text-sm font-semibold shadow-md hover:shadow-lg transition-all duration-300"
         >
           <span>Explore All Products</span>
           <ArrowRightIcon className="size-4" />

@@ -247,6 +247,24 @@ export const initialFeaturedCategories: FeaturedCategory[] = [
       "https://images.unsplash.com/photo-1558769132-cb1aea458c5e?auto=format&fit=crop&w=800&q=80",
     link: "/products?category=Knitwear",
   },
+  {
+    id: "cat-shirts",
+    name: "Casual Shirts & Polos",
+    tagline: "Breathable oxford cotton shirts and classic pique polos",
+    itemCount: "25 Items",
+    image:
+      "https://images.unsplash.com/photo-1602810318383-e386cc2a3ccf?auto=format&fit=crop&w=800&q=80",
+    link: "/products?category=Shirts",
+  },
+  {
+    id: "cat-hoodies",
+    name: "Hoodies & Sweatshirts",
+    tagline: "Heavy 450 GSM fleece hoodies and oversized sweatshirts",
+    itemCount: "18 Items",
+    image:
+      "https://images.unsplash.com/photo-1556905055-8f358a7a47b2?auto=format&fit=crop&w=800&q=80",
+    link: "/products?category=Hoodie",
+  },
 ];
 
 // Product pricing in Bangladeshi Taka (BDT) with easy English product names & details
