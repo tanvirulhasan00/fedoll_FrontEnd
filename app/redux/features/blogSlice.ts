@@ -25,8 +25,24 @@ export interface BlogState {
   seeding: boolean;
 }
 
+const loadInitialBlogs = (): BlogItem[] => {
+  if (typeof window === "undefined") return [];
+  try {
+    const raw = localStorage.getItem("fedoll_blogs_cache");
+    if (raw) {
+      const parsed = JSON.parse(raw);
+      if (Array.isArray(parsed)) return parsed;
+    }
+  } catch {
+    // ignore
+  }
+  return [];
+};
+
+const cachedBlogs = loadInitialBlogs();
+
 const initialState: BlogState = {
-  blogs: initialBlogs, // Initialize with default data for instant SSR/first paint
+  blogs: cachedBlogs,
   selectedBlog: null,
   loading: false,
   detailLoading: false,
@@ -38,21 +54,18 @@ const initialState: BlogState = {
 };
 
 /**
- * Fetch all blogs from Firestore (falls back gracefully to initialBlogs)
+ * Fetch all blogs from Firestore (returns real DB blogs)
  */
 export const fetchBlogs = createAsyncThunk(
   "blogs/fetchBlogs",
   async (_params: void, { rejectWithValue }) => {
     try {
       const data = await fetchBlogsFromFirestore();
-      if (!data || data.length === 0) {
-        return initialBlogs;
-      }
-      return data;
+      return data || [];
     } catch (err: unknown) {
       const error = err as Error;
-      console.warn("fetchBlogs failed, falling back to local dataset:", error);
-      return initialBlogs;
+      console.warn("fetchBlogs failed:", error);
+      return [];
     }
   }
 );

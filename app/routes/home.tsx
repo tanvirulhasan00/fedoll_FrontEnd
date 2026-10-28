@@ -52,17 +52,13 @@ const Home = () => {
 
     // Subscribe to realtime product catalog updates
     const unsubscribeProducts = subscribeToProductsFromFirestore((liveProducts) => {
-      if (liveProducts && liveProducts.length > 0) {
-        dispatch(setProducts(liveProducts));
-        dispatch(setHomeProducts(liveProducts));
-      }
+      dispatch(setProducts(liveProducts || []));
+      dispatch(setHomeProducts(liveProducts || []));
     });
 
     // Subscribe to realtime style journal articles
     const unsubscribeBlogs = subscribeToBlogsFromFirestore((liveBlogs) => {
-      if (liveBlogs && liveBlogs.length > 0) {
-        dispatch(setBlogs(liveBlogs));
-      }
+      dispatch(setBlogs(liveBlogs || []));
     });
 
     return () => {

@@ -28,6 +28,9 @@ import type { ProductItem } from "~/firebase";
 import {
   getVariantImages,
   DEFAULT_CATEGORY_NAME,
+  normalizeGoogleDriveImageUrl,
+  extractGoogleDriveFileId,
+  getGoogleDriveThumbnailUrl,
 } from "~/firebase";
 import { ProductCardSkeleton } from "~/components/main/Skeletons";
 
@@ -103,21 +106,40 @@ const ShowcaseProductCard: React.FC<ShowcaseProductCardProps> = ({
       <div className="relative aspect-4/5 overflow-hidden bg-stone-100 dark:bg-neutral-800">
         <Link to={`/products/${product.id}`} className="block w-full h-full cursor-pointer">
           <img
-            src={primaryImage}
+            src={normalizeGoogleDriveImageUrl(primaryImage)}
             alt={`${product.name} - ${selectedColor}`}
             className={`w-full h-full object-cover group-hover:scale-105 transition-transform duration-500 ${
               isSoldOut ? "opacity-85 grayscale-25" : ""
             }`}
+            onError={(e) => {
+              const target = e.currentTarget;
+              const fileId = extractGoogleDriveFileId(primaryImage);
+              if (fileId && !target.dataset.triedThumbnail) {
+                target.dataset.triedThumbnail = "true";
+                target.src = getGoogleDriveThumbnailUrl(primaryImage, 800);
+                return;
+              }
+              target.src =
+                "https://images.unsplash.com/photo-1544441893-675973e31985?auto=format&fit=crop&w=800&q=80";
+            }}
           />
 
           {/* Secondary Image on Hover if available */}
           {secondaryImage && (
             <img
-              src={secondaryImage}
+              src={normalizeGoogleDriveImageUrl(secondaryImage)}
               alt={`${product.name} alternate view`}
               className={`absolute inset-0 w-full h-full object-cover opacity-0 group-hover:opacity-100 transition-opacity duration-500 ${
                 isSoldOut ? "opacity-85 grayscale-25" : ""
               }`}
+              onError={(e) => {
+                const target = e.currentTarget;
+                const fileId = extractGoogleDriveFileId(secondaryImage);
+                if (fileId && !target.dataset.triedThumbnail) {
+                  target.dataset.triedThumbnail = "true";
+                  target.src = getGoogleDriveThumbnailUrl(secondaryImage, 800);
+                }
+              }}
             />
           )}
         </Link>
@@ -306,32 +328,36 @@ export default function ProductShowcase() {
   const isDataLoading =
     (homeLoading || catalogLoading) && displayProducts.length === 0;
 
-  // Dynamically compute category tabs from database categories + active products
+  // Dynamically compute category tabs ONLY from categories that actually have products listed
   const tabs = useMemo(() => {
+    if (!displayProducts || displayProducts.length === 0) return [];
+
     const list = ["All"];
     const seen = new Set<string>(["all"]);
 
-    // Only use real categories from Firestore/cache - no old dummy category fallbacks
-    const sourceCategories =
-      categories && categories.length > 0 ? categories : [];
-
-    for (const cat of sourceCategories) {
+    // 1. From categories defined in Firestore that actually have products listed
+    for (const cat of categories || []) {
       const name = cat.name?.trim();
-      if (name && !seen.has(name.toLowerCase())) {
-        if (name.toLowerCase() === DEFAULT_CATEGORY_NAME.toLowerCase()) {
-          const hasUncat = displayProducts.some(
-            (p) => p.category?.trim().toLowerCase() === DEFAULT_CATEGORY_NAME.toLowerCase()
-          );
-          if (!hasUncat) continue;
-        }
+      if (!name || seen.has(name.toLowerCase()) || name.toLowerCase() === "uncategorized") {
+        continue;
+      }
+      const hasProducts = displayProducts.some(
+        (p) => (p.category || "").trim().toLowerCase() === name.toLowerCase()
+      );
+      if (hasProducts) {
         seen.add(name.toLowerCase());
         list.push(name);
       }
     }
 
+    // 2. From direct products that have a category assigned
     for (const p of displayProducts) {
       const name = p.category?.trim();
-      if (name && !seen.has(name.toLowerCase())) {
+      if (
+        name &&
+        !seen.has(name.toLowerCase()) &&
+        name.toLowerCase() !== "uncategorized"
+      ) {
         seen.add(name.toLowerCase());
         list.push(name);
       }
@@ -441,71 +467,75 @@ export default function ProductShowcase() {
         </div>
 
         {/* Right Header: Dynamic Category Tabs + Slider Arrows */}
-        <div className="flex flex-wrap sm:flex-nowrap items-center justify-between sm:justify-end gap-3">
-          {/* Dynamic Category Tabs */}
-          {isDataLoading && tabs.length <= 1 ? (
-            <div className="flex items-center gap-2 overflow-x-auto pb-1 no-scrollbar animate-pulse">
-              <div className="w-14 h-8 rounded-full bg-stone-200 dark:bg-neutral-800" />
-              <div className="w-18 h-8 rounded-full bg-stone-100 dark:bg-neutral-800/60" />
-              <div className="w-20 h-8 rounded-full bg-stone-100 dark:bg-neutral-800/60" />
-            </div>
-          ) : (
-            <div className="flex items-center gap-1.5 sm:gap-2 overflow-x-auto pb-1 no-scrollbar max-w-full sm:max-w-md">
-              {tabs.map((tab, tabIdx) => {
-                const isActive =
-                  tab === "All"
-                    ? !activeProductTab || activeProductTab === "All"
-                    : activeProductTab.trim().toLowerCase() === tab.trim().toLowerCase();
-                return (
-                  <button
-                    key={`${tab}-${tabIdx}`}
-                    type="button"
-                    onClick={() => handleTabSelect(tab)}
-                    className={`whitespace-nowrap px-3.5 py-1.5 rounded-full text-xs sm:text-sm font-semibold transition cursor-pointer shrink-0 ${
-                      isActive
-                        ? "bg-gray-900 dark:bg-orange-700 text-white shadow-xs"
-                        : "bg-stone-100 dark:bg-neutral-800 text-gray-600 dark:text-neutral-300 hover:bg-stone-200 dark:hover:bg-neutral-700 hover:text-gray-900 dark:hover:text-white"
-                    }`}
-                  >
-                    {tab}
-                  </button>
-                );
-              })}
-            </div>
-          )}
+        {displayProducts.length > 0 && (
+          <div className="flex flex-wrap sm:flex-nowrap items-center justify-between sm:justify-end gap-3">
+            {/* Dynamic Category Tabs */}
+            {isDataLoading && tabs.length <= 1 ? (
+              <div className="flex items-center gap-2 overflow-x-auto pb-1 no-scrollbar animate-pulse">
+                <div className="w-14 h-8 rounded-full bg-stone-200 dark:bg-neutral-800" />
+                <div className="w-18 h-8 rounded-full bg-stone-100 dark:bg-neutral-800/60" />
+                <div className="w-20 h-8 rounded-full bg-stone-100 dark:bg-neutral-800/60" />
+              </div>
+            ) : tabs.length > 1 ? (
+              <div className="flex items-center gap-1.5 sm:gap-2 overflow-x-auto pb-1 no-scrollbar max-w-full sm:max-w-md">
+                {tabs.map((tab, tabIdx) => {
+                  const isActive =
+                    tab === "All"
+                      ? !activeProductTab || activeProductTab === "All"
+                      : activeProductTab.trim().toLowerCase() === tab.trim().toLowerCase();
+                  return (
+                    <button
+                      key={`${tab}-${tabIdx}`}
+                      type="button"
+                      onClick={() => handleTabSelect(tab)}
+                      className={`whitespace-nowrap px-3.5 py-1.5 rounded-full text-xs sm:text-sm font-semibold transition cursor-pointer shrink-0 ${
+                        isActive
+                          ? "bg-gray-900 dark:bg-orange-700 text-white shadow-xs"
+                          : "bg-stone-100 dark:bg-neutral-800 text-gray-600 dark:text-neutral-300 hover:bg-stone-200 dark:hover:bg-neutral-700 hover:text-gray-900 dark:hover:text-white"
+                      }`}
+                    >
+                      {tab}
+                    </button>
+                  );
+                })}
+              </div>
+            ) : null}
 
-          {/* Navigation Arrows */}
-          <div className="flex items-center gap-1.5 shrink-0 ml-auto sm:ml-0">
-            <button
-              type="button"
-              id="featured-products-prev"
-              onClick={scrollPrev}
-              disabled={!canScrollLeft}
-              aria-label="Previous products"
-              className={`size-8 sm:size-9 rounded-full flex items-center justify-center border transition-all duration-200 ${
-                canScrollLeft
-                  ? "bg-white dark:bg-neutral-800 border-gray-300 dark:border-neutral-700 text-gray-800 dark:text-white hover:bg-orange-600 hover:border-orange-600 hover:text-white cursor-pointer shadow-xs active:scale-95"
-                  : "bg-gray-100 dark:bg-neutral-900 border-gray-200 dark:border-neutral-800 text-gray-400 dark:text-neutral-600 cursor-not-allowed opacity-50"
-              }`}
-            >
-              <ChevronLeftIcon className="size-4" />
-            </button>
-            <button
-              type="button"
-              id="featured-products-next"
-              onClick={scrollNext}
-              disabled={!canScrollRight}
-              aria-label="Next products"
-              className={`size-8 sm:size-9 rounded-full flex items-center justify-center border transition-all duration-200 ${
-                canScrollRight
-                  ? "bg-white dark:bg-neutral-800 border-gray-300 dark:border-neutral-700 text-gray-800 dark:text-white hover:bg-orange-600 hover:border-orange-600 hover:text-white cursor-pointer shadow-xs active:scale-95"
-                  : "bg-gray-100 dark:bg-neutral-900 border-gray-200 dark:border-neutral-800 text-gray-400 dark:text-neutral-600 cursor-not-allowed opacity-50"
-              }`}
-            >
-              <ChevronRightIcon className="size-4" />
-            </button>
+            {/* Navigation Arrows */}
+            {filteredProducts.length > 0 && (
+              <div className="flex items-center gap-1.5 shrink-0 ml-auto sm:ml-0">
+                <button
+                  type="button"
+                  id="featured-products-prev"
+                  onClick={scrollPrev}
+                  disabled={!canScrollLeft}
+                  aria-label="Previous products"
+                  className={`size-8 sm:size-9 rounded-full flex items-center justify-center border transition-all duration-200 ${
+                    canScrollLeft
+                      ? "bg-white dark:bg-neutral-800 border-gray-300 dark:border-neutral-700 text-gray-800 dark:text-white hover:bg-orange-600 hover:border-orange-600 hover:text-white cursor-pointer shadow-xs active:scale-95"
+                      : "bg-gray-100 dark:bg-neutral-900 border-gray-200 dark:border-neutral-800 text-gray-400 dark:text-neutral-600 cursor-not-allowed opacity-50"
+                  }`}
+                >
+                  <ChevronLeftIcon className="size-4" />
+                </button>
+                <button
+                  type="button"
+                  id="featured-products-next"
+                  onClick={scrollNext}
+                  disabled={!canScrollRight}
+                  aria-label="Next products"
+                  className={`size-8 sm:size-9 rounded-full flex items-center justify-center border transition-all duration-200 ${
+                    canScrollRight
+                      ? "bg-white dark:bg-neutral-800 border-gray-300 dark:border-neutral-700 text-gray-800 dark:text-white hover:bg-orange-600 hover:border-orange-600 hover:text-white cursor-pointer shadow-xs active:scale-95"
+                      : "bg-gray-100 dark:bg-neutral-900 border-gray-200 dark:border-neutral-800 text-gray-400 dark:text-neutral-600 cursor-not-allowed opacity-50"
+                  }`}
+                >
+                  <ChevronRightIcon className="size-4" />
+                </button>
+              </div>
+            )}
           </div>
-        </div>
+        )}
       </div>
 
       {/* Products Slider */}
@@ -520,9 +550,25 @@ export default function ProductShowcase() {
             </div>
           ))}
         </div>
+      ) : displayProducts.length === 0 ? (
+        <div className="py-16 px-4 text-center text-gray-500 dark:text-neutral-400 bg-stone-50 dark:bg-neutral-900/50 rounded-2xl border border-dashed border-gray-200 dark:border-neutral-800">
+          <SparklesIcon className="size-10 mx-auto text-gray-400 dark:text-neutral-500 mb-2.5" />
+          <h3 className="text-base font-bold text-gray-800 dark:text-neutral-200">
+            No products found
+          </h3>
+          <p className="text-xs text-gray-500 dark:text-neutral-400 mt-1 max-w-sm mx-auto">
+            There are currently no products available in the store. Products added to the database will appear here automatically.
+          </p>
+        </div>
       ) : filteredProducts.length === 0 ? (
-        <div className="py-16 text-center text-gray-500 dark:text-neutral-400 bg-stone-50 dark:bg-neutral-900/50 rounded-2xl border border-dashed border-gray-200 dark:border-neutral-800">
-          No featured products found in this category.
+        <div className="py-16 px-4 text-center text-gray-500 dark:text-neutral-400 bg-stone-50 dark:bg-neutral-900/50 rounded-2xl border border-dashed border-gray-200 dark:border-neutral-800">
+          <SparklesIcon className="size-10 mx-auto text-gray-400 dark:text-neutral-500 mb-2.5" />
+          <h3 className="text-base font-bold text-gray-800 dark:text-neutral-200">
+            No products found in this category
+          </h3>
+          <p className="text-xs text-gray-500 dark:text-neutral-400 mt-1 max-w-sm mx-auto">
+            Try choosing another category tab above to explore our collections.
+          </p>
         </div>
       ) : (
         <>
@@ -563,15 +609,17 @@ export default function ProductShowcase() {
       )}
 
       {/* View All Products CTA Button */}
-      <div className="mt-10 sm:mt-12 text-center">
-        <Link
-          to="/products"
-          className="inline-flex items-center gap-2 px-7 py-3 rounded-full bg-stone-900 hover:bg-orange-700 text-white text-xs sm:text-sm font-semibold shadow-md hover:shadow-lg transition-all duration-300"
-        >
-          <span>Explore All Products</span>
-          <ArrowRightIcon className="size-4" />
-        </Link>
-      </div>
+      {displayProducts.length > 0 && (
+        <div className="mt-10 sm:mt-12 text-center">
+          <Link
+            to="/products"
+            className="inline-flex items-center gap-2 px-7 py-3 rounded-full bg-stone-900 hover:bg-orange-700 text-white text-xs sm:text-sm font-semibold shadow-md hover:shadow-lg transition-all duration-300"
+          >
+            <span>Explore All Products</span>
+            <ArrowRightIcon className="size-4" />
+          </Link>
+        </div>
+      )}
 
       {/* Quick View Modal */}
       <QuickViewModal />

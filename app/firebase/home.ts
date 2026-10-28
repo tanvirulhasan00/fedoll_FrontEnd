@@ -700,47 +700,7 @@ export const seedSpotlightBannersToFirestore = async (force: boolean = false) =>
  */
 export const fetchHomeDataFromFirestore = async () => {
   try {
-    const catSnap = await getDocs(collection(db, "featured_categories"));
-    let featuredCategories: FeaturedCategory[] = catSnap.empty
-      ? []
-      : catSnap.docs.map(
-          (d) => ({ id: d.id, ...(d.data() as DocumentData) } as FeaturedCategory)
-        );
-
-    // If featured_categories collection has no docs, load live categories from product_categories in Firestore
-    if (featuredCategories.length === 0) {
-      try {
-        const prodCatSnap = await getDocs(collection(db, "product_categories"));
-        if (!prodCatSnap.empty) {
-          const list = prodCatSnap.docs.map((d) => {
-            const data = d.data() as DocumentData;
-            return {
-              id: d.id,
-              name: data.name || "",
-              tagline: data.tagline || "",
-              itemCount: `${data.itemCount || 0} Items`,
-              image: normalizeGoogleDriveImageUrl(data.image || ""),
-              link: `/products?category=${encodeURIComponent(data.name || "")}`,
-              parentId: data.parentId || null,
-              order: data.order ?? 999,
-            };
-          });
-          const rootCats = list.filter((c) => !c.parentId);
-          const activeList = rootCats.length > 0 ? rootCats : list;
-          featuredCategories = activeList.sort(
-            (a, b) => (a.order ?? 999) - (b.order ?? 999)
-          ) as FeaturedCategory[];
-        }
-      } catch (err) {
-        console.warn("Could not fetch product_categories for home data:", err);
-      }
-    }
-
-    if (featuredCategories.length === 0) {
-      featuredCategories = initialFeaturedCategories;
-    }
-
-    // Fetch products using the unified products fetcher (handles Firestore + cache + variants)
+    // 1. Fetch products using the unified products fetcher (handles Firestore + cache + variants)
     let products: ProductItem[] = [];
     try {
       products = await fetchProductsFromFirestore();
@@ -755,6 +715,51 @@ export const fetchHomeDataFromFirestore = async () => {
         products = prodSnap.docs.map(
           (d) => ({ id: d.id, ...(d.data() as DocumentData) } as ProductItem)
         );
+      }
+    }
+
+    // 2. Fetch categories and only keep categories that have products listed
+    const catSnap = await getDocs(collection(db, "featured_categories"));
+    let featuredCategories: FeaturedCategory[] = catSnap.empty
+      ? []
+      : catSnap.docs.map(
+          (d) => ({ id: d.id, ...(d.data() as DocumentData) } as FeaturedCategory)
+        );
+
+    // If featured_categories collection has no docs, load live categories from product_categories in Firestore
+    if (featuredCategories.length === 0) {
+      try {
+        const prodCatSnap = await getDocs(collection(db, "product_categories"));
+        if (!prodCatSnap.empty) {
+          const list = prodCatSnap.docs.map((d) => {
+            const data = d.data() as DocumentData;
+            const matchingCount = (products || []).filter(
+              (p) =>
+                (p.category || "").trim().toLowerCase() ===
+                (data.name || "").trim().toLowerCase()
+            ).length;
+
+            return {
+              id: d.id,
+              name: data.name || "",
+              tagline: data.tagline || "",
+              itemCount: `${matchingCount} ${matchingCount === 1 ? "Item" : "Items"}`,
+              image: normalizeGoogleDriveImageUrl(data.image || ""),
+              link: `/products?category=${encodeURIComponent(data.name || "")}`,
+              parentId: data.parentId || null,
+              order: data.order ?? 999,
+              matchingCount,
+            };
+          });
+
+          // Only keep categories with matching products!
+          const withProducts = list.filter((c) => c.matchingCount > 0);
+          featuredCategories = withProducts.sort(
+            (a, b) => (a.order ?? 999) - (b.order ?? 999)
+          ) as FeaturedCategory[];
+        }
+      } catch (err) {
+        console.warn("Could not fetch product_categories for home data:", err);
       }
     }
 

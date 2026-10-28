@@ -52,16 +52,26 @@ export default function JournalPreviewSection() {
   const scrollPrev = () => {
     const el = scrollRef.current;
     if (!el) return;
-    const isMobile = window.innerWidth < 640;
-    const scrollAmount = isMobile ? el.clientWidth : el.clientWidth * 0.75;
+    const containerWidth = el.clientWidth;
+    const width = window.innerWidth;
+    const visibleItems = width >= 1024 ? 4 : width >= 768 ? 3 : width >= 640 ? 2 : 1;
+    const gap = 16;
+    const totalGap = (visibleItems - 1) * gap;
+    const cardWidth = (containerWidth - totalGap) / visibleItems;
+    const scrollAmount = cardWidth + gap;
     el.scrollBy({ left: -scrollAmount, behavior: "smooth" });
   };
 
   const scrollNext = () => {
     const el = scrollRef.current;
     if (!el) return;
-    const isMobile = window.innerWidth < 640;
-    const scrollAmount = isMobile ? el.clientWidth : el.clientWidth * 0.75;
+    const containerWidth = el.clientWidth;
+    const width = window.innerWidth;
+    const visibleItems = width >= 1024 ? 4 : width >= 768 ? 3 : width >= 640 ? 2 : 1;
+    const gap = 16;
+    const totalGap = (visibleItems - 1) * gap;
+    const cardWidth = (containerWidth - totalGap) / visibleItems;
+    const scrollAmount = cardWidth + gap;
     el.scrollBy({ left: scrollAmount, behavior: "smooth" });
   };
 
@@ -75,7 +85,7 @@ export default function JournalPreviewSection() {
     return <JournalPreviewSkeleton />;
   }
 
-  if (!blogs || blogs.length === 0) return null;
+  const hasBlogs = Boolean(blogs && blogs.length > 0);
 
   return (
     <section className="py-12 sm:py-16 lg:py-20 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 select-none">
@@ -95,54 +105,68 @@ export default function JournalPreviewSection() {
         </div>
 
         {/* Right Header: Link to all guides + Slider Navigation Controls */}
-        <div className="flex items-center justify-between sm:justify-end gap-4 self-end sm:self-auto shrink-0">
-          <Link
-            to="/blogs"
-            className="inline-flex items-center gap-1.5 text-xs sm:text-sm font-semibold text-orange-700 dark:text-orange-500 hover:text-orange-800 dark:hover:text-orange-400 transition"
-          >
-            <span>Read All Guides</span>
-            <ArrowRightIcon className="size-3.5 sm:size-4" />
-          </Link>
+        {hasBlogs && (
+          <div className="flex items-center justify-between sm:justify-end gap-4 self-end sm:self-auto shrink-0">
+            <Link
+              to="/blogs"
+              className="inline-flex items-center gap-1.5 text-xs sm:text-sm font-semibold text-orange-700 dark:text-orange-500 hover:text-orange-800 dark:hover:text-orange-400 transition"
+            >
+              <span>Read All Guides</span>
+              <ArrowRightIcon className="size-3.5 sm:size-4" />
+            </Link>
 
-          <div className="flex items-center gap-1.5">
-            <button
-              type="button"
-              id="journal-prev"
-              onClick={scrollPrev}
-              disabled={!canScrollLeft}
-              aria-label="Previous stories"
-              className={`size-8 sm:size-9 rounded-full flex items-center justify-center border transition-all duration-200 ${
-                canScrollLeft
-                  ? "bg-white dark:bg-neutral-800 border-gray-300 dark:border-neutral-700 text-gray-800 dark:text-white hover:bg-orange-600 hover:border-orange-600 hover:text-white cursor-pointer shadow-xs active:scale-95"
-                  : "bg-gray-100 dark:bg-neutral-900 border-gray-200 dark:border-neutral-800 text-gray-400 dark:text-neutral-600 cursor-not-allowed opacity-50"
-              }`}
-            >
-              <ChevronLeftIcon className="size-4" />
-            </button>
-            <button
-              type="button"
-              id="journal-next"
-              onClick={scrollNext}
-              disabled={!canScrollRight}
-              aria-label="Next stories"
-              className={`size-8 sm:size-9 rounded-full flex items-center justify-center border transition-all duration-200 ${
-                canScrollRight
-                  ? "bg-white dark:bg-neutral-800 border-gray-300 dark:border-neutral-700 text-gray-800 dark:text-white hover:bg-orange-600 hover:border-orange-600 hover:text-white cursor-pointer shadow-xs active:scale-95"
-                  : "bg-gray-100 dark:bg-neutral-900 border-gray-200 dark:border-neutral-800 text-gray-400 dark:text-neutral-600 cursor-not-allowed opacity-50"
-              }`}
-            >
-              <ChevronRightIcon className="size-4" />
-            </button>
+            <div className="flex items-center gap-1.5">
+              <button
+                type="button"
+                id="journal-prev"
+                onClick={scrollPrev}
+                disabled={!canScrollLeft}
+                aria-label="Previous stories"
+                className={`size-8 sm:size-9 rounded-full flex items-center justify-center border transition-all duration-200 ${
+                  canScrollLeft
+                    ? "bg-white dark:bg-neutral-800 border-gray-300 dark:border-neutral-700 text-gray-800 dark:text-white hover:bg-orange-600 hover:border-orange-600 hover:text-white cursor-pointer shadow-xs active:scale-95"
+                    : "bg-gray-100 dark:bg-neutral-900 border-gray-200 dark:border-neutral-800 text-gray-400 dark:text-neutral-600 cursor-not-allowed opacity-50"
+                }`}
+              >
+                <ChevronLeftIcon className="size-4" />
+              </button>
+              <button
+                type="button"
+                id="journal-next"
+                onClick={scrollNext}
+                disabled={!canScrollRight}
+                aria-label="Next stories"
+                className={`size-8 sm:size-9 rounded-full flex items-center justify-center border transition-all duration-200 ${
+                  canScrollRight
+                    ? "bg-white dark:bg-neutral-800 border-gray-300 dark:border-neutral-700 text-gray-800 dark:text-white hover:bg-orange-600 hover:border-orange-600 hover:text-white cursor-pointer shadow-xs active:scale-95"
+                    : "bg-gray-100 dark:bg-neutral-900 border-gray-200 dark:border-neutral-800 text-gray-400 dark:text-neutral-600 cursor-not-allowed opacity-50"
+                }`}
+              >
+                <ChevronRightIcon className="size-4" />
+              </button>
+            </div>
           </div>
-        </div>
+        )}
       </div>
 
-      {/* Journal Stories Slider */}
-      <div
-        ref={scrollRef}
-        className="flex overflow-x-auto snap-x snap-mandatory gap-4 no-scrollbar scroll-smooth pb-3 -mx-4 px-4 sm:mx-0 sm:px-0 touch-pan-x"
-      >
-        {blogs.map((blog, idx) => (
+      {!hasBlogs ? (
+        <div className="py-16 px-4 text-center text-gray-500 dark:text-neutral-400 bg-stone-50 dark:bg-neutral-900/50 rounded-2xl border border-dashed border-gray-200 dark:border-neutral-800">
+          <BookOpenIcon className="size-10 mx-auto text-gray-400 dark:text-neutral-500 mb-2.5" />
+          <h3 className="text-base font-bold text-gray-800 dark:text-neutral-200">
+            No journal articles found
+          </h3>
+          <p className="text-xs text-gray-500 dark:text-neutral-400 mt-1 max-w-sm mx-auto">
+            There are currently no journal stories published in the database. Articles added to the database will appear here automatically.
+          </p>
+        </div>
+      ) : (
+        <>
+          {/* Journal Stories Slider */}
+          <div
+            ref={scrollRef}
+            className="flex overflow-x-auto snap-x snap-mandatory gap-4 no-scrollbar scroll-smooth pb-3 -mx-4 px-4 sm:mx-0 sm:px-0 touch-pan-x"
+          >
+            {blogs.map((blog, idx) => (
           <article
             key={blog.id || idx}
             className="group flex flex-col rounded-2xl border border-gray-200/90 dark:border-neutral-800 bg-white dark:bg-neutral-900 overflow-hidden shadow-xs hover:shadow-xl hover:-translate-y-1 transition-all duration-300 w-full sm:w-[calc((100%-16px)/2)] md:w-[calc((100%-32px)/3)] lg:w-[calc((100%-48px)/4)] shrink-0 snap-start"
@@ -218,22 +242,24 @@ export default function JournalPreviewSection() {
       </div>
 
       {/* Mobile Dot Indicators */}
-      {blogs.length > 1 && (
-        <div className="flex sm:hidden items-center justify-center gap-1.5 mt-3">
-          {blogs.map((_, idx) => (
-            <button
-              key={idx}
-              type="button"
-              onClick={() => scrollToCard(idx)}
-              className={`h-1.5 rounded-full transition-all duration-300 cursor-pointer ${
-                idx === activeMobileIndex
-                  ? "w-6 bg-orange-600 shadow-xs"
-                  : "w-1.5 bg-stone-300 dark:bg-neutral-700 hover:bg-stone-400"
-              }`}
-              aria-label={`Go to story slide ${idx + 1}`}
-            />
-          ))}
-        </div>
+          {blogs.length > 1 && (
+            <div className="flex sm:hidden items-center justify-center gap-1.5 mt-3">
+              {blogs.map((_, idx) => (
+                <button
+                  key={idx}
+                  type="button"
+                  onClick={() => scrollToCard(idx)}
+                  className={`h-1.5 rounded-full transition-all duration-300 cursor-pointer ${
+                    idx === activeMobileIndex
+                      ? "w-6 bg-orange-600 shadow-xs"
+                      : "w-1.5 bg-stone-300 dark:bg-neutral-700 hover:bg-stone-400"
+                  }`}
+                  aria-label={`Go to story slide ${idx + 1}`}
+                />
+              ))}
+            </div>
+          )}
+        </>
       )}
     </section>
   );

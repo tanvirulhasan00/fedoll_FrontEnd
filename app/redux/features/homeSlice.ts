@@ -111,7 +111,7 @@ const cachedSpotlightBanners = loadInitialSpotlightBanners();
 
 const initialState: HomeState = {
   heroBanners: getInitialHeroBanners(cachedHomeProducts),
-  featuredCategories: initialFeaturedCategories,
+  featuredCategories: [],
   products: cachedHomeProducts,
   testimonials: initialTestimonials,
   valueProps: initialValueProps,

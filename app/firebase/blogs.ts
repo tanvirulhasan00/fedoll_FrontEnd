@@ -298,11 +298,14 @@ export const fetchBlogsFromFirestore = async (): Promise<BlogItem[]> => {
     const snap = await getDocs(blogCol);
 
     if (snap.empty) {
-      await seedBlogsToFirestore();
       if (typeof window !== "undefined") {
-        localStorage.setItem(BLOGS_CACHE_KEY, JSON.stringify(initialBlogs));
+        try {
+          localStorage.setItem(BLOGS_CACHE_KEY, JSON.stringify([]));
+        } catch {
+          // ignore
+        }
       }
-      return initialBlogs;
+      return [];
     }
 
     const blogs: BlogItem[] = [];
@@ -357,7 +360,7 @@ export const fetchBlogsFromFirestore = async (): Promise<BlogItem[]> => {
         // ignore parse error
       }
     }
-    return initialBlogs;
+    return [];
   }
 };
 
@@ -414,6 +417,13 @@ export const subscribeToBlogsFromFirestore = (
           }
           callback(list);
         } else {
+          if (typeof window !== "undefined") {
+            try {
+              localStorage.setItem(BLOGS_CACHE_KEY, JSON.stringify([]));
+            } catch {
+              // ignore
+            }
+          }
           callback([]);
         }
       },
