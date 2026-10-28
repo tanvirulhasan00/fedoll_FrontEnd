@@ -19,6 +19,7 @@ import {
   BookOpenIcon,
   ArchiveBoxIcon,
   SparklesIcon,
+  StarIcon,
 } from "@heroicons/react/24/outline";
 import type { AuthUser } from "~/redux/features/auth/authSlice";
 import { useAppSelector } from "~/redux/hooks/hook";
@@ -76,6 +77,11 @@ export const AdminSidebar: React.FC<AdminSidebarProps> = ({
       label: "Returns & Exchanges",
       icon: ArrowPathRoundedSquareIcon,
       badge: pendingReturnsCount > 0 ? `${pendingReturnsCount} New` : undefined,
+    },
+    {
+      id: "reviews",
+      label: "Customer Reviews",
+      icon: StarIcon,
     },
     {
       id: "blogs",

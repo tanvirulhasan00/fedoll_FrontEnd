@@ -15,3 +15,4 @@ export * from "./legalPolicies";
 export * from "./wishlist";
 export * from "./stock";
 export * from "./roles";
+export * from "./reviews";

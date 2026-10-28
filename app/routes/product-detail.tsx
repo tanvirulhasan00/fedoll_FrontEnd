@@ -5,7 +5,7 @@ import Topbar from "~/components/main/Home/Topbar";
 import Header from "~/components/main/Home/Header";
 import Footer from "~/components/main/Home/Footer";
 import QuickViewModal from "~/components/main/Home/QuickViewModal";
-import { SizeGuideModal } from "~/components/main/Product";
+import { SizeGuideModal, ProductReviewsSection } from "~/components/main/Product";
 import { useAppDispatch, useAppSelector } from "~/redux/hooks/hook";
 import {
   fetchProductById,
@@ -654,7 +654,10 @@ export default function ProductDetailPage() {
                   </h1>
 
                   {/* 3. Rating & Reviews Row */}
-                  <div className="mt-2.5 flex items-center gap-2">
+                  <a
+                    href="#customer-reviews"
+                    className="mt-2.5 inline-flex items-center gap-2 group cursor-pointer hover:opacity-90 transition"
+                  >
                     <div className="flex items-center gap-0.5">
                       {[...Array(5)].map((_, i) => (
                         <StarSolidIcon
@@ -666,10 +669,10 @@ export default function ProductDetailPage() {
                     <span className="text-xs font-bold text-gray-900 dark:text-white">
                       {currentProduct.rating || 4.8}
                     </span>
-                    <span className="text-xs text-gray-500 dark:text-neutral-400">
-                      ({currentProduct.reviewCount || 128} reviews)
+                    <span className="text-xs text-gray-500 dark:text-neutral-400 group-hover:text-orange-600 transition underline underline-offset-2">
+                      ({currentProduct.reviewCount || 128} customer reviews)
                     </span>
-                  </div>
+                  </a>
                 </div>
 
                 {/* 4. Price Row with Original Strikethrough & Orange Discount Pill */}
@@ -1088,6 +1091,17 @@ export default function ProductDetailPage() {
             </div>
           </div>
         </section>
+
+        {/* ============================================================== */}
+        {/* CUSTOMER REVIEWS & RATINGS SECTION                              */}
+        {/* ============================================================== */}
+        <ProductReviewsSection
+          productId={currentProduct.id}
+          productName={currentProduct.name}
+          productImage={currentMainImage}
+          baseRating={currentProduct.rating || 4.8}
+          baseReviewCount={currentProduct.reviewCount || 0}
+        />
 
         {/* ============================================================== */}
         {/* BOTTOM SECTION: "YOU MAY ALSO LIKE"                            */}

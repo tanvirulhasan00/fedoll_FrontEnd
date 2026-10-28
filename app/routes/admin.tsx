@@ -51,6 +51,7 @@ import AdminCategoriesTab from "~/components/admin/AdminCategoriesTab";
 import AdminStockTab from "~/components/admin/AdminStockTab";
 import AdminOrdersTab from "~/components/admin/AdminOrdersTab";
 import AdminReturnsTab from "~/components/admin/AdminReturnsTab";
+import AdminReviewsTab from "~/components/admin/AdminReviewsTab";
 import AdminBlogsTab from "~/components/admin/AdminBlogsTab";
 import AdminShippingTab from "~/components/admin/AdminShippingTab";
 import AdminCustomersTab from "~/components/admin/AdminCustomersTab";
@@ -547,6 +548,12 @@ export default function AdminDashboardPage() {
                       policyData={returnsPolicy}
                       orders={orders}
                       onRefresh={loadAllAdminData}
+                    />
+                  )}
+
+                  {currentTab === "reviews" && (
+                    <AdminReviewsTab
+                      adminName={user?.displayName || "SilkenDrift Atelier"}
                     />
                   )}
 
