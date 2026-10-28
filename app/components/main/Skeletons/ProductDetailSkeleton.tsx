@@ -101,38 +101,59 @@ export const ProductDetailSkeleton: React.FC = () => {
           </div>
 
           {/* Quantity & CTA Buttons Skeleton */}
-          <div className="space-y-3 pt-4">
+          <div className="space-y-3 pt-3">
             <div className="flex items-center gap-3">
-              <Skeleton className="h-12 w-28 rounded-2xl" />
-              <Skeleton className="h-12 flex-1 rounded-2xl" />
+              <Skeleton className="h-13 w-28 rounded-xl" />
+              <Skeleton className="h-13 flex-1 rounded-xl" />
+              <Skeleton className="size-13 rounded-xl shrink-0" />
             </div>
-            <Skeleton className="h-12 w-full rounded-2xl" />
+            <Skeleton className="h-12 w-full rounded-xl" />
           </div>
 
-          {/* Trust Value Props Strip */}
-          <div className="pt-4 grid grid-cols-2 gap-3">
-            {[1, 2, 3, 4].map((tp) => (
-              <div
-                key={tp}
-                className="p-3 rounded-xl bg-stone-50 dark:bg-neutral-900 border border-stone-200/60 dark:border-neutral-800 flex items-center gap-2.5"
-              >
-                <Skeleton className="size-5 rounded-md shrink-0" />
-                <Skeleton className="h-3 w-28 rounded-md" />
+          {/* Trust Badges Strip (3 Columns) */}
+          <div className="pt-6 border-t border-stone-200/80 dark:border-neutral-800 grid grid-cols-1 sm:grid-cols-3 gap-4">
+            {[1, 2, 3].map((tp) => (
+              <div key={tp} className="flex items-center gap-3">
+                <Skeleton className="size-9 rounded-full shrink-0" />
+                <div className="space-y-1.5 flex-1">
+                  <Skeleton className="h-3.5 w-20 rounded-md" />
+                  <Skeleton className="h-2.5 w-24 rounded-md" />
+                </div>
               </div>
             ))}
           </div>
+        </div>
+      </div>
 
-          {/* Accordion Placeholders */}
-          <div className="pt-4 space-y-3">
-            {[1, 2, 3].map((acc) => (
-              <div
-                key={acc}
-                className="py-3.5 border-b border-gray-200 dark:border-neutral-800 flex items-center justify-between"
-              >
-                <Skeleton className="h-4 w-36 rounded-md" />
-                <Skeleton className="size-4 rounded-md" />
-              </div>
-            ))}
+      {/* Middle Section Skeleton (Tabs + Detail Photo 2-Column Split) */}
+      <div className="py-12 border-t border-stone-200/80 dark:border-neutral-800">
+        <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 lg:gap-14 items-center">
+          {/* Left: Tabbed Content Skeleton */}
+          <div className="lg:col-span-7 space-y-6">
+            <div className="flex items-center gap-6 border-b border-stone-200 dark:border-neutral-800 pb-3">
+              <Skeleton className="h-5 w-16 rounded-md" />
+              <Skeleton className="h-5 w-20 rounded-md" />
+              <Skeleton className="h-5 w-20 rounded-md" />
+              <Skeleton className="h-5 w-32 rounded-md" />
+            </div>
+            <div className="space-y-3">
+              <Skeleton className="h-4 w-full rounded-md" />
+              <Skeleton className="h-4 w-5/6 rounded-md" />
+              <Skeleton className="h-4 w-2/3 rounded-md" />
+            </div>
+            <div className="space-y-3 pt-2">
+              {[1, 2, 3, 4, 5].map((item) => (
+                <div key={item} className="flex items-center gap-3">
+                  <Skeleton className="size-4.5 rounded-full shrink-0" />
+                  <Skeleton className="h-4 w-64 rounded-md" />
+                </div>
+              ))}
+            </div>
+          </div>
+
+          {/* Right: Detail Showcase Photo Skeleton */}
+          <div className="lg:col-span-5">
+            <Skeleton className="w-full aspect-4/3 rounded-3xl" />
           </div>
         </div>
       </div>
