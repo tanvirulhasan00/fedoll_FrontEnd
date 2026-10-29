@@ -34,6 +34,8 @@ import {
   fetchStockMovements,
   restockProductOrVariant,
   initializeCatalogStockLedgerIfEmpty,
+  formatCategoryHierarchy,
+  isProductInCategory,
 } from "~/firebase";
 
 interface AdminStockTabProps {
@@ -143,7 +145,7 @@ export const AdminStockTab: React.FC<AdminStockTabProps> = ({
       const stock = Number(p.stockCount) || 0;
 
       // Category filter
-      if (selectedCategory !== "all" && p.category !== selectedCategory) {
+      if (selectedCategory !== "all" && !isProductInCategory(p, selectedCategory, categories)) {
         return false;
       }
 
@@ -557,9 +559,9 @@ export const AdminStockTab: React.FC<AdminStockTabProps> = ({
                 className="px-3 py-2 text-xs bg-stone-50 dark:bg-neutral-800 border border-gray-200 dark:border-neutral-700 rounded-xl text-gray-800 dark:text-neutral-200 focus:outline-none focus:ring-1 focus:ring-orange-600 cursor-pointer"
               >
                 <option value="all">All Categories</option>
-                {categories.map((c) => (
-                  <option key={c.id} value={c.name}>
-                    {c.name}
+                {formatCategoryHierarchy(categories).map(({ category: c, label, fullPath }) => (
+                  <option key={c.id} value={c.id} title={fullPath}>
+                    {label} {fullPath !== label ? `(${fullPath})` : ""}
                   </option>
                 ))}
               </select>

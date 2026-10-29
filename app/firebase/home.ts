@@ -44,7 +44,9 @@ import {
   fetchProductsFromFirestore,
   getLocalProducts,
   normalizeGoogleDriveImageUrl,
+  isProductInCategory,
   type ProductItem,
+  type ProductCategoryItem,
 } from "./products";
 
 export interface TestimonialItem {
@@ -731,28 +733,29 @@ export const fetchHomeDataFromFirestore = async () => {
       try {
         const prodCatSnap = await getDocs(collection(db, "product_categories"));
         if (!prodCatSnap.empty) {
-          const list = prodCatSnap.docs.map((d) => {
-            const data = d.data() as DocumentData;
-            const matchingCount = (products || []).filter(
-              (p) =>
-                (p.category || "").trim().toLowerCase() ===
-                (data.name || "").trim().toLowerCase()
+          const allProdCats = prodCatSnap.docs.map(
+            (d) => ({ id: d.id, ...(d.data() as DocumentData) } as ProductCategoryItem)
+          );
+
+          const list = allProdCats.map((cat) => {
+            const matchingCount = (products || []).filter((p) =>
+              isProductInCategory(p, cat, allProdCats)
             ).length;
 
             return {
-              id: d.id,
-              name: data.name || "",
-              tagline: data.tagline || "",
+              id: cat.id,
+              name: cat.name || "",
+              tagline: cat.tagline || "",
               itemCount: `${matchingCount} ${matchingCount === 1 ? "Item" : "Items"}`,
-              image: normalizeGoogleDriveImageUrl(data.image || ""),
-              link: `/products?category=${encodeURIComponent(data.name || "")}`,
-              parentId: data.parentId || null,
-              order: data.order ?? 999,
+              image: normalizeGoogleDriveImageUrl(cat.image || ""),
+              link: `/products?category=${encodeURIComponent(cat.slug || cat.id || cat.name || "")}`,
+              parentId: cat.parentId || null,
+              order: cat.order ?? 999,
               matchingCount,
             };
           });
 
-          // Only keep categories with matching products!
+          // Only keep root categories or categories with matching products!
           const withProducts = list.filter((c) => c.matchingCount > 0);
           featuredCategories = withProducts.sort(
             (a, b) => (a.order ?? 999) - (b.order ?? 999)

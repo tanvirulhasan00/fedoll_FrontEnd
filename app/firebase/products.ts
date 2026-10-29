@@ -77,7 +77,9 @@ export interface ProductVariant {
 export interface ProductItem {
   id: string;
   name: string;
-  category: ProductCategory;
+  categoryId?: string; // Unique primary key linking to ProductCategoryItem.id
+  category: ProductCategory; // Category display name (e.g. "Men's")
+  categoryPath?: string; // Human-readable hierarchical breadcrumb (e.g. "Summer > Men's")
   price: number;
   originalPrice?: number;
   badge?: "New" | "Sale" | "Best Seller" | "Trending" | "Limited";
@@ -356,7 +358,9 @@ export const initialProductsData: ProductItem[] = [
   {
     id: "prod-winter-hoodie",
     name: "Heavyweight 420 GSM Brushed Fleece Hoodie",
+    categoryId: "cat-winter-mens-hoodie",
     category: "Hoodie",
+    categoryPath: "Winter > Mens > Hoodie",
     price: 2450,
     originalPrice: 2950,
     badge: "Trending",
@@ -447,7 +451,9 @@ export const initialProductsData: ProductItem[] = [
   {
     id: "prod-wool-coat",
     name: "Double-Layer Wool Long Coat",
+    categoryId: "cat-outerwear",
     category: "Outerwear",
+    categoryPath: "Outerwear",
     price: 4850,
     originalPrice: 5600,
     badge: "Best Seller",
@@ -516,7 +522,9 @@ export const initialProductsData: ProductItem[] = [
   {
     id: "prod-selvedge-jacket",
     name: "14oz Selvedge Denim Chore Jacket",
+    categoryId: "cat-denim",
     category: "Denim",
+    categoryPath: "Denim",
     price: 3200,
     originalPrice: 3800,
     badge: "Trending",
@@ -572,7 +580,9 @@ export const initialProductsData: ProductItem[] = [
   {
     id: "prod-hybrid-blazer",
     name: "Comfort Stretch Work Blazer",
+    categoryId: "cat-workwear",
     category: "Workwear",
+    categoryPath: "Workwear",
     price: 3950,
     originalPrice: 4500,
     badge: "New",
@@ -625,7 +635,9 @@ export const initialProductsData: ProductItem[] = [
   {
     id: "prod-heavyweight-tee",
     name: "240 GSM Heavyweight Cotton T-Shirt",
+    categoryId: "cat-essentials",
     category: "Essentials",
+    categoryPath: "Essentials",
     price: 850,
     originalPrice: 1100,
     badge: "Sale",
@@ -661,7 +673,9 @@ export const initialProductsData: ProductItem[] = [
   {
     id: "prod-stretch-trouser",
     name: "Pleated Tapered Stretch Pants",
+    categoryId: "cat-workwear",
     category: "Workwear",
+    categoryPath: "Workwear",
     price: 2150,
     originalPrice: 2600,
     badge: "Trending",
@@ -696,7 +710,9 @@ export const initialProductsData: ProductItem[] = [
   {
     id: "prod-tech-trench",
     name: "Water-Resistant All-Weather Trench Coat",
+    categoryId: "cat-outerwear",
     category: "Outerwear",
+    categoryPath: "Outerwear",
     price: 5200,
     badge: "New",
     rating: 4.9,
@@ -730,7 +746,9 @@ export const initialProductsData: ProductItem[] = [
   {
     id: "prod-merino-knit",
     name: "Soft Fine Merino Wool Sweater",
+    categoryId: "cat-knitwear",
     category: "Knitwear",
+    categoryPath: "Knitwear",
     price: 2250,
     originalPrice: 2750,
     badge: "Sale",
@@ -765,7 +783,9 @@ export const initialProductsData: ProductItem[] = [
   {
     id: "prod-selvedge-jeans",
     name: "Classic Straight-Fit Selvedge Jeans",
+    categoryId: "cat-denim",
     category: "Denim",
+    categoryPath: "Denim",
     price: 2650,
     badge: "Best Seller",
     rating: 4.9,
@@ -799,7 +819,9 @@ export const initialProductsData: ProductItem[] = [
   {
     id: "prod-oxford-shirt",
     name: "Pure Cotton Oxford Button-Down Shirt",
+    categoryId: "cat-shirts",
     category: "Shirts",
+    categoryPath: "Shirts",
     price: 1650,
     originalPrice: 1950,
     badge: "Trending",
@@ -834,7 +856,9 @@ export const initialProductsData: ProductItem[] = [
   {
     id: "prod-casual-chinos",
     name: "Everyday Stretch Cotton Chinos",
+    categoryId: "cat-trousers",
     category: "Trousers",
+    categoryPath: "Trousers",
     price: 1850,
     badge: "New",
     rating: 4.7,
@@ -1030,8 +1054,11 @@ export const fetchProductsFromFirestore = async (params?: {
 
   // Apply category filter if specified
   if (params?.category && params.category !== "All") {
+    const catTarget = params.category.trim().toLowerCase();
     items = items.filter(
-      (p) => p.category?.toLowerCase() === params.category?.toLowerCase()
+      (p) =>
+        (p.categoryId && p.categoryId.toLowerCase() === catTarget) ||
+        (p.category && p.category.toLowerCase() === catTarget)
     );
   }
 
@@ -1464,47 +1491,68 @@ export const deleteCategoryFromFirestore = async (
     console.warn("Could not ensure default category in Firestore:", err);
   }
 
-  // 2. Query and reassign products assigned to this category
+  // 2. Query and reassign products assigned to this category ID
+  try {
+    const q = query(collection(db, "products"), where("categoryId", "==", id));
+    const snap = await getDocs(q);
+
+    if (!snap.empty) {
+      const batch = writeBatch(db);
+      snap.docs.forEach((d) => {
+        batch.update(d.ref, {
+          category: DEFAULT_CATEGORY_NAME,
+          categoryId: DEFAULT_CATEGORY_ID,
+          categoryPath: DEFAULT_CATEGORY_NAME,
+          updatedAt: serverTimestamp(),
+        });
+        reassignedCount++;
+      });
+      await batch.commit();
+    }
+  } catch (err) {
+    console.warn("Product reassignment by categoryId failed:", err);
+  }
+
+  // Also check legacy products that lack categoryId and match targetName
   if (targetName) {
     try {
-      const q = query(collection(db, "products"), where("category", "==", targetName));
-      const snap = await getDocs(q);
-
-      if (!snap.empty) {
-        const batch = writeBatch(db);
-        snap.docs.forEach((d) => {
-          batch.update(d.ref, {
+      const allSnap = await getDocs(collection(db, "products"));
+      const batch = writeBatch(db);
+      let batchCount = 0;
+      for (const docSnap of allSnap.docs) {
+        const data = docSnap.data();
+        if (
+          !data.categoryId &&
+          data.category &&
+          String(data.category).toLowerCase() === targetName.toLowerCase()
+        ) {
+          batch.update(docSnap.ref, {
             category: DEFAULT_CATEGORY_NAME,
+            categoryId: DEFAULT_CATEGORY_ID,
+            categoryPath: DEFAULT_CATEGORY_NAME,
             updatedAt: serverTimestamp(),
           });
+          batchCount++;
           reassignedCount++;
-        });
+        }
+      }
+      if (batchCount > 0) {
         await batch.commit();
       }
-    } catch (err) {
-      console.warn("Batch product reassignment failed, trying individual updates:", err);
-      try {
-        const allSnap = await getDocs(collection(db, "products"));
-        for (const docSnap of allSnap.docs) {
-          const data = docSnap.data();
-          if (data.category && String(data.category).toLowerCase() === targetName.toLowerCase()) {
-            await updateDoc(docSnap.ref, {
-              category: DEFAULT_CATEGORY_NAME,
-              updatedAt: serverTimestamp(),
-            });
-            reassignedCount++;
-          }
-        }
-      } catch (innerErr) {
-        console.warn("Fallback product reassignment failed:", innerErr);
-      }
+    } catch (innerErr) {
+      console.warn("Fallback product reassignment failed:", innerErr);
     }
 
     // 3. Update in-memory initialProductsData
     try {
       initialProductsData.forEach((p) => {
-        if (p.category && p.category.toLowerCase() === targetName.toLowerCase()) {
+        if (
+          p.categoryId === id ||
+          (!p.categoryId && p.category && p.category.toLowerCase() === targetName.toLowerCase())
+        ) {
           p.category = DEFAULT_CATEGORY_NAME;
+          p.categoryId = DEFAULT_CATEGORY_ID;
+          p.categoryPath = DEFAULT_CATEGORY_NAME;
         }
       });
     } catch (e) {
@@ -1514,8 +1562,16 @@ export const deleteCategoryFromFirestore = async (
     // 4. Update local storage cached products
     try {
       const localProducts = getLocalProducts().map((p) => {
-        if (p.category && p.category.toLowerCase() === targetName.toLowerCase()) {
-          return { ...p, category: DEFAULT_CATEGORY_NAME };
+        if (
+          p.categoryId === id ||
+          (!p.categoryId && p.category && p.category.toLowerCase() === targetName.toLowerCase())
+        ) {
+          return {
+            ...p,
+            category: DEFAULT_CATEGORY_NAME,
+            categoryId: DEFAULT_CATEGORY_ID,
+            categoryPath: DEFAULT_CATEGORY_NAME,
+          };
         }
         return p;
       });
@@ -1576,7 +1632,7 @@ export const deleteCategoryFromFirestore = async (
 };
 
 /**
- * Find a category by ID, slug, or name (case-insensitive)
+ * Find a category by ID, slug, or name (checks ID first, then slug, then name)
  */
 export const findCategory = (
   identifier: string | null | undefined,
@@ -1584,12 +1640,78 @@ export const findCategory = (
 ): ProductCategoryItem | undefined => {
   if (!identifier) return undefined;
   const clean = identifier.trim().toLowerCase();
-  return categories.find(
-    (c) =>
-      c.id.toLowerCase() === clean ||
-      c.name.trim().toLowerCase() === clean ||
-      c.slug?.trim().toLowerCase() === clean
-  );
+
+  // 1. Exact match on ID (highest priority)
+  const byId = categories.find((c) => c.id.toLowerCase() === clean);
+  if (byId) return byId;
+
+  // 2. Exact match on slug
+  const bySlug = categories.find((c) => c.slug?.trim().toLowerCase() === clean);
+  if (bySlug) return bySlug;
+
+  // 3. Match on name
+  return categories.find((c) => c.name.trim().toLowerCase() === clean);
+};
+
+/**
+ * Find a category strictly by its unique ID
+ */
+export const findCategoryById = (
+  id: string | null | undefined,
+  categories: ProductCategoryItem[]
+): ProductCategoryItem | undefined => {
+  if (!id) return undefined;
+  const clean = id.trim().toLowerCase();
+  return categories.find((c) => c.id.toLowerCase() === clean);
+};
+
+/**
+ * Accurately check whether a product belongs to a category or any of its descendant subcategories.
+ * Prioritizes unique categoryId, avoiding collisions between subcategories sharing the same name (e.g. Summer > Men's vs Denim > Men's).
+ */
+export const isProductInCategory = (
+  product: ProductItem | null | undefined,
+  targetCategoryOrId: ProductCategoryItem | string | null | undefined,
+  allCategories: ProductCategoryItem[]
+): boolean => {
+  if (!product) return false;
+  if (!targetCategoryOrId || targetCategoryOrId === "All" || targetCategoryOrId === "all") {
+    return true;
+  }
+
+  const target =
+    typeof targetCategoryOrId === "string"
+      ? findCategory(targetCategoryOrId, allCategories)
+      : targetCategoryOrId;
+
+  if (!target) {
+    const rawTarget =
+      typeof targetCategoryOrId === "string"
+        ? targetCategoryOrId.trim().toLowerCase()
+        : "";
+    return (
+      (product.categoryId || "").toLowerCase() === rawTarget ||
+      (product.category || "").trim().toLowerCase() === rawTarget
+    );
+  }
+
+  // Get all descendant IDs of this category (including target itself)
+  const descendants = getCategoryDescendants(target.id, allCategories);
+  const descendantIds = new Set(descendants.map((c) => c.id.toLowerCase()));
+  descendantIds.add(target.id.toLowerCase());
+
+  // 1. Authoritative check: If product has categoryId, match strictly against descendant IDs!
+  if (product.categoryId) {
+    return descendantIds.has(product.categoryId.toLowerCase());
+  }
+
+  // 2. Legacy fallback for old products created before categoryId existed:
+  const prodCatName = (product.category || "").trim().toLowerCase();
+  if (!prodCatName) return false;
+
+  const descendantNames = new Set(descendants.map((c) => c.name.trim().toLowerCase()));
+  descendantNames.add(target.name.trim().toLowerCase());
+  return descendantNames.has(prodCatName);
 };
 
 /**

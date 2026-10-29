@@ -51,6 +51,7 @@ import {
   getCategoryAncestors,
   getCategoryDescendantNames,
   getCategoryChildren,
+  isProductInCategory,
 } from "~/firebase";
 
 export function meta({}: Route.MetaArgs) {
@@ -397,12 +398,10 @@ export default function ProductsPage() {
   useEffect(() => {
     const categoryParam = searchParams.get("category");
     if (categoryParam) {
-      const matched = categories.find(
-        (c) =>
-          c.name.trim().toLowerCase() === categoryParam.trim().toLowerCase() ||
-          c.slug?.trim().toLowerCase() === categoryParam.trim().toLowerCase()
-      );
-      dispatch(setProductCategory(matched ? matched.name : categoryParam));
+      const matched = findCategory(categoryParam, categories);
+      dispatch(setProductCategory(matched ? matched.id : categoryParam));
+    } else {
+      dispatch(setProductCategory("All"));
     }
     const searchParam = searchParams.get("search");
     if (searchParam) {
@@ -425,15 +424,25 @@ export default function ProductsPage() {
     };
   }, [dispatch]);
 
-  const handleCategoryChange = (cat: string) => {
-    dispatch(setProductCategory(cat));
+  const handleCategoryChange = (catIdentifier: string) => {
+    if (!catIdentifier || catIdentifier === "All" || catIdentifier === "all") {
+      dispatch(setProductCategory("All"));
+      setSearchParams((prev) => {
+        const updated = new URLSearchParams(prev);
+        updated.delete("category");
+        return updated;
+      });
+      return;
+    }
+
+    const matched = findCategory(catIdentifier, categories);
+    const catId = matched ? matched.id : catIdentifier;
+    const urlParam = matched?.slug || matched?.id || catIdentifier;
+
+    dispatch(setProductCategory(catId));
     setSearchParams((prev) => {
       const updated = new URLSearchParams(prev);
-      if (cat === "All") {
-        updated.delete("category");
-      } else {
-        updated.set("category", cat);
-      }
+      updated.set("category", urlParam);
       return updated;
     });
   };
@@ -516,7 +525,9 @@ export default function ProductsPage() {
     const directChildren = getCategoryChildren(activeCategoryObj.id, categories);
     if (directChildren.length > 0) {
       return {
+        parentId: activeCategoryObj.id,
         parentName: activeCategoryObj.name,
+        parentSlug: activeCategoryObj.slug,
         isRootOfStrip: true,
         items: directChildren,
       };
@@ -527,7 +538,9 @@ export default function ProductsPage() {
       const siblings = getCategoryChildren(activeCategoryObj.parentId, categories);
       if (parentCat && siblings.length > 0) {
         return {
+          parentId: parentCat.id,
           parentName: parentCat.name,
+          parentSlug: parentCat.slug,
           isRootOfStrip: false,
           items: siblings,
         };
@@ -543,13 +556,8 @@ export default function ProductsPage() {
 
     // Hierarchical Category filter: match selected category and all its children/descendants
     if (selectedCategory !== "All") {
-      const allowedCategories = new Set(
-        getCategoryDescendantNames(selectedCategory, categories).map((c) =>
-          c.trim().toLowerCase()
-        )
-      );
       result = result.filter((p) =>
-        allowedCategories.has((p.category || "").trim().toLowerCase())
+        isProductInCategory(p, activeCategoryObj || selectedCategory, categories)
       );
     }
 
@@ -596,11 +604,20 @@ export default function ProductsPage() {
   }, [products, selectedCategory, categories, searchQuery, onlyInStock, maxPrice, sortBy]);
 
   // Helper to determine if a node or any of its descendants is currently selected
-  const isNodeOrDescendantSelected = (node: CategoryTreeNode, targetName: string): boolean => {
-    if (!targetName || targetName === "All") return false;
-    const normalizedTarget = targetName.trim().toLowerCase();
-    if (node.name.trim().toLowerCase() === normalizedTarget) return true;
-    return node.children.some((child) => isNodeOrDescendantSelected(child, targetName));
+  const isNodeOrDescendantSelected = (
+    node: CategoryTreeNode,
+    targetIdentifier: string | null | undefined
+  ): boolean => {
+    if (!targetIdentifier || targetIdentifier === "All" || targetIdentifier === "all") return false;
+    const clean = targetIdentifier.trim().toLowerCase();
+    if (
+      node.id.toLowerCase() === clean ||
+      node.name.trim().toLowerCase() === clean ||
+      (node.slug && node.slug.trim().toLowerCase() === clean)
+    ) {
+      return true;
+    }
+    return node.children.some((child) => isNodeOrDescendantSelected(child, targetIdentifier));
   };
 
   // Compute category counts dynamically including all descendant subcategories
@@ -610,14 +627,12 @@ export default function ProductsPage() {
       categories && categories.length > 0 ? categories : [];
 
     for (const cat of sourceCategories) {
-      const descendants = new Set(
-        getCategoryDescendantNames(cat.name, sourceCategories).map((n) => n.trim().toLowerCase())
-      );
       const count = products.filter((p) =>
-        descendants.has((p.category || "").trim().toLowerCase())
+        isProductInCategory(p, cat, sourceCategories)
       ).length;
-      counts[cat.name.trim().toLowerCase()] = count;
       counts[cat.id] = count;
+      if (cat.slug) counts[cat.slug.toLowerCase()] = count;
+      counts[cat.name.trim().toLowerCase()] = count;
     }
 
     for (const p of products) {
@@ -657,7 +672,11 @@ export default function ProductsPage() {
       );
 
       const childrenNodes = rawChildren.map(buildTreeNode);
-      const count = categoryCounts[cat.name.trim().toLowerCase()] ?? 0;
+      const count =
+        categoryCounts[cat.id] ??
+        categoryCounts[cat.slug?.toLowerCase() || ""] ??
+        categoryCounts[cat.name.trim().toLowerCase()] ??
+        0;
 
       return {
         id: cat.id,
@@ -728,17 +747,21 @@ export default function ProductsPage() {
     depth = 0
   ): React.ReactNode => {
     return nodes.map((child) => {
-      const isSelected =
-        selectedCategory.trim().toLowerCase() === child.name.trim().toLowerCase();
+      const isSelected = activeCategoryObj
+        ? activeCategoryObj.id === child.id
+        : selectedCategory.trim().toLowerCase() === child.name.trim().toLowerCase();
       const hasSubChildren = child.children.length > 0;
-      const isDescendantSelected = isNodeOrDescendantSelected(child, selectedCategory);
+      const isDescendantSelected = isNodeOrDescendantSelected(
+        child,
+        activeCategoryObj?.id || selectedCategory
+      );
 
       return (
         <div key={child.id} className="flex flex-col">
           <button
             type="button"
             onClick={() => {
-              handleCategoryChange(child.name);
+              handleCategoryChange(child.slug || child.id);
               setOpenDropdownId(null);
             }}
             className={`w-full flex items-center justify-between text-left py-2 px-3 text-xs rounded-xl transition cursor-pointer ${
@@ -809,7 +832,9 @@ export default function ProductsPage() {
                 <>
                   <span>/</span>
                   <span className="font-bold text-gray-900 dark:text-white shrink-0">
-                    {selectedCategory === "All" ? "All Products" : selectedCategory}
+                    {selectedCategory === "All"
+                      ? "All Products"
+                      : activeCategoryObj?.name || selectedCategory}
                   </span>
                 </>
               ) : (
@@ -825,7 +850,7 @@ export default function ProductsPage() {
                       ) : (
                         <button
                           type="button"
-                          onClick={() => handleCategoryChange(anc.name)}
+                          onClick={() => handleCategoryChange(anc.slug || anc.id)}
                           className="hover:text-orange-600 dark:hover:text-orange-400 transition cursor-pointer shrink-0 font-medium"
                         >
                           {anc.name}
@@ -858,7 +883,7 @@ export default function ProductsPage() {
                     </>
                   ) : (
                     <>
-                      {selectedCategory} Collection. <br />
+                      {activeCategoryObj?.name || selectedCategory} Collection. <br />
                       <span className="text-orange-600 dark:text-orange-400 italic font-serif">
                         Crafted in Bangladesh.
                       </span>

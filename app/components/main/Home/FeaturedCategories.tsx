@@ -11,7 +11,9 @@ import {
   normalizeGoogleDriveImageUrl,
   extractGoogleDriveFileId,
   getGoogleDriveThumbnailUrl,
-  getCategoryDescendantNames,
+  isProductInCategory,
+  findCategory,
+  type ProductItem,
 } from "~/firebase";
 import { FeaturedCategoriesSkeleton } from "~/components/main/Skeletons";
 
@@ -30,44 +32,22 @@ export default function FeaturedCategories() {
   const [canScrollRight, setCanScrollRight] = useState(false);
   const [activeMobileIndex, setActiveMobileIndex] = useState(0);
 
-  // Combine products from catalog & home state
+  // Combine products from catalog & home state (deduplicated by product id)
   const allProducts = useMemo(() => {
-    if (catalogProducts && catalogProducts.length > 0) return catalogProducts;
-    if (homeProducts && homeProducts.length > 0) return homeProducts;
-    return [];
+    const map = new Map<string, ProductItem>();
+    for (const p of homeProducts || []) {
+      if (p.id) map.set(p.id, p);
+    }
+    for (const p of catalogProducts || []) {
+      if (p.id) map.set(p.id, p);
+    }
+    return Array.from(map.values());
   }, [catalogProducts, homeProducts]);
 
   // Only display categories that actually have at least 1 product listed in DB
   const displayCategories = useMemo(() => {
     if (!allProducts || allProducts.length === 0) {
       return [];
-    }
-
-    const normalize = (val?: string) => (val || "").trim().toLowerCase();
-
-    // 1. Group all available products by their direct category name
-    const productsByCategory = new Map<string, typeof allProducts>();
-
-    for (const p of allProducts) {
-      const catName = p.category?.trim();
-      if (!catName || normalize(catName) === "uncategorized" || normalize(catName) === "all") {
-        continue;
-      }
-      const key = normalize(catName);
-      const list = productsByCategory.get(key) || [];
-      list.push(p);
-      productsByCategory.set(key, list);
-    }
-
-    // 2. Map of category definitions from database (product_categories)
-    const categoryDefMap = new Map<string, (typeof categories)[0]>();
-    const seenCategoryKeys = new Set<string>();
-
-    for (const cat of categories || []) {
-      if (!cat.name) continue;
-      categoryDefMap.set(normalize(cat.name), cat);
-      if (cat.slug) categoryDefMap.set(normalize(cat.slug), cat);
-      if (cat.id) categoryDefMap.set(normalize(cat.id), cat);
     }
 
     const result: Array<{
@@ -80,69 +60,83 @@ export default function FeaturedCategories() {
       order: number;
     }> = [];
 
-    // 3. First, add all categories that have direct products assigned
-    for (const [key, prods] of productsByCategory.entries()) {
-      if (prods.length === 0) continue; // Skip if no products!
+    const seenIds = new Set<string>();
 
-      const catDef = categoryDefMap.get(key);
-      const categoryName = catDef?.name || prods[0].category?.trim() || key;
-      const normalizedName = normalize(categoryName);
+    // 1. First, check root collections defined in categories collection
+    // (categories without parentId, or whose parentId does not exist in categories)
+    const rootCategories = (categories || []).filter((cat) => {
+      if (!cat.name) return false;
+      if (!cat.parentId) return true;
+      const parentExists = categories.some((c) => c.id === cat.parentId);
+      return !parentExists;
+    });
 
-      if (seenCategoryKeys.has(normalizedName)) continue;
-      seenCategoryKeys.add(normalizedName);
+    for (const cat of rootCategories) {
+      if (seenIds.has(cat.id)) continue;
 
-      const count = prods.length;
-      const countLabel = `${count} ${count === 1 ? "Item" : "Items"}`;
-
-      // Pick image: category definition image -> or product's primary image
-      const rawImage =
-        catDef?.image && catDef.image.trim()
-          ? catDef.image
-          : prods.find((p) => p.images && p.images.length > 0)?.images[0] ||
-            "https://images.unsplash.com/photo-1544441893-675973e31985?auto=format&fit=crop&w=800&q=80";
-
-      const tagline =
-        catDef?.tagline && catDef.tagline.trim()
-          ? catDef.tagline
-          : `Explore everyday ${categoryName} curated for comfort and style`;
-
-      result.push({
-        id: catDef?.id || `cat-${key}`,
-        name: categoryName,
-        tagline,
-        image: rawImage,
-        itemCount: countLabel,
-        link: `/products?category=${encodeURIComponent(categoryName)}`,
-        order: catDef?.order ?? 999,
-      });
-    }
-
-    // 4. Also check if any parent category in categories collection has products via descendants
-    // but only if it's not already in result AND has matching products
-    for (const cat of categories || []) {
-      const normalizedName = normalize(cat.name);
-      if (!cat.name || seenCategoryKeys.has(normalizedName)) continue;
-
-      const descendantNames = new Set(
-        getCategoryDescendantNames(cat.name, categories).map((n) => normalize(n))
+      const matching = allProducts.filter((p) =>
+        isProductInCategory(p, cat, categories)
       );
-      descendantNames.add(normalizedName);
-      if (cat.slug) descendantNames.add(normalize(cat.slug));
-      if (cat.id) descendantNames.add(normalize(cat.id));
 
-      const matchingProds = allProducts.filter((p) => {
-        const pCat = normalize(p.category);
-        return pCat && descendantNames.has(pCat);
-      });
+      if (matching.length > 0) {
+        seenIds.add(cat.id);
+        const count = matching.length;
+        const countLabel = `${count} ${count === 1 ? "Item" : "Items"}`;
 
-      // ONLY include if it has products listed!
-      if (matchingProds.length > 0) {
-        seenCategoryKeys.add(normalizedName);
-        const count = matchingProds.length;
         const rawImage =
           cat.image && cat.image.trim()
             ? cat.image
-            : matchingProds.find((p) => p.images && p.images.length > 0)?.images[0] ||
+            : matching.find((p) => p.images && p.images.length > 0)?.images[0] ||
+              "https://images.unsplash.com/photo-1544441893-675973e31985?auto=format&fit=crop&w=800&q=80";
+
+        const tagline =
+          cat.tagline && cat.tagline.trim()
+            ? cat.tagline
+            : `Explore everyday ${cat.name} curated for comfort and style`;
+
+        result.push({
+          id: cat.id,
+          name: cat.name,
+          tagline,
+          image: rawImage,
+          itemCount: countLabel,
+          link: `/products?category=${encodeURIComponent(cat.slug || cat.id || cat.name)}`,
+          order: cat.order ?? 999,
+        });
+      }
+    }
+
+    // 2. Also check if there are standalone subcategories that have direct products
+    // but whose root ancestor wasn't added yet
+    for (const cat of categories || []) {
+      if (!cat.name || seenIds.has(cat.id)) continue;
+
+      let currentParentId = cat.parentId;
+      let hasAncestorInResult = false;
+      while (currentParentId) {
+        if (seenIds.has(currentParentId)) {
+          hasAncestorInResult = true;
+          break;
+        }
+        const parent = categories.find((c) => c.id === currentParentId);
+        currentParentId = parent ? parent.parentId : null;
+      }
+
+      if (hasAncestorInResult) continue;
+
+      const matching = allProducts.filter((p) =>
+        isProductInCategory(p, cat, categories)
+      );
+
+      if (matching.length > 0) {
+        seenIds.add(cat.id);
+        const count = matching.length;
+        const countLabel = `${count} ${count === 1 ? "Item" : "Items"}`;
+
+        const rawImage =
+          cat.image && cat.image.trim()
+            ? cat.image
+            : matching.find((p) => p.images && p.images.length > 0)?.images[0] ||
               "https://images.unsplash.com/photo-1544441893-675973e31985?auto=format&fit=crop&w=800&q=80";
 
         result.push({
@@ -153,10 +147,45 @@ export default function FeaturedCategories() {
               ? cat.tagline
               : `Explore everyday ${cat.name} curated for comfort and style`,
           image: rawImage,
-          itemCount: `${count} ${count === 1 ? "Item" : "Items"}`,
-          link: `/products?category=${encodeURIComponent(cat.name)}`,
+          itemCount: countLabel,
+          link: `/products?category=${encodeURIComponent(cat.slug || cat.id || cat.name)}`,
           order: cat.order ?? 999,
         });
+      }
+    }
+
+    // 3. Fallback for any standalone products whose category isn't in categories collection
+    for (const p of allProducts) {
+      const catName = p.category?.trim();
+      if (!catName || catName.toLowerCase() === "uncategorized" || catName.toLowerCase() === "all") {
+        continue;
+      }
+
+      const isCovered = result.some((r) => {
+        const catObj = categories.find((c) => c.id === r.id);
+        return isProductInCategory(p, catObj || r.name, categories);
+      });
+
+      if (!isCovered) {
+        const matching = allProducts.filter(
+          (prod) => (prod.category || "").trim().toLowerCase() === catName.toLowerCase()
+        );
+        const count = matching.length;
+        const fakeId = `cat-${catName.toLowerCase().replace(/\s+/g, "-")}`;
+        if (!seenIds.has(fakeId)) {
+          seenIds.add(fakeId);
+          result.push({
+            id: fakeId,
+            name: catName,
+            tagline: `Explore everyday ${catName} curated for comfort and style`,
+            image:
+              matching.find((prod) => prod.images && prod.images.length > 0)?.images[0] ||
+              "https://images.unsplash.com/photo-1544441893-675973e31985?auto=format&fit=crop&w=800&q=80",
+            itemCount: `${count} ${count === 1 ? "Item" : "Items"}`,
+            link: `/products?category=${encodeURIComponent(catName)}`,
+            order: 999,
+          });
+        }
       }
     }
 

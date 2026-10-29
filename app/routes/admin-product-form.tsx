@@ -81,7 +81,9 @@ export default function AdminProductFormPage() {
 
   // Form Fields
   const [formName, setFormName] = useState("");
+  const [formCategoryId, setFormCategoryId] = useState("");
   const [formCategory, setFormCategory] = useState("Outerwear");
+  const [formCategoryPath, setFormCategoryPath] = useState("");
   const [formPrice, setFormPrice] = useState(2500);
   const [formOriginalPrice, setFormOriginalPrice] = useState<number | undefined>(2900);
   const [formBadge, setFormBadge] = useState<"New" | "Sale" | "Best Seller" | "Trending" | "Limited" | "">("New");
@@ -191,9 +193,11 @@ export default function AdminProductFormPage() {
         setCategories(fetchedCats);
 
         if (!isEditMode && fetchedCats.length > 0) {
-          if (!fetchedCats.some((c) => c.name.toLowerCase() === formCategory.toLowerCase())) {
-            setFormCategory(fetchedCats[0].name);
-          }
+          const defaultCat =
+            fetchedCats.find((c) => c.name.toLowerCase() === formCategory.toLowerCase()) ||
+            fetchedCats[0];
+          setFormCategoryId(defaultCat.id);
+          setFormCategory(defaultCat.name);
         }
 
         if (isEditMode && id) {
@@ -207,6 +211,20 @@ export default function AdminProductFormPage() {
             setEditingProduct(foundProduct);
             setFormName(foundProduct.name);
             setFormCategory(foundProduct.category);
+            const matchedCat = foundProduct.categoryId
+              ? fetchedCats.find((c) => c.id === foundProduct.categoryId)
+              : fetchedCats.find(
+                  (c) => c.name.toLowerCase() === foundProduct.category?.toLowerCase()
+                );
+            if (matchedCat) {
+              setFormCategoryId(matchedCat.id);
+              setFormCategory(matchedCat.name);
+            } else if (foundProduct.categoryId) {
+              setFormCategoryId(foundProduct.categoryId);
+            }
+            if (foundProduct.categoryPath) {
+              setFormCategoryPath(foundProduct.categoryPath);
+            }
             setFormPrice(foundProduct.price);
             setFormOriginalPrice(foundProduct.originalPrice);
             setFormBadge(foundProduct.badge || "");
@@ -460,10 +478,19 @@ export default function AdminProductFormPage() {
 
     const resolvedStock = calculatedTotalStock;
 
+    const hierarchy = formatCategoryHierarchy(categories);
+    const matchedCategory =
+      categories.find((c) => c.id === formCategoryId) ||
+      categories.find((c) => c.name.toLowerCase() === formCategory.toLowerCase());
+    const matchedHierarchy = hierarchy.find((h) => h.category.id === matchedCategory?.id);
+
     const savedProduct: ProductItem = {
       id: productId,
       name: formName.trim(),
-      category: formCategory,
+      categoryId: matchedCategory ? matchedCategory.id : formCategoryId || undefined,
+      category: matchedCategory ? matchedCategory.name : formCategory,
+      categoryPath:
+        matchedHierarchy?.fullPath || formCategoryPath || matchedCategory?.name || formCategory,
       price: Number(formPrice),
       originalPrice: formOriginalPrice ? Number(formOriginalPrice) : undefined,
       badge: (formBadge as any) || undefined,
@@ -686,20 +713,35 @@ export default function AdminProductFormPage() {
                         Collection / Category *
                       </label>
                       <select
-                        value={formCategory}
-                        onChange={(e) => setFormCategory(e.target.value)}
+                        value={
+                          formCategoryId ||
+                          categories.find((c) => c.name.toLowerCase() === formCategory.toLowerCase())?.id ||
+                          ""
+                        }
+                        onChange={(e) => {
+                          const selectedId = e.target.value;
+                          setFormCategoryId(selectedId);
+                          const cat = categories.find((c) => c.id === selectedId);
+                          if (cat) {
+                            setFormCategory(cat.name);
+                            const hItem = formatCategoryHierarchy(categories).find(
+                              (h) => h.category.id === cat.id
+                            );
+                            if (hItem) {
+                              setFormCategoryPath(hItem.fullPath);
+                            }
+                          }
+                        }}
                         className="w-full px-3 py-2 bg-stone-50 dark:bg-neutral-800 border border-gray-200 dark:border-neutral-700 rounded-xl text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-orange-600 cursor-pointer font-sans"
                       >
                         {formatCategoryHierarchy(categories).map(({ category: c, label, fullPath }) => (
-                          <option key={c.id} value={c.name} title={fullPath}>
-                            {label}
+                          <option key={c.id} value={c.id} title={fullPath}>
+                            {label} {fullPath !== label ? `(${fullPath})` : ""}
                           </option>
                         ))}
-                        {formCategory &&
-                          !categories.some(
-                            (c) => c.name.toLowerCase() === formCategory.toLowerCase()
-                          ) && (
-                            <option value={formCategory}>{formCategory}</option>
+                        {formCategoryId &&
+                          !categories.some((c) => c.id === formCategoryId) && (
+                            <option value={formCategoryId}>{formCategory || formCategoryId}</option>
                           )}
                       </select>
                     </div>

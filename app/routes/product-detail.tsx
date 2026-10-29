@@ -20,6 +20,7 @@ import {
   getProductVariant,
   getCategoryAncestors,
   getCategoryDescendantNames,
+  isProductInCategory,
   normalizeGoogleDriveImageUrl,
   extractGoogleDriveFileId,
   getGoogleDriveThumbnailUrl,
@@ -123,9 +124,10 @@ export default function ProductDetailPage() {
 
   // Compute category ancestors for multi-level breadcrumbs
   const categoryAncestors = useMemo(() => {
-    if (!currentProduct?.category) return [];
-    return getCategoryAncestors(currentProduct.category, categories);
-  }, [currentProduct?.category, categories]);
+    const target = currentProduct?.categoryId || currentProduct?.category;
+    if (!target) return [];
+    return getCategoryAncestors(target, categories);
+  }, [currentProduct?.categoryId, currentProduct?.category, categories]);
 
   // Set default size and color when product loads
   useEffect(() => {
@@ -206,24 +208,29 @@ export default function ProductDetailPage() {
     );
     if (candidates.length === 0) return [];
 
-    const rootOrParent = categoryAncestors[0]?.name || currentProduct.category;
-    const branchNames = new Set(
-      getCategoryDescendantNames(rootOrParent, categories).map((n) =>
-        n.trim().toLowerCase()
-      )
-    );
-
-    const sameCat = candidates.filter(
-      (p) =>
+    // Exact same category match (prefers categoryId to eliminate cross-parent ambiguity)
+    const sameCat = candidates.filter((p) => {
+      if (currentProduct.categoryId && p.categoryId) {
+        return p.categoryId === currentProduct.categoryId;
+      }
+      return (
         (p.category || "").trim().toLowerCase() ===
         (currentProduct.category || "").trim().toLowerCase()
-    );
+      );
+    });
+
+    // Same root collection branch (e.g., Summer tree vs Denim tree)
+    const rootAncestor =
+      categoryAncestors[0] ||
+      (currentProduct.categoryId || currentProduct.category);
     const sameBranch = candidates.filter(
       (p) =>
-        (p.category || "").trim().toLowerCase() !==
-          (currentProduct.category || "").trim().toLowerCase() &&
-        branchNames.has((p.category || "").trim().toLowerCase())
+        !sameCat.some((c) => c.id === p.id) &&
+        rootAncestor &&
+        isProductInCategory(p, rootAncestor, categories)
     );
+
+    // Other store products as fallback
     const otherProducts = candidates.filter(
       (p) =>
         !sameCat.some((c) => c.id === p.id) &&
@@ -488,7 +495,7 @@ export default function ProductDetailPage() {
                   <React.Fragment key={anc.id}>
                     <span>/</span>
                     <Link
-                      to={`/products?category=${encodeURIComponent(anc.name)}`}
+                      to={`/products?category=${encodeURIComponent(anc.slug || anc.id)}`}
                       className="hover:text-orange-600 dark:hover:text-orange-400 transition shrink-0 font-medium"
                     >
                       {anc.name}
@@ -500,7 +507,7 @@ export default function ProductDetailPage() {
                   <span>/</span>
                   <Link
                     to={`/products?category=${encodeURIComponent(
-                      currentProduct.category
+                      currentProduct.categoryId || currentProduct.category
                     )}`}
                     className="hover:text-orange-600 dark:hover:text-orange-400 transition shrink-0 font-medium"
                   >
@@ -1120,7 +1127,7 @@ export default function ProductDetailPage() {
               </div>
               <Link
                 to={`/products?category=${encodeURIComponent(
-                  currentProduct.category
+                  currentProduct.categoryId || currentProduct.category
                 )}`}
                 className="inline-flex items-center gap-1.5 text-xs sm:text-sm font-semibold text-orange-600 dark:text-orange-400 hover:underline group transition"
               >

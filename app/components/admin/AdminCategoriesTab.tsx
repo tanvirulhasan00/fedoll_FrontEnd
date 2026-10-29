@@ -21,6 +21,7 @@ import {
   isCategoryDescendantOf,
   getCategoryAncestors,
   getCategoryChildren,
+  isProductInCategory,
   normalizeGoogleDriveImageUrl,
   extractGoogleDriveFileId,
   getGoogleDriveThumbnailUrl,
@@ -103,10 +104,38 @@ export const AdminCategoriesTab: React.FC<AdminCategoriesTabProps> = ({
     if (onCloseAddModal) onCloseAddModal();
   };
 
+  const generateSlugForName = (val: string, currentParentId?: string | null) => {
+    const raw = val
+      .toLowerCase()
+      .replace(/[^a-z0-9]+/g, "-")
+      .replace(/^-|-$/g, "");
+    if (!raw) return "";
+    if (currentParentId) {
+      const parent = localCategories.find((c) => c.id === currentParentId);
+      if (parent) {
+        const parentSlug = (parent.slug || parent.name)
+          .toLowerCase()
+          .replace(/[^a-z0-9]+/g, "-")
+          .replace(/^-|-$/g, "");
+        if (parentSlug && !raw.startsWith(parentSlug + "-")) {
+          return `${parentSlug}-${raw}`;
+        }
+      }
+    }
+    return raw;
+  };
+
   const handleNameChange = (val: string) => {
     setName(val);
     if (!editingCategory) {
-      setSlug(val.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, ""));
+      setSlug(generateSlugForName(val, parentId));
+    }
+  };
+
+  const handleParentChange = (newParentId: string | null) => {
+    setParentId(newParentId);
+    if (!editingCategory && name.trim()) {
+      setSlug(generateSlugForName(name, newParentId));
     }
   };
 
@@ -141,10 +170,26 @@ export const AdminCategoriesTab: React.FC<AdminCategoriesTabProps> = ({
       normalizeGoogleDriveImageUrl(image.trim()) ||
       "https://images.unsplash.com/photo-1544441893-675973e31985?auto=format&fit=crop&w=800&q=80";
 
+    // Auto-generate and ensure unique slug
+    let baseSlug = slug.trim() || generateSlugForName(name.trim(), parentId);
+    if (!baseSlug) {
+      baseSlug = `cat-${Date.now().toString(36)}`;
+    }
+    let candidateSlug = baseSlug;
+    let counter = 1;
+    while (
+      localCategories.some(
+        (c) => c.id !== categoryId && c.slug?.toLowerCase() === candidateSlug.toLowerCase()
+      )
+    ) {
+      counter++;
+      candidateSlug = `${baseSlug}-${counter}`;
+    }
+
     const newCategory: ProductCategoryItem = {
       id: categoryId,
       name: name.trim(),
-      slug: slug.trim() || name.toLowerCase().replace(/\s+/g, "-"),
+      slug: candidateSlug,
       tagline: tagline.trim(),
       image: normalizedImage,
       itemCount: Number(itemCount) || 0,
@@ -233,8 +278,8 @@ export const AdminCategoriesTab: React.FC<AdminCategoriesTabProps> = ({
 
   // Calculate assigned products for the category pending deletion
   const assignedGarmentsCount = categoryToDelete
-    ? products.filter(
-        (p) => p.category?.trim().toLowerCase() === categoryToDelete.name.trim().toLowerCase()
+    ? products.filter((p) =>
+        isProductInCategory(p, categoryToDelete, localCategories)
       ).length
     : 0;
 
@@ -268,8 +313,14 @@ export const AdminCategoriesTab: React.FC<AdminCategoriesTabProps> = ({
             cat.id === DEFAULT_CATEGORY_ID ||
             cat.name.trim().toLowerCase() === DEFAULT_CATEGORY_NAME.toLowerCase();
 
-          const assignedCount = products.filter(
-            (p) => p.category?.trim().toLowerCase() === cat.name.trim().toLowerCase()
+          const directCount = products.filter(
+            (p) =>
+              p.categoryId === cat.id ||
+              (!p.categoryId && p.category?.trim().toLowerCase() === cat.name.trim().toLowerCase())
+          ).length;
+
+          const totalBranchCount = products.filter((p) =>
+            isProductInCategory(p, cat, localCategories)
           ).length;
 
           const ancestors = getCategoryAncestors(cat.id, localCategories);
@@ -360,7 +411,18 @@ export const AdminCategoriesTab: React.FC<AdminCategoriesTabProps> = ({
                   <div className="flex items-center justify-between text-[11px] text-gray-500 dark:text-neutral-400 pt-2 border-t border-gray-100 dark:border-neutral-800">
                     <span>Assigned Garments:</span>
                     <strong className="text-gray-900 dark:text-white font-mono">
-                      {assignedCount > 0 ? `${assignedCount} garments` : `${cat.itemCount || 0} items`}
+                      {totalBranchCount > 0 ? (
+                        <>
+                          <span>{directCount} direct</span>
+                          {directChildren.length > 0 && totalBranchCount !== directCount && (
+                            <span className="text-orange-600 dark:text-orange-400 font-medium ml-1">
+                              ({totalBranchCount} in branch)
+                            </span>
+                          )}
+                        </>
+                      ) : (
+                        `${cat.itemCount || 0} items`
+                      )}
                     </strong>
                   </div>
                 </div>
@@ -466,7 +528,7 @@ export const AdminCategoriesTab: React.FC<AdminCategoriesTabProps> = ({
                       </label>
                       <select
                         value={parentId || ""}
-                        onChange={(e) => setParentId(e.target.value ? e.target.value : null)}
+                        onChange={(e) => handleParentChange(e.target.value ? e.target.value : null)}
                         className="w-full px-3 py-2 bg-stone-50 dark:bg-neutral-800 border border-gray-200 dark:border-neutral-700 rounded-xl text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-orange-600 cursor-pointer font-sans"
                       >
                         <option value="">(None - Top-Level Root Category)</option>

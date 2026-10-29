@@ -21,6 +21,7 @@ import {
   deleteMultipleProductsFromFirestore,
   formatCategoryHierarchy,
   getCategoryDescendantNames,
+  isProductInCategory,
 } from "~/firebase";
 import { Spinner } from "~/components/ui/spinner";
 
@@ -53,10 +54,7 @@ export const AdminProductsTab: React.FC<AdminProductsTabProps> = ({
 
   const filteredProducts = localProducts.filter((p) => {
     if (selectedCategory !== "all") {
-      const allowedNames = new Set(
-        getCategoryDescendantNames(selectedCategory, categories).map((n) => n.trim().toLowerCase())
-      );
-      if (!allowedNames.has((p.category || "").trim().toLowerCase())) {
+      if (!isProductInCategory(p, selectedCategory, categories)) {
         return false;
       }
     }
@@ -203,8 +201,8 @@ export const AdminProductsTab: React.FC<AdminProductsTabProps> = ({
           >
             <option value="all">All Categories</option>
             {formatCategoryHierarchy(categories).map(({ category: c, label, fullPath }) => (
-              <option key={c.id} value={c.name} title={fullPath}>
-                {label}
+              <option key={c.id} value={c.id} title={fullPath}>
+                {label} {fullPath !== label ? `(${fullPath})` : ""}
               </option>
             ))}
           </select>
@@ -369,9 +367,19 @@ export const AdminProductsTab: React.FC<AdminProductsTabProps> = ({
                       </td>
 
                       <td className="py-3 px-4">
-                        <span className="inline-block px-2.5 py-1 rounded-full text-[10px] font-bold bg-stone-100 dark:bg-neutral-800 text-gray-700 dark:text-neutral-300">
-                          {p.category}
-                        </span>
+                        <div>
+                          <span className="inline-block px-2.5 py-1 rounded-full text-[10px] font-bold bg-stone-100 dark:bg-neutral-800 text-gray-700 dark:text-neutral-300">
+                            {p.category}
+                          </span>
+                          {p.categoryPath && p.categoryPath !== p.category && (
+                            <span
+                              className="text-[10px] text-gray-400 dark:text-neutral-500 block truncate max-w-[130px] mt-0.5"
+                              title={p.categoryPath}
+                            >
+                              {p.categoryPath}
+                            </span>
+                          )}
+                        </div>
                       </td>
 
                       <td className="py-3 px-4">

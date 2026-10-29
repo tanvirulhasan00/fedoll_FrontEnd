@@ -31,6 +31,8 @@ import {
   normalizeGoogleDriveImageUrl,
   extractGoogleDriveFileId,
   getGoogleDriveThumbnailUrl,
+  isProductInCategory,
+  findCategory,
 } from "~/firebase";
 import { ProductCardSkeleton } from "~/components/main/Skeletons";
 
@@ -341,8 +343,8 @@ export default function ProductShowcase() {
       if (!name || seen.has(name.toLowerCase()) || name.toLowerCase() === "uncategorized") {
         continue;
       }
-      const hasProducts = displayProducts.some(
-        (p) => (p.category || "").trim().toLowerCase() === name.toLowerCase()
+      const hasProducts = displayProducts.some((p) =>
+        isProductInCategory(p, cat, categories)
       );
       if (hasProducts) {
         seen.add(name.toLowerCase());
@@ -350,7 +352,7 @@ export default function ProductShowcase() {
       }
     }
 
-    // 2. From direct products that have a category assigned
+    // 2. From direct products that have a category assigned not yet covered
     for (const p of displayProducts) {
       const name = p.category?.trim();
       if (
@@ -369,8 +371,9 @@ export default function ProductShowcase() {
   const filteredProducts = useMemo(() => {
     let prods = displayProducts;
     if (activeProductTab !== "All") {
-      prods = displayProducts.filter(
-        (p) => p.category?.trim().toLowerCase() === activeProductTab.trim().toLowerCase()
+      const targetCat = findCategory(activeProductTab, categories);
+      prods = displayProducts.filter((p) =>
+        isProductInCategory(p, targetCat || activeProductTab, categories)
       );
     }
     // Prioritize products marked as isFeatured
@@ -379,7 +382,7 @@ export default function ProductShowcase() {
       if (!a.isFeatured && b.isFeatured) return 1;
       return 0;
     });
-  }, [displayProducts, activeProductTab]);
+  }, [displayProducts, activeProductTab, categories]);
 
   const checkScroll = useCallback(() => {
     const el = scrollRef.current;
