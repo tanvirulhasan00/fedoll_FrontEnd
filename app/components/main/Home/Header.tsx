@@ -134,7 +134,7 @@ export default function Header() {
         className="mx-auto flex max-w-7xl items-center justify-between p-6 lg:px-8"
       >
         <div className="flex lg:flex-1">
-          <Link to="/" className="-m-1.5 p-1.5 flex items-center">
+          <Link to="/" prefetch="intent" className="-m-1.5 p-1.5 flex items-center">
             <span className="sr-only">{settings?.storeName || "SilkenDrift"}</span>
             {isLogoLoading ? (
               <NavbarLogoSkeleton className="h-11 sm:h-12" />
@@ -221,6 +221,7 @@ export default function Header() {
               <Link
                 key={item.name}
                 to={item.href}
+                prefetch="intent"
                 className={clsx(
                   "relative py-1 text-sm/6 font-semibold transition-colors duration-200",
                   active
@@ -240,6 +241,7 @@ export default function Header() {
 
           <Link
             to="/profile?tab=wishlist"
+            prefetch="intent"
             className="relative p-2 text-gray-700 dark:text-neutral-300 hover:text-rose-600 dark:hover:text-rose-400 transition cursor-pointer group"
             title="My Loved Wishlist"
           >
@@ -384,6 +386,7 @@ export default function Header() {
                     <Link
                       key={item.name}
                       to={item.href}
+                      prefetch="intent"
                       onClick={() => setMobileMenuOpen(false)}
                       className={clsx(
                         "-mx-3 block rounded-lg px-3 py-2 text-base/7 font-semibold transition-all",
@@ -446,6 +449,7 @@ export default function Header() {
                     <div className="pt-2 space-y-1">
                       <Link
                         to="/profile"
+                        prefetch="intent"
                         onClick={() => setMobileMenuOpen(false)}
                         className="-mx-3 block rounded-lg px-3 py-2 text-sm font-semibold text-gray-800 dark:text-neutral-200 hover:bg-gray-100 dark:hover:bg-neutral-800"
                       >
@@ -453,6 +457,7 @@ export default function Header() {
                       </Link>
                       <Link
                         to="/profile?tab=orders"
+                        prefetch="intent"
                         onClick={() => setMobileMenuOpen(false)}
                         className="-mx-3 block rounded-lg px-3 py-2 text-sm font-semibold text-gray-800 dark:text-neutral-200 hover:bg-gray-100 dark:hover:bg-neutral-800"
                       >
@@ -460,6 +465,7 @@ export default function Header() {
                       </Link>
                       <Link
                         to="/profile?tab=wishlist"
+                        prefetch="intent"
                         onClick={() => setMobileMenuOpen(false)}
                         className="-mx-3 flex items-center justify-between rounded-lg px-3 py-2 text-sm font-semibold text-rose-600 dark:text-rose-400 hover:bg-rose-50 dark:hover:bg-rose-950/30"
                       >
@@ -475,6 +481,7 @@ export default function Header() {
                       </Link>
                       <Link
                         to="/track-order"
+                        prefetch="intent"
                         onClick={() => setMobileMenuOpen(false)}
                         className="-mx-3 block rounded-lg px-3 py-2 text-sm font-semibold text-orange-600 dark:text-orange-400 hover:bg-orange-50 dark:hover:bg-orange-950/30"
                       >
@@ -483,6 +490,7 @@ export default function Header() {
                       {isStaffRole(user.role) && (
                         <Link
                           to="/admin"
+                          prefetch="intent"
                           onClick={() => setMobileMenuOpen(false)}
                           className="-mx-3 flex items-center justify-between rounded-lg px-3 py-2 text-sm font-bold text-neutral-900 dark:text-white bg-neutral-100 dark:bg-neutral-800 hover:bg-neutral-200 dark:hover:bg-neutral-700"
                         >

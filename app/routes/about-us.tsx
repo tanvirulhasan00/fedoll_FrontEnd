@@ -349,6 +349,7 @@ export default function AboutUsPage() {
                       </p>
                       <Link
                         to="/products"
+                        prefetch="intent"
                         className="inline-flex items-center gap-2 px-6 py-3 rounded-full bg-orange-600 hover:bg-orange-700 active:scale-98 text-white font-bold text-xs tracking-wide shadow-lg transition cursor-pointer"
                       >
                         <span>Browse All Products</span>

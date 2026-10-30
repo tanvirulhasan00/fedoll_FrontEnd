@@ -109,6 +109,7 @@ export default function JournalPreviewSection() {
           <div className="flex items-center justify-between sm:justify-end gap-4 self-end sm:self-auto shrink-0">
             <Link
               to="/blogs"
+              prefetch="intent"
               className="inline-flex items-center gap-1.5 text-xs sm:text-sm font-semibold text-orange-700 dark:text-orange-500 hover:text-orange-800 dark:hover:text-orange-400 transition"
             >
               <span>Read All Guides</span>
@@ -206,7 +207,7 @@ export default function JournalPreviewSection() {
                   <span className="truncate">{blog.publishedAt}</span>
                 </div>
 
-                <Link to={`/blogs/${blog.id}`}>
+                <Link to={`/blogs/${blog.id}`} prefetch="intent">
                   <h3 className="text-sm sm:text-sm font-bold text-gray-900 dark:text-white group-hover:text-orange-700 dark:group-hover:text-orange-400 transition line-clamp-2 leading-snug">
                     {blog.title}
                   </h3>
@@ -231,6 +232,7 @@ export default function JournalPreviewSection() {
 
                 <Link
                   to={`/blogs/${blog.id}`}
+                  prefetch="intent"
                   className="text-xs font-semibold text-orange-700 dark:text-orange-500 group-hover:translate-x-0.5 transition"
                 >
                   Read &rarr;

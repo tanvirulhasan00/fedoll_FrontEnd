@@ -70,6 +70,7 @@ const Topbar = () => {
           ) : (
             <Link
               to="/track-order"
+              prefetch="intent"
               className="flex items-center gap-1.5 text-xs font-semibold hover:text-white hover:underline transition"
             >
               <TruckIcon className="size-3.5 text-orange-200 dark:text-orange-400" />

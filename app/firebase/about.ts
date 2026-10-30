@@ -193,10 +193,29 @@ export const initialAboutData: AboutData = {
   },
 };
 
+let memoryCachedAboutData: AboutData | null = null;
+const LOCAL_STORAGE_ABOUT_KEY = "silkendrift_about_page_cache_v1";
+
 /**
- * Fetch About Us content from Cloud Firestore
+ * Fetch About Us content from Cloud Firestore with memory and local cache
  */
 export const fetchAboutDataFromFirestore = async (): Promise<AboutData> => {
+  if (memoryCachedAboutData) {
+    return memoryCachedAboutData;
+  }
+
+  // Try loading from localStorage immediately in browser
+  if (typeof window !== "undefined") {
+    try {
+      const raw = localStorage.getItem(LOCAL_STORAGE_ABOUT_KEY);
+      if (raw) {
+        memoryCachedAboutData = JSON.parse(raw) as AboutData;
+      }
+    } catch {
+      // ignore
+    }
+  }
+
   try {
     const docRef = doc(db, "about_page", "main");
     const snap = await getDoc(docRef);
@@ -210,16 +229,26 @@ export const fetchAboutDataFromFirestore = async (): Promise<AboutData> => {
         !data.contact?.phone?.includes("+880")
       ) {
         await seedAboutDataToFirestore(true);
+        memoryCachedAboutData = initialAboutData;
         return initialAboutData;
+      }
+      memoryCachedAboutData = data;
+      if (typeof window !== "undefined") {
+        try {
+          localStorage.setItem(LOCAL_STORAGE_ABOUT_KEY, JSON.stringify(data));
+        } catch {
+          // ignore
+        }
       }
       return data;
     }
 
     await seedAboutDataToFirestore();
+    memoryCachedAboutData = initialAboutData;
     return initialAboutData;
   } catch (error) {
     console.warn("Failed to fetch about data from Firestore, using initial dataset:", error);
-    return initialAboutData;
+    return memoryCachedAboutData || initialAboutData;
   }
 };
 
@@ -227,6 +256,7 @@ export const fetchAboutDataFromFirestore = async (): Promise<AboutData> => {
  * Seed or update About Us content in Cloud Firestore
  */
 export const seedAboutDataToFirestore = async (force: boolean = false) => {
+  memoryCachedAboutData = null;
   const docRef = doc(db, "about_page", "main");
   await setDoc(
     docRef,

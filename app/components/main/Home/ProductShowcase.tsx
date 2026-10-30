@@ -106,7 +106,7 @@ const ShowcaseProductCard: React.FC<ShowcaseProductCardProps> = ({
     <div className="group flex flex-col rounded-2xl bg-white dark:bg-neutral-900 border border-gray-200/80 dark:border-neutral-800 overflow-hidden shadow-xs hover:shadow-xl transition-all duration-300 w-full sm:w-[calc((100%-16px)/2)] md:w-[calc((100%-32px)/3)] lg:w-[calc((100%-48px)/4)] shrink-0 snap-start">
       {/* Product Card Image Container */}
       <div className="relative aspect-4/5 overflow-hidden bg-stone-100 dark:bg-neutral-800">
-        <Link to={`/products/${product.id}`} className="block w-full h-full cursor-pointer">
+        <Link to={`/products/${product.id}`} prefetch="intent" className="block w-full h-full cursor-pointer">
           <img
             src={normalizeGoogleDriveImageUrl(primaryImage)}
             alt={`${product.name} - ${selectedColor}`}
@@ -239,6 +239,7 @@ const ShowcaseProductCard: React.FC<ShowcaseProductCardProps> = ({
 
           <Link
             to={`/products/${product.id}`}
+            prefetch="intent"
             className="block text-sm font-bold text-gray-900 dark:text-white group-hover:text-orange-700 dark:group-hover:text-orange-400 transition line-clamp-1"
           >
             {product.name}
@@ -616,6 +617,7 @@ export default function ProductShowcase() {
         <div className="mt-10 sm:mt-12 text-center">
           <Link
             to="/products"
+            prefetch="intent"
             className="inline-flex items-center gap-2 px-7 py-3 rounded-full bg-stone-900 hover:bg-orange-700 text-white text-xs sm:text-sm font-semibold shadow-md hover:shadow-lg transition-all duration-300"
           >
             <span>Explore All Products</span>

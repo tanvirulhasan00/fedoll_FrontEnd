@@ -180,6 +180,7 @@ export default function HeroSlider() {
           <div className="pt-4 flex flex-wrap items-center gap-4">
             <Link
               to={currentBanner.ctaLink}
+              prefetch="intent"
               className="inline-flex items-center gap-2.5 px-7 py-3.5 rounded-full bg-orange-700 hover:bg-orange-800 text-white font-bold text-sm tracking-wide shadow-lg hover:shadow-orange-700/30 hover:scale-[1.02] active:scale-[0.98] transition cursor-pointer"
             >
               <span>{currentBanner.ctaText}</span>
@@ -189,6 +190,7 @@ export default function HeroSlider() {
             {currentBanner.secondaryCtaText && (
               <Link
                 to={currentBanner.secondaryCtaLink || "/products"}
+                prefetch="intent"
                 className="inline-flex items-center gap-2 px-6 py-3.5 rounded-full bg-white/10 hover:bg-white/20 backdrop-blur-sm border border-white/25 text-white font-semibold text-sm hover:border-white/50 transition cursor-pointer"
               >
                 <span>{currentBanner.secondaryCtaText}</span>

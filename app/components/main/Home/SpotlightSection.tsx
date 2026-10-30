@@ -320,6 +320,7 @@ export default function SpotlightSection() {
 
                     <Link
                       to={banner.ctaLink}
+                      prefetch="intent"
                       className="inline-flex items-center gap-1 px-3.5 py-1.5 rounded-full bg-orange-700 hover:bg-orange-800 active:scale-95 text-white font-bold text-xs shadow-md transition cursor-pointer"
                     >
                       <span>{banner.ctaText}</span>
@@ -461,6 +462,7 @@ export default function SpotlightSection() {
             <div className="pt-2 flex flex-wrap items-center gap-3">
               <Link
                 to={currentBanner.ctaLink}
+                prefetch="intent"
                 className="inline-flex items-center gap-2 px-6 py-2.5 rounded-full bg-orange-700 hover:bg-orange-800 text-white font-bold text-xs sm:text-sm shadow-md hover:shadow-orange-700/30 transition hover:scale-[1.02] cursor-pointer"
               >
                 <span>{currentBanner.ctaText}</span>
@@ -471,6 +473,7 @@ export default function SpotlightSection() {
                 currentBanner.secondaryCtaLink && (
                   <Link
                     to={currentBanner.secondaryCtaLink}
+                    prefetch="intent"
                     className={`inline-flex items-center gap-2 px-5 py-2.5 rounded-full text-xs sm:text-sm font-semibold border transition hover:scale-[1.02] cursor-pointer ${
                       isLightStyle
                         ? "border-stone-300 dark:border-neutral-700 text-gray-800 dark:text-stone-200 hover:bg-stone-200/50"

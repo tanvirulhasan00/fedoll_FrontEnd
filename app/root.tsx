@@ -5,6 +5,8 @@ import {
   Outlet,
   Scripts,
   ScrollRestoration,
+  useNavigation,
+  type ShouldRevalidateFunctionArgs,
 } from "react-router";
 
 import type { Route } from "./+types/root";
@@ -27,6 +29,40 @@ const DEFAULT_FAVICON =
 export async function loader() {
   const settings = await fetchStoreSettings();
   return { settings };
+}
+
+/**
+ * Prevent React Router from re-fetching root store settings on standard page navigations.
+ * Settings are cached and persistent; skipping this eliminates the blocking server roundtrip
+ * and makes client-side page transitions instantaneous.
+ */
+export function shouldRevalidate({
+  formMethod,
+  defaultShouldRevalidate,
+}: ShouldRevalidateFunctionArgs) {
+  if (!formMethod || formMethod === "GET") {
+    return false;
+  }
+  return defaultShouldRevalidate;
+}
+
+/**
+ * Sleek top-of-viewport loading bar for immediate visual feedback during route changes
+ */
+function NavigationProgressBar() {
+  const navigation = useNavigation();
+  const isNavigating = Boolean(navigation.location);
+
+  if (!isNavigating) return null;
+
+  return (
+    <div
+      aria-hidden="true"
+      className="fixed top-0 left-0 right-0 z-[9999] pointer-events-none"
+    >
+      <div className="h-0.5 sm:h-1 w-full bg-gradient-to-r from-orange-500 via-amber-400 to-orange-600 shadow-xs shadow-orange-500/50 animate-pulse" />
+    </div>
+  );
 }
 
 export const links: Route.LinksFunction = () => [
@@ -71,6 +107,7 @@ export function Layout({ children }: { children: React.ReactNode }) {
 export default function App({ loaderData }: Route.ComponentProps) {
   return (
     <ReduxProvider>
+      <NavigationProgressBar />
       <StoreSettingsSync initialSettings={loaderData?.settings} />
       <Outlet />
       <Toaster position="top-right" richColors />

@@ -99,6 +99,7 @@ export const UserMenu: React.FC<UserMenuProps> = ({ user }) => {
               {({ focus }) => (
                 <Link
                   to="/profile"
+                  prefetch="intent"
                   className={`flex items-center gap-2.5 rounded-xl px-3 py-2 text-xs font-medium transition ${
                     focus
                       ? "bg-gray-100 dark:bg-neutral-800 text-orange-700 dark:text-orange-400"
@@ -115,6 +116,7 @@ export const UserMenu: React.FC<UserMenuProps> = ({ user }) => {
               {({ focus }) => (
                 <Link
                   to="/profile?tab=orders"
+                  prefetch="intent"
                   className={`flex items-center gap-2.5 rounded-xl px-3 py-2 text-xs font-medium transition ${
                     focus
                       ? "bg-gray-100 dark:bg-neutral-800 text-orange-700 dark:text-orange-400"
@@ -131,6 +133,7 @@ export const UserMenu: React.FC<UserMenuProps> = ({ user }) => {
               {({ focus }) => (
                 <Link
                   to="/track-order"
+                  prefetch="intent"
                   className={`flex items-center gap-2.5 rounded-xl px-3 py-2 text-xs font-medium transition ${
                     focus
                       ? "bg-gray-100 dark:bg-neutral-800 text-orange-700 dark:text-orange-400"
@@ -147,6 +150,7 @@ export const UserMenu: React.FC<UserMenuProps> = ({ user }) => {
               {({ focus }) => (
                 <Link
                   to="/profile?tab=wishlist"
+                  prefetch="intent"
                   className={`flex items-center gap-2.5 rounded-xl px-3 py-2 text-xs font-medium transition ${
                     focus
                       ? "bg-gray-100 dark:bg-neutral-800 text-orange-700 dark:text-orange-400"
@@ -164,6 +168,7 @@ export const UserMenu: React.FC<UserMenuProps> = ({ user }) => {
                 {({ focus }) => (
                   <Link
                     to="/admin"
+                    prefetch="intent"
                     className={`flex items-center justify-between rounded-xl px-3 py-2 text-xs font-semibold transition ${
                       focus
                         ? "bg-orange-500/15 text-orange-600 dark:text-orange-400"

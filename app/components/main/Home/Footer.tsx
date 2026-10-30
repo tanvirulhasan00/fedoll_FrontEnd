@@ -213,7 +213,7 @@ const Footer = () => {
           {/* Brand & Direct Contact Info (4 cols) */}
           <div className="lg:col-span-4 flex flex-col justify-between">
             <div>
-              <Link to="/" className="inline-block group">
+              <Link to="/" prefetch="intent" className="inline-block group">
                 {settingsLoading || !settingsInitialized ? (
                   <NavbarLogoSkeleton className="h-12 sm:h-14" />
                 ) : (
@@ -375,6 +375,7 @@ const Footer = () => {
                       <li key={link.name}>
                         <Link
                           to={link.href}
+                          prefetch="intent"
                           className="text-xs text-gray-600 hover:text-orange-600 dark:text-neutral-400 dark:hover:text-orange-400 transition-colors inline-block py-0.5"
                         >
                           {link.name}
@@ -411,6 +412,7 @@ const Footer = () => {
                       <li key={link.name}>
                         <Link
                           to={link.href}
+                          prefetch="intent"
                           className="text-xs text-gray-600 hover:text-orange-600 dark:text-neutral-400 dark:hover:text-orange-400 transition-colors inline-block py-0.5"
                         >
                           {link.name}
@@ -447,6 +449,7 @@ const Footer = () => {
                       <li key={link.name}>
                         <Link
                           to={link.href}
+                          prefetch="intent"
                           className="text-xs text-gray-600 hover:text-orange-600 dark:text-neutral-400 dark:hover:text-orange-400 transition-colors inline-block py-0.5"
                         >
                           {link.name}
@@ -483,6 +486,7 @@ const Footer = () => {
                     <li key={link.name}>
                       <Link
                         to={link.href}
+                        prefetch="intent"
                         className="text-sm text-gray-600 hover:text-orange-600 dark:text-neutral-400 dark:hover:text-orange-400 transition-colors duration-200 inline-block py-0.5 hover:translate-x-1 transition-transform"
                       >
                         {link.name}
@@ -502,6 +506,7 @@ const Footer = () => {
                     <li key={link.name}>
                       <Link
                         to={link.href}
+                        prefetch="intent"
                         className="text-sm text-gray-600 hover:text-orange-600 dark:text-neutral-400 dark:hover:text-orange-400 transition-colors duration-200 inline-block py-0.5 hover:translate-x-1 transition-transform"
                       >
                         {link.name}
@@ -521,6 +526,7 @@ const Footer = () => {
                     <li key={link.name}>
                       <Link
                         to={link.href}
+                        prefetch="intent"
                         className="text-sm text-gray-600 hover:text-orange-600 dark:text-neutral-400 dark:hover:text-orange-400 transition-colors duration-200 inline-block py-0.5 hover:translate-x-1 transition-transform"
                       >
                         {link.name}
@@ -572,15 +578,15 @@ const Footer = () => {
           </div>
 
           <div className="flex flex-wrap items-center justify-center sm:justify-start gap-3.5 sm:gap-6 text-[11px] sm:text-xs text-gray-500 dark:text-neutral-400">
-            <Link to="/privacy-policy" className="hover:text-orange-600 dark:hover:text-orange-400 transition-colors">
+            <Link to="/privacy-policy" prefetch="intent" className="hover:text-orange-600 dark:hover:text-orange-400 transition-colors">
               Privacy Policy
             </Link>
             <span className="text-stone-300 dark:text-neutral-700">•</span>
-            <Link to="/terms-of-service" className="hover:text-orange-600 dark:hover:text-orange-400 transition-colors">
+            <Link to="/terms-of-service" prefetch="intent" className="hover:text-orange-600 dark:hover:text-orange-400 transition-colors">
               Terms of Service
             </Link>
             <span className="text-stone-300 dark:text-neutral-700">•</span>
-            <Link to="/security" className="hover:text-orange-600 dark:hover:text-orange-400 transition-colors">
+            <Link to="/security" prefetch="intent" className="hover:text-orange-600 dark:hover:text-orange-400 transition-colors">
               Security &amp; Compliance
             </Link>
           </div>

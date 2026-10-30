@@ -331,6 +331,7 @@ export default function FeaturedCategories() {
               <Link
                 key={cat.id || idx}
                 to={getCategoryLink(cat)}
+                prefetch="intent"
                 className="group relative shrink-0 snap-start rounded-2xl overflow-hidden bg-stone-100 dark:bg-neutral-900 shadow-xs hover:shadow-xl transition-all duration-500 h-[300px] sm:h-[320px] lg:h-[350px] flex flex-col justify-end p-5 sm:p-5 border border-gray-200/80 dark:border-neutral-800 w-full sm:w-[calc((100%-16px)/2)] md:w-[calc((100%-32px)/3)] lg:w-[calc((100%-48px)/4)] cursor-pointer"
               >
                 {/* Background Image with Zoom */}
