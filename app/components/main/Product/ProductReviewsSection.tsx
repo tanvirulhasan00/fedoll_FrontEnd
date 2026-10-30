@@ -614,7 +614,7 @@ export const ProductReviewsSection: React.FC<ProductReviewsSectionProps> = ({
             {/* Reviews Slider Track */}
             <div
               ref={scrollRef}
-              className="flex items-stretch overflow-x-auto snap-x snap-mandatory gap-4 sm:gap-6 no-scrollbar scroll-smooth pb-4 -mx-4 px-4 sm:mx-0 sm:px-0 touch-pan-x"
+              className="flex items-stretch overflow-x-auto snap-x snap-mandatory gap-4 sm:gap-6 no-scrollbar scroll-smooth pb-4 -mx-4 px-4 sm:mx-0 sm:px-0 overscroll-x-contain"
             >
               {displayedReviews.map((rev) => {
                 const isHelpful = helpfulClicked.has(rev.id);

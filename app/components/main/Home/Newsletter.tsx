@@ -81,7 +81,7 @@ export default function NewsLetter() {
   };
 
   return (
-    <div className="relative isolate overflow-hidden rounded-3xl bg-gradient-to-b from-stone-50 via-white to-stone-100/70 dark:from-neutral-900 dark:via-neutral-900 dark:to-neutral-950 border border-stone-200/90 dark:border-neutral-800 p-6 sm:p-12 lg:p-16 shadow-xl dark:shadow-2xl transition-colors duration-200">
+    <div className="relative isolate overflow-hidden rounded-2xl sm:rounded-3xl bg-gradient-to-b from-stone-50 via-white to-stone-100/70 dark:from-neutral-900 dark:via-neutral-900 dark:to-neutral-950 border border-stone-200/90 dark:border-neutral-800 p-4 sm:p-10 lg:p-16 shadow-lg sm:shadow-xl dark:shadow-2xl transition-colors duration-200">
       {/* Decorative ambient glowing gradients */}
       <div
         aria-hidden="true"
@@ -199,6 +199,22 @@ export default function NewsLetter() {
               <ShieldCheckIcon className="size-4 shrink-0 text-gray-400 dark:text-neutral-400" />
               <span>We value your privacy. Strictly zero spam. Unsubscribe anytime with 1 click.</span>
             </p>
+
+            {/* Mobile-only compact benefits pill strip to eliminate empty space */}
+            <div className="flex sm:hidden items-center justify-between gap-2 mt-4 pt-3.5 border-t border-stone-200/80 dark:border-neutral-800 text-[11px] font-medium text-gray-600 dark:text-neutral-400">
+              <div className="flex items-center gap-1">
+                <TagIcon className="size-3.5 text-orange-600 dark:text-orange-400 shrink-0" />
+                <span>10% Voucher</span>
+              </div>
+              <div className="flex items-center gap-1">
+                <BoltIcon className="size-3.5 text-amber-600 dark:text-amber-400 shrink-0" />
+                <span>VIP Drops</span>
+              </div>
+              <div className="flex items-center gap-1">
+                <ShieldCheckIcon className="size-3.5 text-emerald-600 dark:text-emerald-400 shrink-0" />
+                <span>Zero Spam</span>
+              </div>
+            </div>
           </form>
         </div>
 

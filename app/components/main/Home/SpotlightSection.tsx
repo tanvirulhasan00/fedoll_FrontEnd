@@ -224,7 +224,7 @@ export default function SpotlightSection() {
           onTouchEnd={() => {
             setTimeout(() => setIsInteracting(false), 2500);
           }}
-          className="flex overflow-x-auto snap-x snap-mandatory gap-3 px-1 py-1 scroll-smooth no-scrollbar touch-pan-x"
+          className="flex overflow-x-auto snap-x snap-mandatory gap-3 px-1 py-1 scroll-smooth no-scrollbar overscroll-x-contain"
         >
           {liveBanners.map((banner, idx) => {
             const bBadgeClass =

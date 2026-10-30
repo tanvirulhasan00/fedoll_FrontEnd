@@ -91,7 +91,7 @@ export default function TestimonialsSection() {
           <div
             ref={mobileScrollRef}
             onScroll={handleScroll}
-            className="flex overflow-x-auto snap-x snap-mandatory gap-3.5 px-1 py-1 scroll-smooth no-scrollbar touch-pan-x"
+            className="flex overflow-x-auto snap-x snap-mandatory gap-3.5 px-1 py-1 scroll-smooth no-scrollbar overscroll-x-contain"
           >
             {testimonials.map((test, idx) => (
               <div

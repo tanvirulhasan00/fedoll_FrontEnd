@@ -577,7 +577,7 @@ export default function ProductShowcase() {
         <>
           <div
             ref={scrollRef}
-            className="flex overflow-x-auto snap-x snap-mandatory gap-4 no-scrollbar scroll-smooth pb-3 -mx-4 px-4 sm:mx-0 sm:px-0 touch-pan-x"
+            className="flex overflow-x-auto snap-x snap-mandatory gap-4 no-scrollbar scroll-smooth pb-3 -mx-4 px-4 sm:mx-0 sm:px-0 overscroll-x-contain"
           >
             {filteredProducts.map((product, idx) => (
               <ShowcaseProductCard
