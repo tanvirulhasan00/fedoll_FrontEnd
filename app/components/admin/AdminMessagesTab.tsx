@@ -1,4 +1,4 @@
-import React, { useState, Fragment } from "react";
+import React, { useState, useEffect, Fragment } from "react";
 import { Dialog, Transition } from "@headlessui/react";
 import {
   ChatBubbleLeftRightIcon,
@@ -24,17 +24,28 @@ import {
   type ContactMessageRecord,
   updateContactMessageStatusInFirestore,
   deleteContactMessageFromFirestore,
+  bulkDeleteContactMessagesFromFirestore,
 } from "~/firebase";
 
 interface AdminMessagesTabProps {
   messages: ContactMessageRecord[];
-  onRefresh: () => void;
+  onRefresh: () => void | Promise<void>;
+  onDeleteMessage?: (id: string) => void;
+  onUpdateMessage?: (updated: ContactMessageRecord) => void;
 }
 
 export const AdminMessagesTab: React.FC<AdminMessagesTabProps> = ({
   messages,
   onRefresh,
+  onDeleteMessage,
+  onUpdateMessage,
 }) => {
+  const [localMessages, setLocalMessages] = useState<ContactMessageRecord[]>(messages);
+  const [selectedIds, setSelectedIds] = useState<string[]>([]);
+  const [isBulkDeleteOpen, setIsBulkDeleteOpen] = useState(false);
+  const [isDeletingBulk, setIsDeletingBulk] = useState(false);
+  const [isBulkStatusUpdating, setIsBulkStatusUpdating] = useState(false);
+
   const [searchTerm, setSearchTerm] = useState("");
   const [statusFilter, setStatusFilter] = useState<string>("all");
   const [categoryFilter, setCategoryFilter] = useState<string>("all");
@@ -44,14 +55,19 @@ export const AdminMessagesTab: React.FC<AdminMessagesTabProps> = ({
   const [inquiryToDelete, setInquiryToDelete] = useState<ContactMessageRecord | null>(null);
   const [isDeletingInquiry, setIsDeletingInquiry] = useState(false);
 
+  // Sync internal state when parent messages change
+  useEffect(() => {
+    setLocalMessages(messages);
+  }, [messages]);
+
   // Status Counts
-  const totalCount = messages.length;
-  const newCount = messages.filter((m) => m.status === "new").length;
-  const inReviewCount = messages.filter((m) => m.status === "in-review").length;
-  const resolvedCount = messages.filter((m) => m.status === "resolved").length;
+  const totalCount = localMessages.length;
+  const newCount = localMessages.filter((m) => m.status === "new").length;
+  const inReviewCount = localMessages.filter((m) => m.status === "in-review").length;
+  const resolvedCount = localMessages.filter((m) => m.status === "resolved").length;
 
   // Filter messages
-  const filteredMessages = messages.filter((msg) => {
+  const filteredMessages = localMessages.filter((msg) => {
     const matchesSearch =
       msg.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
       msg.email.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -71,12 +87,28 @@ export const AdminMessagesTab: React.FC<AdminMessagesTabProps> = ({
 
   // Unique categories for filter
   const categoriesList = Array.from(
-    new Set(messages.map((m) => m.category).filter(Boolean))
+    new Set(localMessages.map((m) => m.category).filter(Boolean))
   );
 
   const handleOpenDetail = (msg: ContactMessageRecord) => {
     setSelectedMessage(msg);
     setAdminNote(msg.adminNote || "");
+  };
+
+  const handleToggleSelectAll = () => {
+    const validFilteredIds = filteredMessages.map((m) => m.id!).filter(Boolean);
+    if (selectedIds.length === validFilteredIds.length && validFilteredIds.length > 0) {
+      setSelectedIds([]);
+    } else {
+      setSelectedIds(validFilteredIds);
+    }
+  };
+
+  const handleToggleSelectOne = (id: string, e?: React.MouseEvent) => {
+    if (e) e.stopPropagation();
+    setSelectedIds((prev) =>
+      prev.includes(id) ? prev.filter((item) => item !== id) : [...prev, id]
+    );
   };
 
   const handleStatusChange = async (
@@ -85,19 +117,69 @@ export const AdminMessagesTab: React.FC<AdminMessagesTabProps> = ({
     note?: string
   ) => {
     try {
-      await updateContactMessageStatusInFirestore(msgId, newStatus, note);
-      toast.success(`Message marked as ${newStatus.replace("-", " ")}`);
+      // Optimistic update
+      setLocalMessages((prev) =>
+        prev.map((m) =>
+          m.id === msgId
+            ? {
+                ...m,
+                status: newStatus,
+                ...(note !== undefined ? { adminNote: note } : {}),
+              }
+            : m
+        )
+      );
+
       if (selectedMessage && selectedMessage.id === msgId) {
-        setSelectedMessage({
+        const updated = {
           ...selectedMessage,
           status: newStatus,
           ...(note !== undefined ? { adminNote: note } : {}),
-        });
+        };
+        setSelectedMessage(updated);
+        onUpdateMessage?.(updated);
       }
+
+      await updateContactMessageStatusInFirestore(msgId, newStatus, note);
+      toast.success(`Inquiry marked as ${newStatus.replace("-", " ")}`);
       onRefresh();
     } catch (err: unknown) {
       const error = err as Error;
       toast.error(error.message || "Failed to update message status");
+      onRefresh();
+    }
+  };
+
+  const handleBulkStatusChange = async (newStatus: "new" | "in-review" | "resolved") => {
+    if (selectedIds.length === 0) return;
+
+    setIsBulkStatusUpdating(true);
+    const idsSet = new Set(selectedIds);
+    try {
+      // Optimistic update
+      setLocalMessages((prev) =>
+        prev.map((m) => (idsSet.has(m.id || "") ? { ...m, status: newStatus } : m))
+      );
+      if (selectedMessage && idsSet.has(selectedMessage.id || "")) {
+        setSelectedMessage((prev) => (prev ? { ...prev, status: newStatus } : null));
+      }
+
+      await Promise.all(
+        selectedIds.map((id) =>
+          updateContactMessageStatusInFirestore(id, newStatus)
+        )
+      );
+      toast.success(
+        `Updated ${selectedIds.length} inquiries to "${newStatus.replace("-", " ")}"`
+      );
+      setSelectedIds([]);
+      onRefresh();
+    } catch (err: unknown) {
+      const error = err as Error;
+      toast.error(error.message || "Failed to update selected inquiries");
+      onRefresh();
+    } finally {
+      setIsBulkStatusUpdating(false);
     }
   };
 
@@ -105,17 +187,25 @@ export const AdminMessagesTab: React.FC<AdminMessagesTabProps> = ({
     if (!selectedMessage?.id) return;
     setSavingNote(true);
     try {
+      const updated: ContactMessageRecord = {
+        ...selectedMessage,
+        adminNote,
+        repliedAt: adminNote.trim() ? new Date().toISOString() : selectedMessage.repliedAt,
+      };
+
+      // Optimistic update
+      setSelectedMessage(updated);
+      setLocalMessages((prev) =>
+        prev.map((m) => (m.id === updated.id ? updated : m))
+      );
+      onUpdateMessage?.(updated);
+
       await updateContactMessageStatusInFirestore(
         selectedMessage.id,
         selectedMessage.status,
         adminNote
       );
       toast.success("Admin note and reply record updated");
-      setSelectedMessage({
-        ...selectedMessage,
-        adminNote,
-        repliedAt: adminNote.trim() ? new Date().toISOString() : selectedMessage.repliedAt,
-      });
       onRefresh();
     } catch (err: unknown) {
       const error = err as Error;
@@ -131,21 +221,61 @@ export const AdminMessagesTab: React.FC<AdminMessagesTabProps> = ({
 
   const handleConfirmDelete = async () => {
     if (!inquiryToDelete?.id) return;
+    const targetId = inquiryToDelete.id;
 
     setIsDeletingInquiry(true);
     try {
-      await deleteContactMessageFromFirestore(inquiryToDelete.id);
-      toast.success("Customer message deleted successfully");
-      if (selectedMessage?.id === inquiryToDelete.id) {
+      // Immediate optimistic update: remove from local messages & selection
+      setLocalMessages((prev) => prev.filter((m) => m.id !== targetId));
+      setSelectedIds((prev) => prev.filter((id) => id !== targetId));
+      if (selectedMessage?.id === targetId) {
         setSelectedMessage(null);
       }
       setInquiryToDelete(null);
+      onDeleteMessage?.(targetId);
+
+      await deleteContactMessageFromFirestore(targetId);
+      toast.success("Customer message deleted successfully");
+
+      // Background revalidation
       onRefresh();
     } catch (err: unknown) {
       const error = err as Error;
       toast.error(error.message || "Failed to delete message");
+      onRefresh();
     } finally {
       setIsDeletingInquiry(false);
+    }
+  };
+
+  const handleConfirmBulkDelete = async () => {
+    if (selectedIds.length === 0) return;
+
+    setIsDeletingBulk(true);
+    const toDeleteIds = [...selectedIds];
+    const idsSet = new Set(toDeleteIds);
+
+    try {
+      // Immediate optimistic update
+      setLocalMessages((prev) => prev.filter((m) => !idsSet.has(m.id || "")));
+      if (selectedMessage && idsSet.has(selectedMessage.id || "")) {
+        setSelectedMessage(null);
+      }
+      toDeleteIds.forEach((id) => onDeleteMessage?.(id));
+      setSelectedIds([]);
+      setIsBulkDeleteOpen(false);
+
+      await bulkDeleteContactMessagesFromFirestore(toDeleteIds);
+      toast.success(`Deleted ${toDeleteIds.length} inquiries permanently`);
+
+      // Background revalidation
+      onRefresh();
+    } catch (err: unknown) {
+      const error = err as Error;
+      toast.error(error.message || "Failed to delete selected inquiries");
+      onRefresh();
+    } finally {
+      setIsDeletingBulk(false);
     }
   };
 
@@ -311,7 +441,62 @@ export const AdminMessagesTab: React.FC<AdminMessagesTabProps> = ({
             </button>
           ))}
         </div>
+
+        {/* Quick Select All Toggle */}
+        {filteredMessages.length > 0 && (
+          <button
+            type="button"
+            onClick={handleToggleSelectAll}
+            className="text-xs px-3 py-2 rounded-xl border border-gray-200 dark:border-neutral-700 hover:bg-gray-50 dark:hover:bg-neutral-800 font-semibold text-gray-700 dark:text-neutral-300 transition shrink-0 cursor-pointer"
+          >
+            {selectedIds.length === filteredMessages.length ? "Deselect All" : "Select All"}
+          </button>
+        )}
       </div>
+
+      {/* Bulk Selection Actions Bar */}
+      {selectedIds.length > 0 && (
+        <div className="bg-orange-50 dark:bg-orange-950/40 border border-orange-200 dark:border-orange-900/60 p-3 sm:p-4 rounded-2xl flex flex-wrap items-center justify-between gap-3 animate-in fade-in">
+          <div className="flex items-center gap-3">
+            <span className="text-xs font-bold text-orange-950 dark:text-orange-200">
+              {selectedIds.length} of {filteredMessages.length} inquiries selected
+            </span>
+            <button
+              type="button"
+              onClick={handleToggleSelectAll}
+              className="text-xs text-orange-700 dark:text-orange-300 underline font-semibold hover:text-orange-800 cursor-pointer"
+            >
+              {selectedIds.length === filteredMessages.length ? "Deselect All" : "Select All"}
+            </button>
+          </div>
+          <div className="flex flex-wrap items-center gap-2">
+            <button
+              type="button"
+              disabled={isBulkStatusUpdating}
+              onClick={() => handleBulkStatusChange("in-review")}
+              className="px-3 py-1.5 rounded-xl bg-blue-100 dark:bg-blue-950/60 text-blue-800 dark:text-blue-300 border border-blue-300/60 text-xs font-semibold hover:bg-blue-200 transition cursor-pointer disabled:opacity-50"
+            >
+              Mark In Review
+            </button>
+            <button
+              type="button"
+              disabled={isBulkStatusUpdating}
+              onClick={() => handleBulkStatusChange("resolved")}
+              className="px-3 py-1.5 rounded-xl bg-emerald-100 dark:bg-emerald-950/60 text-emerald-800 dark:text-emerald-300 border border-emerald-300/60 text-xs font-semibold hover:bg-emerald-200 transition cursor-pointer disabled:opacity-50"
+            >
+              Mark Resolved
+            </button>
+            <button
+              type="button"
+              onClick={() => setIsBulkDeleteOpen(true)}
+              className="px-3 py-1.5 rounded-xl bg-rose-600 text-white text-xs font-bold hover:bg-rose-700 transition flex items-center gap-1.5 shadow-xs cursor-pointer"
+            >
+              <TrashIcon className="size-3.5" />
+              <span>Delete Selected ({selectedIds.length})</span>
+            </button>
+          </div>
+        </div>
+      )}
 
       {/* Messages List */}
       {filteredMessages.length === 0 ? (
@@ -332,12 +517,15 @@ export const AdminMessagesTab: React.FC<AdminMessagesTabProps> = ({
             const isNew = msg.status === "new";
             const isInReview = msg.status === "in-review";
             const isResolved = msg.status === "resolved";
+            const isSelected = Boolean(msg.id && selectedIds.includes(msg.id));
 
             return (
               <div
                 key={msg.id || msg.submittedAt}
                 className={`p-5 rounded-2xl border transition-all ${
-                  isNew
+                  isSelected
+                    ? "bg-orange-50/40 dark:bg-orange-950/20 border-orange-300 dark:border-orange-800 ring-2 ring-orange-500/20 shadow-sm"
+                    : isNew
                     ? "bg-white dark:bg-neutral-900 border-amber-300/80 dark:border-amber-800/60 shadow-sm ring-1 ring-amber-500/10"
                     : "bg-white dark:bg-neutral-900 border-gray-200 dark:border-neutral-800 hover:border-gray-300 dark:hover:border-neutral-700"
                 }`}
@@ -345,6 +533,14 @@ export const AdminMessagesTab: React.FC<AdminMessagesTabProps> = ({
                 <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-3">
                   {/* Left: Sender & Subject */}
                   <div className="flex items-start gap-3.5 flex-1 min-w-0">
+                    <input
+                      type="checkbox"
+                      aria-label={`Select inquiry from ${msg.name}`}
+                      checked={isSelected}
+                      onChange={() => msg.id && handleToggleSelectOne(msg.id)}
+                      className="mt-2.5 size-4 rounded-md border-gray-300 dark:border-neutral-700 text-orange-600 focus:ring-orange-500 cursor-pointer shrink-0"
+                    />
+
                     <div className="size-10 rounded-full bg-stone-900 dark:bg-neutral-800 text-white font-bold text-sm flex items-center justify-center shrink-0 shadow-xs">
                       {msg.name.charAt(0).toUpperCase()}
                     </div>
@@ -767,6 +963,97 @@ export const AdminMessagesTab: React.FC<AdminMessagesTabProps> = ({
                         <>
                           <TrashIcon className="size-4" />
                           <span>Delete Inquiry</span>
+                        </>
+                      )}
+                    </button>
+                  </div>
+                </Dialog.Panel>
+              </Transition.Child>
+            </div>
+          </div>
+        </Dialog>
+      </Transition>
+
+      {/* Bulk Delete Inquiries Confirmation Modal Alert */}
+      <Transition appear show={isBulkDeleteOpen} as={Fragment}>
+        <Dialog
+          as="div"
+          className="relative z-50"
+          onClose={() => {
+            if (!isDeletingBulk) setIsBulkDeleteOpen(false);
+          }}
+        >
+          <Transition.Child
+            as={Fragment}
+            enter="ease-out duration-200"
+            enterFrom="opacity-0"
+            enterTo="opacity-100"
+            leave="ease-in duration-150"
+            leaveFrom="opacity-100"
+            leaveTo="opacity-0"
+          >
+            <div className="fixed inset-0 bg-black/60 backdrop-blur-xs" />
+          </Transition.Child>
+
+          <div className="fixed inset-0 overflow-y-auto">
+            <div className="flex min-h-full items-center justify-center p-4 text-center">
+              <Transition.Child
+                as={Fragment}
+                enter="ease-out duration-200"
+                enterFrom="opacity-0 scale-95"
+                enterTo="opacity-100 scale-100"
+                leave="ease-in duration-150"
+                leaveFrom="opacity-100 scale-100"
+                leaveTo="opacity-0 scale-95"
+              >
+                <Dialog.Panel className="w-full max-w-md transform overflow-hidden rounded-3xl bg-white dark:bg-neutral-900 border border-stone-200 dark:border-neutral-800 p-6 sm:p-7 text-left align-middle shadow-2xl transition-all">
+                  <div className="flex items-start gap-4">
+                    <div className="size-12 shrink-0 rounded-2xl bg-rose-50 dark:bg-rose-950/50 border border-rose-200 dark:border-rose-900/60 flex items-center justify-center text-rose-600 dark:text-rose-400 shadow-xs">
+                      <ExclamationTriangleIcon className="size-6" />
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <Dialog.Title
+                        as="h3"
+                        className="text-lg font-bold text-gray-900 dark:text-white tracking-tight"
+                      >
+                        Delete Selected Inquiries
+                      </Dialog.Title>
+                      <p className="mt-1 text-xs text-gray-500 dark:text-neutral-400">
+                        Permanently delete {selectedIds.length} customer {selectedIds.length === 1 ? "inquiry" : "inquiries"}? This action cannot be undone.
+                      </p>
+                    </div>
+                  </div>
+
+                  <div className="mt-5 space-y-3">
+                    <div className="p-3 rounded-xl bg-rose-50/70 dark:bg-rose-950/30 border border-rose-200/60 dark:border-rose-900/40 text-[11px] text-rose-800 dark:text-rose-300">
+                      <strong>Warning:</strong> All {selectedIds.length} selected customer messages and internal notes will be permanently removed from Cloud Firestore.
+                    </div>
+                  </div>
+
+                  <div className="mt-6 flex items-center justify-end gap-3">
+                    <button
+                      type="button"
+                      disabled={isDeletingBulk}
+                      onClick={() => setIsBulkDeleteOpen(false)}
+                      className="px-4 py-2.5 rounded-xl border border-stone-200 dark:border-neutral-700 text-xs font-bold text-gray-700 dark:text-neutral-300 hover:bg-stone-50 dark:hover:bg-neutral-800 transition cursor-pointer disabled:opacity-50"
+                    >
+                      Cancel
+                    </button>
+                    <button
+                      type="button"
+                      disabled={isDeletingBulk}
+                      onClick={handleConfirmBulkDelete}
+                      className="px-5 py-2.5 rounded-xl bg-rose-600 hover:bg-rose-700 text-white text-xs font-bold shadow-md shadow-rose-600/20 transition flex items-center gap-2 cursor-pointer disabled:opacity-50"
+                    >
+                      {isDeletingBulk ? (
+                        <>
+                          <Spinner className="size-4 text-white" />
+                          <span>Deleting...</span>
+                        </>
+                      ) : (
+                        <>
+                          <TrashIcon className="size-4" />
+                          <span>Delete {selectedIds.length} Inquiries</span>
                         </>
                       )}
                     </button>

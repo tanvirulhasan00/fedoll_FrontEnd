@@ -329,65 +329,76 @@ export const initialContactMessages: ContactMessageRecord[] = [
   },
 ];
 
+const LOCAL_STORAGE_MESSAGES_KEY = "fedoll_contact_messages_v2";
+const LOCAL_STORAGE_DELETED_KEY = "fedoll_deleted_contact_message_ids_v1";
+const LOCAL_STORAGE_INIT_KEY = "fedoll_contact_messages_initialized";
+
+export const getDeletedContactMessageIds = (): Set<string> => {
+  if (typeof window === "undefined") return new Set();
+  try {
+    const raw = localStorage.getItem(LOCAL_STORAGE_DELETED_KEY);
+    if (raw) {
+      const arr = JSON.parse(raw);
+      if (Array.isArray(arr)) return new Set(arr);
+    }
+  } catch {
+    // ignore
+  }
+  return new Set();
+};
+
+const saveDeletedMessageId = (id: string) => {
+  if (typeof window === "undefined" || !id) return;
+  try {
+    const set = getDeletedContactMessageIds();
+    set.add(id);
+    localStorage.setItem(LOCAL_STORAGE_DELETED_KEY, JSON.stringify(Array.from(set)));
+  } catch (err) {
+    console.warn("Could not save deleted contact message id:", err);
+  }
+};
+
+const saveDeletedMessageIds = (ids: string[]) => {
+  if (typeof window === "undefined" || !ids || ids.length === 0) return;
+  try {
+    const set = getDeletedContactMessageIds();
+    ids.forEach((id) => set.add(id));
+    localStorage.setItem(LOCAL_STORAGE_DELETED_KEY, JSON.stringify(Array.from(set)));
+  } catch (err) {
+    console.warn("Could not save deleted contact message ids:", err);
+  }
+};
+
 /**
  * Admin: Fetch all customer contact messages from Cloud Firestore
  */
 export const fetchContactMessagesFromFirestore = async (): Promise<ContactMessageRecord[]> => {
+  const deletedIds = getDeletedContactMessageIds();
+
   try {
-    const q = query(collection(db, "contact_messages"), orderBy("createdAt", "desc"));
-    const snap = await getDocs(q);
-    if (!snap.empty) {
-      return snap.docs.map((d) => {
-        const data = d.data() as DocumentData;
-        return {
-          id: d.id,
-          name: data.name || "Anonymous",
-          email: data.email || "",
-          phone: data.phone || "",
-          category: data.category || "General Inquiry",
-          orderNumber: data.orderNumber || "",
-          subject: data.subject || "No Subject",
-          message: data.message || "",
-          status: (data.status as "new" | "in-review" | "resolved") || "new",
-          submittedAt: data.submittedAt || new Date().toISOString(),
-          adminNote: data.adminNote || "",
-          repliedAt: data.repliedAt || "",
-        };
-      });
-    }
-
-    // Fallback without orderBy in case documents lack serverTimestamp
-    const fallbackSnap = await getDocs(collection(db, "contact_messages"));
-    if (!fallbackSnap.empty) {
-      const messages = fallbackSnap.docs.map((d) => {
-        const data = d.data() as DocumentData;
-        return {
-          id: d.id,
-          name: data.name || "Anonymous",
-          email: data.email || "",
-          phone: data.phone || "",
-          category: data.category || "General Inquiry",
-          orderNumber: data.orderNumber || "",
-          subject: data.subject || "No Subject",
-          message: data.message || "",
-          status: (data.status as "new" | "in-review" | "resolved") || "new",
-          submittedAt: data.submittedAt || new Date().toISOString(),
-          adminNote: data.adminNote || "",
-          repliedAt: data.repliedAt || "",
-        };
-      });
-      return messages.sort(
-        (a, b) => new Date(b.submittedAt).getTime() - new Date(a.submittedAt).getTime()
-      );
-    }
-
-    return initialContactMessages;
-  } catch (error) {
-    console.warn("Failed to query contact_messages with order, trying simple query:", error);
+    // 1. Check if messages metadata exists in Firestore or locally
+    let metaInitialized = false;
     try {
-      const fallbackSnap = await getDocs(collection(db, "contact_messages"));
-      if (!fallbackSnap.empty) {
-        const messages = fallbackSnap.docs.map((d) => {
+      const metaSnap = await getDoc(doc(db, "contact_page", "messages_meta"));
+      if (metaSnap.exists() && metaSnap.data()?.initialized) {
+        metaInitialized = true;
+      }
+    } catch {
+      // ignore
+    }
+
+    const localInitialized =
+      typeof window !== "undefined" &&
+      localStorage.getItem(LOCAL_STORAGE_INIT_KEY) === "true";
+    const isInitialized = metaInitialized || localInitialized;
+
+    // 2. Query Firestore contact_messages
+    let firestoreMessages: ContactMessageRecord[] = [];
+    try {
+      const q = query(collection(db, "contact_messages"), orderBy("createdAt", "desc"));
+      const snap = await getDocs(q);
+      if (!snap.empty) {
+        firestoreMessages = snap.docs.map((d) => {
           const data = d.data() as DocumentData;
           return {
             id: d.id,
@@ -404,14 +415,156 @@ export const fetchContactMessagesFromFirestore = async (): Promise<ContactMessag
             repliedAt: data.repliedAt || "",
           };
         });
-        return messages.sort(
-          (a, b) => new Date(b.submittedAt).getTime() - new Date(a.submittedAt).getTime()
+      } else {
+        // Fallback without orderBy
+        const fallbackSnap = await getDocs(collection(db, "contact_messages"));
+        if (!fallbackSnap.empty) {
+          firestoreMessages = fallbackSnap.docs.map((d) => {
+            const data = d.data() as DocumentData;
+            return {
+              id: d.id,
+              name: data.name || "Anonymous",
+              email: data.email || "",
+              phone: data.phone || "",
+              category: data.category || "General Inquiry",
+              orderNumber: data.orderNumber || "",
+              subject: data.subject || "No Subject",
+              message: data.message || "",
+              status: (data.status as "new" | "in-review" | "resolved") || "new",
+              submittedAt: data.submittedAt || new Date().toISOString(),
+              adminNote: data.adminNote || "",
+              repliedAt: data.repliedAt || "",
+            };
+          });
+        }
+      }
+    } catch (queryErr) {
+      console.warn("Failed to query contact_messages with order, trying simple query:", queryErr);
+      try {
+        const fallbackSnap = await getDocs(collection(db, "contact_messages"));
+        if (!fallbackSnap.empty) {
+          firestoreMessages = fallbackSnap.docs.map((d) => {
+            const data = d.data() as DocumentData;
+            return {
+              id: d.id,
+              name: data.name || "Anonymous",
+              email: data.email || "",
+              phone: data.phone || "",
+              category: data.category || "General Inquiry",
+              orderNumber: data.orderNumber || "",
+              subject: data.subject || "No Subject",
+              message: data.message || "",
+              status: (data.status as "new" | "in-review" | "resolved") || "new",
+              submittedAt: data.submittedAt || new Date().toISOString(),
+              adminNote: data.adminNote || "",
+              repliedAt: data.repliedAt || "",
+            };
+          });
+        }
+      } catch {
+        // ignore
+      }
+    }
+
+    // Filter out any messages that the admin previously deleted
+    firestoreMessages = firestoreMessages.filter(
+      (m) => m.id && !deletedIds.has(m.id)
+    );
+
+    // If Firestore has documents:
+    if (firestoreMessages.length > 0) {
+      if (typeof window !== "undefined") {
+        localStorage.setItem(LOCAL_STORAGE_INIT_KEY, "true");
+        localStorage.setItem(
+          LOCAL_STORAGE_MESSAGES_KEY,
+          JSON.stringify(firestoreMessages)
         );
       }
+      return firestoreMessages.sort(
+        (a, b) => new Date(b.submittedAt).getTime() - new Date(a.submittedAt).getTime()
+      );
+    }
+
+    // If already initialized and Firestore collection is empty:
+    // It means the admin deleted all inquiries. Do NOT revive demo inquiries!
+    if (isInitialized) {
+      if (typeof window !== "undefined") {
+        localStorage.setItem(LOCAL_STORAGE_MESSAGES_KEY, JSON.stringify([]));
+      }
+      return [];
+    }
+
+    // First-time visit: seed initial demo messages into Firestore and localStorage
+    const seededList: ContactMessageRecord[] = [];
+    for (const msg of initialContactMessages) {
+      if (msg.id && !deletedIds.has(msg.id)) {
+        seededList.push(msg);
+        try {
+          await setDoc(
+            doc(db, "contact_messages", msg.id),
+            {
+              name: msg.name,
+              email: msg.email,
+              phone: msg.phone || "",
+              category: msg.category || "General Inquiry",
+              orderNumber: msg.orderNumber || "",
+              subject: msg.subject,
+              message: msg.message,
+              status: msg.status || "new",
+              submittedAt: msg.submittedAt,
+              adminNote: msg.adminNote || "",
+              repliedAt: msg.repliedAt || "",
+              createdAt: serverTimestamp(),
+            },
+            { merge: true }
+          );
+        } catch (seedErr) {
+          console.warn("Could not seed demo message to Firestore:", seedErr);
+        }
+      }
+    }
+
+    // Mark as initialized in Firestore metadata and localStorage
+    try {
+      await setDoc(
+        doc(db, "contact_page", "messages_meta"),
+        {
+          initialized: true,
+          seededAt: serverTimestamp(),
+        },
+        { merge: true }
+      );
     } catch {
       // ignore
     }
-    return initialContactMessages;
+
+    if (typeof window !== "undefined") {
+      localStorage.setItem(LOCAL_STORAGE_INIT_KEY, "true");
+      localStorage.setItem(
+        LOCAL_STORAGE_MESSAGES_KEY,
+        JSON.stringify(seededList)
+      );
+    }
+
+    return seededList;
+  } catch (error) {
+    console.warn("Failed to fetch contact messages, using fallback:", error);
+    const localInitialized =
+      typeof window !== "undefined" &&
+      localStorage.getItem(LOCAL_STORAGE_INIT_KEY) === "true";
+    if (localInitialized) {
+      try {
+        const cached = localStorage.getItem(LOCAL_STORAGE_MESSAGES_KEY);
+        if (cached) {
+          const list: ContactMessageRecord[] = JSON.parse(cached);
+          return list.filter((m) => m.id && !deletedIds.has(m.id));
+        }
+      } catch {
+        // ignore
+      }
+      return [];
+    }
+    return initialContactMessages.filter((m) => m.id && !deletedIds.has(m.id));
   }
 };
 
@@ -434,12 +587,153 @@ export const updateContactMessageStatusInFirestore = async (
       updateData.repliedAt = new Date().toISOString();
     }
   }
-  await updateDoc(ref, updateData);
+  try {
+    await updateDoc(ref, updateData);
+  } catch (err) {
+    console.warn("Could not update message in Firestore:", err);
+  }
+
+  // Sync localStorage cache
+  if (typeof window !== "undefined") {
+    try {
+      const cached = localStorage.getItem(LOCAL_STORAGE_MESSAGES_KEY);
+      if (cached) {
+        const list: ContactMessageRecord[] = JSON.parse(cached);
+        const updated = list.map((m) =>
+          m.id === id
+            ? {
+                ...m,
+                status,
+                ...(adminNote !== undefined ? { adminNote } : {}),
+                ...(adminNote?.trim() ? { repliedAt: new Date().toISOString() } : {}),
+              }
+            : m
+        );
+        localStorage.setItem(LOCAL_STORAGE_MESSAGES_KEY, JSON.stringify(updated));
+      }
+    } catch {
+      // ignore
+    }
+  }
 };
 
 /**
- * Admin: Delete customer message
+ * Admin: Delete customer message from Cloud Firestore and local storage cache
  */
-export const deleteContactMessageFromFirestore = async (id: string): Promise<void> => {
-  await deleteDoc(doc(db, "contact_messages", id));
+export const deleteContactMessageFromFirestore = async (id: string): Promise<boolean> => {
+  if (!id) return false;
+
+  // 1. Record ID in deleted set immediately so it never resurfaces
+  saveDeletedMessageId(id);
+
+  // 2. Mark initialized in localStorage so empty list is never re-seeded
+  if (typeof window !== "undefined") {
+    try {
+      localStorage.setItem(LOCAL_STORAGE_INIT_KEY, "true");
+    } catch {
+      // ignore
+    }
+  }
+
+  // 3. Delete from Cloud Firestore
+  try {
+    await deleteDoc(doc(db, "contact_messages", id));
+  } catch (err) {
+    console.warn("Could not delete contact message from Firestore:", err);
+  }
+
+  // 4. Also mark in Firestore metadata that messages were initialized/modified
+  try {
+    await setDoc(
+      doc(db, "contact_page", "messages_meta"),
+      {
+        initialized: true,
+        lastDeletedAt: serverTimestamp(),
+      },
+      { merge: true }
+    );
+  } catch {
+    // ignore
+  }
+
+  // 5. Update local cache
+  if (typeof window !== "undefined") {
+    try {
+      const cached = localStorage.getItem(LOCAL_STORAGE_MESSAGES_KEY);
+      if (cached) {
+        const list: ContactMessageRecord[] = JSON.parse(cached);
+        const filtered = list.filter((m) => m.id !== id);
+        localStorage.setItem(LOCAL_STORAGE_MESSAGES_KEY, JSON.stringify(filtered));
+      }
+    } catch {
+      // ignore
+    }
+  }
+
+  return true;
+};
+
+/**
+ * Admin: Bulk delete customer messages from Cloud Firestore and local storage cache
+ */
+export const bulkDeleteContactMessagesFromFirestore = async (ids: string[]): Promise<boolean> => {
+  if (!ids || ids.length === 0) return true;
+
+  // 1. Record IDs in deleted set immediately
+  saveDeletedMessageIds(ids);
+
+  // 2. Mark initialized in localStorage
+  if (typeof window !== "undefined") {
+    try {
+      localStorage.setItem(LOCAL_STORAGE_INIT_KEY, "true");
+    } catch {
+      // ignore
+    }
+  }
+
+  // 3. Delete each from Cloud Firestore
+  const idsSet = new Set(ids);
+  try {
+    await Promise.all(
+      ids.map(async (id) => {
+        try {
+          await deleteDoc(doc(db, "contact_messages", id));
+        } catch (err) {
+          console.warn("Could not delete message from Firestore:", id, err);
+        }
+      })
+    );
+  } catch (err) {
+    console.warn("Bulk delete error from Firestore:", err);
+  }
+
+  // 4. Update Firestore metadata
+  try {
+    await setDoc(
+      doc(db, "contact_page", "messages_meta"),
+      {
+        initialized: true,
+        lastDeletedAt: serverTimestamp(),
+      },
+      { merge: true }
+    );
+  } catch {
+    // ignore
+  }
+
+  // 5. Update local cache
+  if (typeof window !== "undefined") {
+    try {
+      const cached = localStorage.getItem(LOCAL_STORAGE_MESSAGES_KEY);
+      if (cached) {
+        const list: ContactMessageRecord[] = JSON.parse(cached);
+        const filtered = list.filter((m) => !idsSet.has(m.id || ""));
+        localStorage.setItem(LOCAL_STORAGE_MESSAGES_KEY, JSON.stringify(filtered));
+      }
+    } catch {
+      // ignore
+    }
+  }
+
+  return true;
 };

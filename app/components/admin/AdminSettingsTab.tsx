@@ -14,6 +14,8 @@ import {
   ExclamationTriangleIcon,
   ArrowPathIcon,
   SparklesIcon,
+  LockClosedIcon,
+  LockOpenIcon,
 } from "@heroicons/react/24/outline";
 import { toast } from "sonner";
 import type { StoreGeneralSettings } from "~/firebase";
@@ -39,6 +41,7 @@ export const AdminSettingsTab: React.FC<AdminSettingsTabProps> = ({
   const dispatch = useAppDispatch();
   const [form, setForm] = useState<StoreGeneralSettings>(initialSettings);
   const [isSaving, setIsSaving] = useState(false);
+  const [isUrlFieldsMuted, setIsUrlFieldsMuted] = useState(true);
   const [logoLightLoadError, setLogoLightLoadError] = useState(false);
   const [logoDarkLoadError, setLogoDarkLoadError] = useState(false);
   const [faviconLoadError, setFaviconLoadError] = useState(false);
@@ -60,21 +63,22 @@ export const AdminSettingsTab: React.FC<AdminSettingsTabProps> = ({
   }, [form.faviconUrl]);
 
   // Derived normalized URLs for Google Drive and standard links
-  const normalizedLightLogo = normalizeGoogleDriveImageUrl(
-    form.logoLightUrl || form.logoUrl
-  );
+  const normalizedLightLogo =
+    normalizeGoogleDriveImageUrl(form.logoLightUrl || form.logoUrl) ||
+    "/silken-drift-logo-light.png";
   const lightLogoDriveId = extractGoogleDriveFileId(
     form.logoLightUrl || form.logoUrl
   );
 
-  const normalizedDarkLogo = normalizeGoogleDriveImageUrl(
-    form.logoDarkUrl || form.logoUrl
-  );
+  const normalizedDarkLogo =
+    normalizeGoogleDriveImageUrl(form.logoDarkUrl || form.logoUrl) ||
+    "/silken-drift-logo-dark.png";
   const darkLogoDriveId = extractGoogleDriveFileId(
     form.logoDarkUrl || form.logoUrl
   );
 
-  const normalizedFavicon = normalizeGoogleDriveImageUrl(form.faviconUrl);
+  const normalizedFavicon =
+    normalizeGoogleDriveImageUrl(form.faviconUrl) || "/favicon.ico";
   const faviconDriveId = extractGoogleDriveFileId(form.faviconUrl);
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -83,10 +87,10 @@ export const AdminSettingsTab: React.FC<AdminSettingsTabProps> = ({
     try {
       const sanitized: StoreGeneralSettings = {
         ...form,
-        logoLightUrl: form.logoLightUrl?.trim() || "",
-        logoDarkUrl: form.logoDarkUrl?.trim() || "",
-        logoUrl: form.logoLightUrl?.trim() || form.logoDarkUrl?.trim() || "",
-        faviconUrl: form.faviconUrl?.trim() || "",
+        logoLightUrl: form.logoLightUrl?.trim() || "/silken-drift-logo-light.png",
+        logoDarkUrl: form.logoDarkUrl?.trim() || "/silken-drift-logo-dark.png",
+        logoUrl: form.logoUrl?.trim() || "/silken-drift-logo.png",
+        faviconUrl: form.faviconUrl?.trim() || "/favicon.ico",
       };
       await saveStoreSettings(sanitized);
       dispatch(setStoreSettings(sanitized));
@@ -120,33 +124,52 @@ export const AdminSettingsTab: React.FC<AdminSettingsTabProps> = ({
         {/* Brand Assets: Light Logo, Dark Logo, and Favicon with Google Drive Support */}
         {/* ==================================================================== */}
         <div className="space-y-5">
-          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-gray-100 dark:border-neutral-800 pb-3">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-gray-100 dark:border-neutral-800 pb-3">
             <div>
               <h3 className="font-bold uppercase tracking-wider text-gray-900 dark:text-white flex items-center gap-1.5 text-sm">
                 <PhotoIcon className="size-4 text-orange-600" />
                 <span>Brand Identity: Logos &amp; Favicon</span>
               </h3>
               <p className="text-[11px] text-gray-500 dark:text-neutral-400 mt-0.5">
-                Configure your storefront logos (light &amp; dark mode) and browser tab favicon. Google Drive share links are fully supported.
+                Fixed official SilkenDrift logos (light &amp; dark mode) and browser tab favicon.
               </p>
             </div>
-            <div className="flex items-center gap-1.5 px-3 py-1 bg-amber-50 dark:bg-amber-950/40 border border-amber-200/70 dark:border-amber-800/60 rounded-full text-[10px] font-semibold text-amber-800 dark:text-amber-300 w-fit">
-              <SparklesIcon className="size-3.5 shrink-0 text-amber-600 dark:text-amber-400" />
-              <span>Google Drive Share Link Ready</span>
+            <div className="flex items-center gap-2">
+              <button
+                type="button"
+                onClick={() => setIsUrlFieldsMuted(!isUrlFieldsMuted)}
+                className="flex items-center gap-1.5 px-3 py-1.5 bg-stone-100 dark:bg-neutral-800 hover:bg-stone-200 dark:hover:bg-neutral-700 border border-stone-200/80 dark:border-neutral-700 rounded-xl text-[11px] font-semibold text-stone-700 dark:text-neutral-300 transition cursor-pointer"
+              >
+                {isUrlFieldsMuted ? (
+                  <>
+                    <LockClosedIcon className="size-3.5 text-stone-500" />
+                    <span>URL Fields Muted</span>
+                  </>
+                ) : (
+                  <>
+                    <LockOpenIcon className="size-3.5 text-orange-600" />
+                    <span>URL Fields Unlocked</span>
+                  </>
+                )}
+              </button>
+              <div className="flex items-center gap-1.5 px-3 py-1.5 bg-emerald-50 dark:bg-emerald-950/40 border border-emerald-200/70 dark:border-emerald-800/60 rounded-xl text-[11px] font-semibold text-emerald-800 dark:text-emerald-300 w-fit">
+                <CheckCircleIcon className="size-3.5 shrink-0 text-emerald-600 dark:text-emerald-400" />
+                <span>Fixed Assets Active</span>
+              </div>
             </div>
           </div>
 
-          {/* Google Drive Sharing Tip Banner */}
+          {/* Fixed Assets Status Banner */}
           <div className="p-4 bg-stone-50 dark:bg-neutral-800/60 border border-stone-200/80 dark:border-neutral-700/80 rounded-2xl flex items-start gap-3">
-            <div className="size-7 rounded-xl bg-orange-100 dark:bg-orange-950/60 flex items-center justify-center shrink-0 text-orange-600 dark:text-orange-400">
-              <GlobeAltIcon className="size-4" />
+            <div className="size-8 rounded-xl bg-orange-100 dark:bg-orange-950/60 flex items-center justify-center shrink-0 text-orange-600 dark:text-orange-400">
+              <SparklesIcon className="size-4.5" />
             </div>
-            <div className="space-y-1 text-gray-600 dark:text-neutral-300 leading-relaxed">
-              <p className="font-bold text-gray-900 dark:text-white text-xs">
-                How to use Google Drive share links:
+            <div className="space-y-1 text-gray-600 dark:text-neutral-300 leading-relaxed text-xs">
+              <p className="font-bold text-gray-900 dark:text-white">
+                Official Brand Assets &amp; Favicon Configured:
               </p>
-              <p className="text-[11px]">
-                In Google Drive, right-click your image &rarr; select <span className="font-semibold text-gray-800 dark:text-neutral-200">Share</span> &rarr; change General access to <span className="font-semibold text-orange-600 dark:text-orange-400">&ldquo;Anyone with the link&rdquo; (Viewer)</span> &rarr; click <span className="font-semibold text-gray-800 dark:text-neutral-200">Copy link</span> and paste below. The system automatically converts it into a high-speed CDN image!
+              <p className="text-[11px] text-gray-500 dark:text-neutral-400">
+                Your storefront is permanently linked to the official SilkenDrift logos (<code className="font-mono text-orange-600 dark:text-orange-400">/silken-drift-logo-light.png</code> &amp; <code className="font-mono text-orange-600 dark:text-orange-400">/silken-drift-logo-dark.png</code>) and browser favicon (<code className="font-mono text-orange-600 dark:text-orange-400">/favicon.ico</code>). Custom URL inputs below are muted to prevent accidental breakage.
               </p>
             </div>
           </div>
@@ -156,14 +179,22 @@ export const AdminSettingsTab: React.FC<AdminSettingsTabProps> = ({
             <div className="space-y-3 p-5 bg-stone-50/70 dark:bg-neutral-800/40 rounded-2xl border border-stone-200/70 dark:border-neutral-700/60">
               <div className="flex items-center justify-between">
                 <div>
-                  <label className="block font-bold text-gray-900 dark:text-white text-xs">
-                    1. Store Logo URL (Light Mode)
-                  </label>
+                  <div className="flex items-center gap-2">
+                    <label className="block font-bold text-gray-900 dark:text-white text-xs">
+                      1. Store Logo URL (Light Mode)
+                    </label>
+                    {isUrlFieldsMuted && (
+                      <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md bg-stone-200/80 dark:bg-neutral-700 text-[10px] font-semibold text-stone-600 dark:text-neutral-300">
+                        <LockClosedIcon className="size-2.5" />
+                        Muted
+                      </span>
+                    )}
+                  </div>
                   <p className="text-[10px] text-gray-500 dark:text-neutral-400">
                     Shown in the main navigation on white/light backgrounds.
                   </p>
                 </div>
-                {form.logoLightUrl && (
+                {!isUrlFieldsMuted && form.logoLightUrl && (
                   <button
                     type="button"
                     onClick={() => {
@@ -180,18 +211,30 @@ export const AdminSettingsTab: React.FC<AdminSettingsTabProps> = ({
               <div className="relative">
                 <input
                   type="text"
-                  value={form.logoLightUrl || ""}
+                  disabled={isUrlFieldsMuted}
+                  readOnly={isUrlFieldsMuted}
+                  value={isUrlFieldsMuted ? (form.logoLightUrl || "/silken-drift-logo-light.png") : (form.logoLightUrl || "")}
                   onChange={(e) => {
                     setForm({ ...form, logoLightUrl: e.target.value });
                     setLogoLightLoadError(false);
                   }}
-                  placeholder="https://drive.google.com/file/d/.../view?usp=sharing"
-                  className="w-full px-3 py-2.5 bg-white dark:bg-neutral-800 border border-gray-200 dark:border-neutral-700 rounded-xl focus:outline-none focus:ring-2 focus:ring-orange-600 font-mono text-[11px]"
+                  placeholder="/silken-drift-logo-light.png"
+                  className={`w-full px-3 py-2.5 rounded-xl font-mono text-[11px] transition ${
+                    isUrlFieldsMuted
+                      ? "bg-stone-100 dark:bg-neutral-900/90 text-stone-500 dark:text-neutral-400 border border-dashed border-stone-300 dark:border-neutral-700 cursor-not-allowed select-none opacity-80"
+                      : "bg-white dark:bg-neutral-800 border border-gray-200 dark:border-neutral-700 focus:outline-none focus:ring-2 focus:ring-orange-600"
+                  }`}
                 />
+                {isUrlFieldsMuted && (
+                  <div className="absolute right-3 top-1/2 -translate-y-1/2 flex items-center gap-1 text-[10px] font-semibold text-stone-500 dark:text-neutral-400 bg-stone-200/70 dark:bg-neutral-800 px-2 py-0.5 rounded-md pointer-events-none">
+                    <LockClosedIcon className="size-3" />
+                    <span>Fixed Asset</span>
+                  </div>
+                )}
               </div>
 
               {/* Google Drive Status Notification */}
-              {lightLogoDriveId && (
+              {!isUrlFieldsMuted && lightLogoDriveId && (
                 <div className="flex items-center gap-1.5 text-[11px] text-emerald-700 dark:text-emerald-400 font-medium">
                   <CheckCircleIcon className="size-4 shrink-0" />
                   <span>Google Drive link detected (File ID: {lightLogoDriveId.slice(0, 8)}...)</span>
@@ -219,39 +262,30 @@ export const AdminSettingsTab: React.FC<AdminSettingsTabProps> = ({
                   <span className="text-[9px] uppercase font-bold text-gray-400 mb-2 tracking-wider">
                     Light Surface Preview
                   </span>
-                  {normalizedLightLogo ? (
-                    <img
-                      src={normalizedLightLogo}
-                      alt="Store logo preview (light)"
-                      referrerPolicy="no-referrer"
-                      className="h-12 sm:h-14 max-h-16 w-auto max-w-full object-contain"
-                      onLoad={() => setLogoLightLoadError(false)}
-                      onError={(e) => {
-                        const target = e.currentTarget;
-                        const fileId = lightLogoDriveId;
-                        if (fileId && !target.dataset.triedFallback) {
-                          target.dataset.triedFallback = "true";
-                          target.src = `https://lh3.googleusercontent.com/d/${fileId}`;
-                        } else {
-                          setLogoLightLoadError(true);
-                        }
-                      }}
-                    />
-                  ) : (
-                    <div className="flex flex-col items-center justify-center py-1">
-                      <BrandLogo variant="light" />
-                      <span className="text-[10px] text-stone-400 mt-2 font-medium">
-                        Default brand mark (active when no custom URL is entered)
-                      </span>
-                    </div>
-                  )}
+                  <img
+                    src={normalizedLightLogo}
+                    alt="Store logo preview (light)"
+                    referrerPolicy="no-referrer"
+                    className="h-12 sm:h-14 max-h-16 w-auto max-w-full object-contain"
+                    onLoad={() => setLogoLightLoadError(false)}
+                    onError={(e) => {
+                      const target = e.currentTarget;
+                      const fileId = lightLogoDriveId;
+                      if (fileId && !target.dataset.triedFallback) {
+                        target.dataset.triedFallback = "true";
+                        target.src = `https://lh3.googleusercontent.com/d/${fileId}`;
+                      } else {
+                        target.src = "/silken-drift-logo-light.png";
+                      }
+                    }}
+                  />
                 </div>
 
                 {logoLightLoadError && (
                   <div className="p-2.5 bg-rose-50 dark:bg-rose-950/40 border border-rose-200 dark:border-rose-900 rounded-xl text-rose-700 dark:text-rose-400 flex items-start gap-2 text-[10px]">
                     <ExclamationTriangleIcon className="size-4 shrink-0 mt-0.5" />
                     <span>
-                      Could not load light logo preview. If this is a Google Drive link, please ensure General Access is set to <strong>&ldquo;Anyone with the link&rdquo;</strong> in Google Drive sharing settings.
+                      Could not load light logo preview. Using official fallback <code className="font-mono">/silken-drift-logo-light.png</code>.
                     </span>
                   </div>
                 )}
@@ -265,14 +299,22 @@ export const AdminSettingsTab: React.FC<AdminSettingsTabProps> = ({
             <div className="space-y-3 p-5 bg-stone-50/70 dark:bg-neutral-800/40 rounded-2xl border border-stone-200/70 dark:border-neutral-700/60">
               <div className="flex items-center justify-between">
                 <div>
-                  <label className="block font-bold text-gray-900 dark:text-white text-xs">
-                    2. Store Logo URL (Dark Mode &amp; Footer)
-                  </label>
+                  <div className="flex items-center gap-2">
+                    <label className="block font-bold text-gray-900 dark:text-white text-xs">
+                      2. Store Logo URL (Dark Mode &amp; Footer)
+                    </label>
+                    {isUrlFieldsMuted && (
+                      <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md bg-stone-200/80 dark:bg-neutral-700 text-[10px] font-semibold text-stone-600 dark:text-neutral-300">
+                        <LockClosedIcon className="size-2.5" />
+                        Muted
+                      </span>
+                    )}
+                  </div>
                   <p className="text-[10px] text-gray-500 dark:text-neutral-400">
                     Shown in dark mode navigation and the dark footer.
                   </p>
                 </div>
-                {form.logoDarkUrl && (
+                {!isUrlFieldsMuted && form.logoDarkUrl && (
                   <button
                     type="button"
                     onClick={() => {
@@ -289,18 +331,30 @@ export const AdminSettingsTab: React.FC<AdminSettingsTabProps> = ({
               <div className="relative">
                 <input
                   type="text"
-                  value={form.logoDarkUrl || ""}
+                  disabled={isUrlFieldsMuted}
+                  readOnly={isUrlFieldsMuted}
+                  value={isUrlFieldsMuted ? (form.logoDarkUrl || "/silken-drift-logo-dark.png") : (form.logoDarkUrl || "")}
                   onChange={(e) => {
                     setForm({ ...form, logoDarkUrl: e.target.value });
                     setLogoDarkLoadError(false);
                   }}
-                  placeholder="https://drive.google.com/file/d/.../view?usp=sharing"
-                  className="w-full px-3 py-2.5 bg-white dark:bg-neutral-800 border border-gray-200 dark:border-neutral-700 rounded-xl focus:outline-none focus:ring-2 focus:ring-orange-600 font-mono text-[11px]"
+                  placeholder="/silken-drift-logo-dark.png"
+                  className={`w-full px-3 py-2.5 rounded-xl font-mono text-[11px] transition ${
+                    isUrlFieldsMuted
+                      ? "bg-stone-100 dark:bg-neutral-900/90 text-stone-500 dark:text-neutral-400 border border-dashed border-stone-300 dark:border-neutral-700 cursor-not-allowed select-none opacity-80"
+                      : "bg-white dark:bg-neutral-800 border border-gray-200 dark:border-neutral-700 focus:outline-none focus:ring-2 focus:ring-orange-600"
+                  }`}
                 />
+                {isUrlFieldsMuted && (
+                  <div className="absolute right-3 top-1/2 -translate-y-1/2 flex items-center gap-1 text-[10px] font-semibold text-stone-500 dark:text-neutral-400 bg-stone-200/70 dark:bg-neutral-800 px-2 py-0.5 rounded-md pointer-events-none">
+                    <LockClosedIcon className="size-3" />
+                    <span>Fixed Asset</span>
+                  </div>
+                )}
               </div>
 
               {/* Google Drive Status Notification */}
-              {darkLogoDriveId && (
+              {!isUrlFieldsMuted && darkLogoDriveId && (
                 <div className="flex items-center gap-1.5 text-[11px] text-emerald-700 dark:text-emerald-400 font-medium">
                   <CheckCircleIcon className="size-4 shrink-0" />
                   <span>Google Drive link detected (File ID: {darkLogoDriveId.slice(0, 8)}...)</span>
@@ -328,39 +382,30 @@ export const AdminSettingsTab: React.FC<AdminSettingsTabProps> = ({
                   <span className="text-[9px] uppercase font-bold text-neutral-500 mb-2 tracking-wider">
                     Dark Surface &amp; Footer Preview
                   </span>
-                  {normalizedDarkLogo ? (
-                    <img
-                      src={normalizedDarkLogo}
-                      alt="Store logo preview (dark)"
-                      referrerPolicy="no-referrer"
-                      className="h-12 sm:h-14 max-h-16 w-auto max-w-full object-contain"
-                      onLoad={() => setLogoDarkLoadError(false)}
-                      onError={(e) => {
-                        const target = e.currentTarget;
-                        const fileId = darkLogoDriveId;
-                        if (fileId && !target.dataset.triedFallback) {
-                          target.dataset.triedFallback = "true";
-                          target.src = `https://lh3.googleusercontent.com/d/${fileId}`;
-                        } else {
-                          setLogoDarkLoadError(true);
-                        }
-                      }}
-                    />
-                  ) : (
-                    <div className="flex flex-col items-center justify-center py-1">
-                      <BrandLogo variant="dark" />
-                      <span className="text-[10px] text-neutral-500 mt-2 font-medium">
-                        Default brand mark (active when no custom URL is entered)
-                      </span>
-                    </div>
-                  )}
+                  <img
+                    src={normalizedDarkLogo}
+                    alt="Store logo preview (dark)"
+                    referrerPolicy="no-referrer"
+                    className="h-12 sm:h-14 max-h-16 w-auto max-w-full object-contain"
+                    onLoad={() => setLogoDarkLoadError(false)}
+                    onError={(e) => {
+                      const target = e.currentTarget;
+                      const fileId = darkLogoDriveId;
+                      if (fileId && !target.dataset.triedFallback) {
+                        target.dataset.triedFallback = "true";
+                        target.src = `https://lh3.googleusercontent.com/d/${fileId}`;
+                      } else {
+                        target.src = "/silken-drift-logo-dark.png";
+                      }
+                    }}
+                  />
                 </div>
 
                 {logoDarkLoadError && (
                   <div className="p-2.5 bg-rose-50 dark:bg-rose-950/40 border border-rose-200 dark:border-rose-900 rounded-xl text-rose-700 dark:text-rose-400 flex items-start gap-2 text-[10px]">
                     <ExclamationTriangleIcon className="size-4 shrink-0 mt-0.5" />
                     <span>
-                      Could not load dark logo preview. If this is a Google Drive link, please ensure General Access is set to <strong>&ldquo;Anyone with the link&rdquo;</strong> in Google Drive sharing settings.
+                      Could not load dark logo preview. Using official fallback <code className="font-mono">/silken-drift-logo-dark.png</code>.
                     </span>
                   </div>
                 )}
@@ -375,14 +420,22 @@ export const AdminSettingsTab: React.FC<AdminSettingsTabProps> = ({
           <div className="space-y-3 p-5 bg-stone-50/70 dark:bg-neutral-800/40 rounded-2xl border border-stone-200/70 dark:border-neutral-700/60">
             <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
               <div>
-                <label className="block font-bold text-gray-900 dark:text-white text-xs">
-                  3. Store Favicon URL (Browser Tab Icon)
-                </label>
+                <div className="flex items-center gap-2">
+                  <label className="block font-bold text-gray-900 dark:text-white text-xs">
+                    3. Store Favicon URL (Browser Tab Icon)
+                  </label>
+                  {isUrlFieldsMuted && (
+                    <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md bg-stone-200/80 dark:bg-neutral-700 text-[10px] font-semibold text-stone-600 dark:text-neutral-300">
+                      <LockClosedIcon className="size-2.5" />
+                      Muted
+                    </span>
+                  )}
+                </div>
                 <p className="text-[10px] text-gray-500 dark:text-neutral-400">
                   Small square icon displayed on browser tabs, bookmarks, and mobile home screen shortcuts.
                 </p>
               </div>
-              {form.faviconUrl && (
+              {!isUrlFieldsMuted && form.faviconUrl && (
                 <button
                   type="button"
                   onClick={() => {
@@ -398,25 +451,39 @@ export const AdminSettingsTab: React.FC<AdminSettingsTabProps> = ({
 
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 items-center">
               <div className="space-y-2">
-                <input
-                  type="text"
-                  value={form.faviconUrl || ""}
-                  onChange={(e) => {
-                    setForm({ ...form, faviconUrl: e.target.value });
-                    setFaviconLoadError(false);
-                  }}
-                  placeholder="https://drive.google.com/file/d/.../view?usp=sharing"
-                  className="w-full px-3 py-2.5 bg-white dark:bg-neutral-800 border border-gray-200 dark:border-neutral-700 rounded-xl focus:outline-none focus:ring-2 focus:ring-orange-600 font-mono text-[11px]"
-                />
+                <div className="relative">
+                  <input
+                    type="text"
+                    disabled={isUrlFieldsMuted}
+                    readOnly={isUrlFieldsMuted}
+                    value={isUrlFieldsMuted ? (form.faviconUrl || "/favicon.ico") : (form.faviconUrl || "")}
+                    onChange={(e) => {
+                      setForm({ ...form, faviconUrl: e.target.value });
+                      setFaviconLoadError(false);
+                    }}
+                    placeholder="/favicon.ico"
+                    className={`w-full px-3 py-2.5 rounded-xl font-mono text-[11px] transition ${
+                      isUrlFieldsMuted
+                        ? "bg-stone-100 dark:bg-neutral-900/90 text-stone-500 dark:text-neutral-400 border border-dashed border-stone-300 dark:border-neutral-700 cursor-not-allowed select-none opacity-80"
+                        : "bg-white dark:bg-neutral-800 border border-gray-200 dark:border-neutral-700 focus:outline-none focus:ring-2 focus:ring-orange-600"
+                    }`}
+                  />
+                  {isUrlFieldsMuted && (
+                    <div className="absolute right-3 top-1/2 -translate-y-1/2 flex items-center gap-1 text-[10px] font-semibold text-stone-500 dark:text-neutral-400 bg-stone-200/70 dark:bg-neutral-800 px-2 py-0.5 rounded-md pointer-events-none">
+                      <LockClosedIcon className="size-3" />
+                      <span>Fixed Asset</span>
+                    </div>
+                  )}
+                </div>
 
-                {faviconDriveId && (
+                {!isUrlFieldsMuted && faviconDriveId && (
                   <div className="flex items-center gap-1.5 text-[11px] text-emerald-700 dark:text-emerald-400 font-medium">
                     <CheckCircleIcon className="size-4 shrink-0" />
                     <span>Google Drive link detected (File ID: {faviconDriveId.slice(0, 8)}...)</span>
                   </div>
                 )}
                 <p className="text-[10px] text-gray-400 dark:text-neutral-500">
-                  Recommended: 32x32px, 64x64px, or square PNG/ICO with transparent background.
+                  Active browser tab icon: <code className="font-mono text-orange-600 dark:text-orange-400">/favicon.ico</code> (32x32px .ico).
                 </p>
               </div>
 
@@ -459,7 +526,7 @@ export const AdminSettingsTab: React.FC<AdminSettingsTabProps> = ({
                             target.dataset.triedFallback = "true";
                             target.src = `https://lh3.googleusercontent.com/d/${fileId}`;
                           } else {
-                            setFaviconLoadError(true);
+                            target.src = "/favicon.ico";
                           }
                         }}
                       />

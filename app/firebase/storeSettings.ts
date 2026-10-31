@@ -39,10 +39,10 @@ export const defaultStoreSettings: StoreGeneralSettings = {
   announcementActive: true,
   orderPrefix: "FED-",
   supportHours: "10:00 AM - 10:00 PM (Sat - Thu)",
-  logoLightUrl: "",
-  logoDarkUrl: "",
-  logoUrl: "",
-  faviconUrl: "",
+  logoLightUrl: "/silken-drift-logo-light.png",
+  logoDarkUrl: "/silken-drift-logo-dark.png",
+  logoUrl: "/silken-drift-logo.png",
+  faviconUrl: "/favicon.ico",
 };
 
 import { sanitizeForFirestore } from "./firestore";

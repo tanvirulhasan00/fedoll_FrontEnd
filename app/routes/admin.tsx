@@ -601,6 +601,14 @@ export default function AdminDashboardPage() {
                     <AdminMessagesTab
                       messages={messages}
                       onRefresh={loadAllAdminData}
+                      onDeleteMessage={(id) => {
+                        setMessages((prev) => prev.filter((m) => m.id !== id));
+                      }}
+                      onUpdateMessage={(updated) => {
+                        setMessages((prev) =>
+                          prev.map((m) => (m.id === updated.id ? updated : m))
+                        );
+                      }}
                     />
                   )}
 

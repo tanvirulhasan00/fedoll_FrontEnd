@@ -24,7 +24,7 @@ import {
 
 const DEFAULT_FAVICON =
   normalizeGoogleDriveImageUrl(defaultStoreSettings.faviconUrl) ||
-  "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Ccircle cx='16' cy='16' r='14' fill='%23ea580c'/%3E%3Cpath d='M20 11c-1.5-1.5-6.5-1.5-7.5 1s9 3.5 8 7-7 3-9 1' stroke='%23ffffff' stroke-width='2.5' stroke-linecap='round' stroke-linejoin='round' fill='none'/%3E%3C/svg%3E";
+  "/favicon.ico";
 
 export async function loader() {
   const settings = await fetchStoreSettings();
@@ -66,7 +66,9 @@ function NavigationProgressBar() {
 }
 
 export const links: Route.LinksFunction = () => [
-  { rel: "icon", href: DEFAULT_FAVICON },
+  { rel: "icon", href: DEFAULT_FAVICON, type: "image/x-icon" },
+  { rel: "shortcut icon", href: DEFAULT_FAVICON, type: "image/x-icon" },
+  { rel: "apple-touch-icon", href: "/favicon.ico" },
   { rel: "preconnect", href: "https://fonts.googleapis.com" },
   {
     rel: "preconnect",
