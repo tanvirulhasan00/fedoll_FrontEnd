@@ -48,6 +48,7 @@ import {
   type ProductItem,
   type ProductCategoryItem,
 } from "./products";
+import { fetchPublishedReviews, type ProductReview } from "./reviews";
 
 export interface TestimonialItem {
   id: string;
@@ -776,12 +777,8 @@ export const fetchHomeDataFromFirestore = async () => {
       heroBanners = selected.map((p, idx) => convertProductToHeroBanner(p, idx));
     }
 
-    const testSnap = await getDocs(collection(db, "testimonials"));
-    const testimonials: TestimonialItem[] = testSnap.empty
-      ? initialTestimonials
-      : testSnap.docs.map(
-          (d) => ({ id: d.id, ...(d.data() as DocumentData) } as TestimonialItem)
-        );
+    // Fetch real customer published reviews from Cloud Firestore
+    const publishedReviews = await fetchPublishedReviews(12);
 
     const valSnap = await getDocs(collection(db, "value_props"));
     const valueProps: ValueProp[] = valSnap.empty
@@ -794,7 +791,8 @@ export const fetchHomeDataFromFirestore = async () => {
       heroBanners,
       featuredCategories,
       products: products || [],
-      testimonials,
+      testimonials: [],
+      publishedReviews,
       valueProps,
       spotlightBanner: spotlightBanners[0] || initialSpotlightBanner,
       spotlightBanners: spotlightBanners.length > 0 ? spotlightBanners : initialSpotlightBanners,
@@ -823,7 +821,8 @@ export const fetchHomeDataFromFirestore = async () => {
       heroBanners: fallbackBanners,
       featuredCategories: initialFeaturedCategories,
       products: fallbackProducts,
-      testimonials: initialTestimonials,
+      testimonials: [],
+      publishedReviews: [],
       valueProps: initialValueProps,
       spotlightBanner: initialSpotlightBanner,
       spotlightBanners: initialSpotlightBanners,

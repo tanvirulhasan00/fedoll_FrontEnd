@@ -547,3 +547,122 @@ export const deleteReviewFromFirestore = async (
   }
 };
 
+const STOREFRONT_REVIEWS_CACHE_KEY = "silkendrift_published_reviews";
+
+/**
+ * Storefront: Fetch published customer reviews across all products
+ */
+export const fetchPublishedReviews = async (
+  limitCount = 12
+): Promise<ProductReview[]> => {
+  try {
+    const reviewsRef = collection(db, "reviews");
+    const snap = await getDocs(reviewsRef);
+
+    if (!snap.empty) {
+      const items = snap.docs.map((docSnap) => {
+        const data = docSnap.data() as DocumentData;
+        return {
+          id: docSnap.id,
+          ...data,
+        } as ProductReview;
+      });
+
+      const published = items
+        .filter((r) => r.status === "published" || !r.status)
+        .sort(
+          (a, b) =>
+            new Date(b.createdAt || 0).getTime() -
+            new Date(a.createdAt || 0).getTime()
+        )
+        .slice(0, limitCount);
+
+      if (typeof window !== "undefined") {
+        try {
+          localStorage.setItem(
+            STOREFRONT_REVIEWS_CACHE_KEY,
+            JSON.stringify(published)
+          );
+        } catch {}
+      }
+
+      return published;
+    }
+  } catch (error) {
+    console.warn("Failed to fetch published reviews for storefront:", error);
+  }
+
+  // Fallback to local storage cache if available
+  if (typeof window !== "undefined") {
+    try {
+      const raw = localStorage.getItem(STOREFRONT_REVIEWS_CACHE_KEY);
+      if (raw) {
+        const parsed = JSON.parse(raw);
+        if (Array.isArray(parsed)) return parsed.slice(0, limitCount);
+      }
+    } catch {}
+  }
+
+  return [];
+};
+
+/**
+ * Storefront: Real-time listener for published customer reviews across all products
+ */
+export const subscribeToPublishedReviews = (
+  callback: (reviews: ProductReview[]) => void,
+  limitCount = 12,
+  onError?: (error: Error) => void
+): (() => void) => {
+  if (typeof window === "undefined") {
+    return () => {};
+  }
+
+  try {
+    const reviewsRef = collection(db, "reviews");
+    const unsubscribe = onSnapshot(
+      reviewsRef,
+      (snap) => {
+        if (!snap.empty) {
+          const items = snap.docs.map((docSnap) => {
+            const data = docSnap.data() as DocumentData;
+            return {
+              id: docSnap.id,
+              ...data,
+            } as ProductReview;
+          });
+
+          const published = items
+            .filter((r) => r.status === "published" || !r.status)
+            .sort(
+              (a, b) =>
+                new Date(b.createdAt || 0).getTime() -
+                new Date(a.createdAt || 0).getTime()
+            )
+            .slice(0, limitCount);
+
+          try {
+            localStorage.setItem(
+              STOREFRONT_REVIEWS_CACHE_KEY,
+              JSON.stringify(published)
+            );
+          } catch {}
+
+          callback(published);
+        } else {
+          callback([]);
+        }
+      },
+      (error) => {
+        console.warn("Realtime published reviews subscription error:", error);
+        if (onError) onError(error);
+      }
+    );
+
+    return unsubscribe;
+  } catch (err) {
+    console.warn("Could not set up realtime published reviews subscription:", err);
+    return () => {};
+  }
+};
+

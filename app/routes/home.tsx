@@ -15,6 +15,7 @@ import {
   fetchHomeData,
   setSpotlightBanners,
   setHomeProducts,
+  setPublishedReviews,
 } from "~/redux/features/homeSlice";
 import { fetchBlogs, setBlogs } from "~/redux/features/blogSlice";
 import {
@@ -28,6 +29,7 @@ import {
   subscribeToSpotlightBannersFromFirestore,
   subscribeToProductsFromFirestore,
   subscribeToBlogsFromFirestore,
+  subscribeToPublishedReviews,
 } from "~/firebase";
 
 const Home = () => {
@@ -61,11 +63,17 @@ const Home = () => {
       dispatch(setBlogs(liveBlogs || []));
     });
 
+    // Subscribe to realtime published customer reviews
+    const unsubscribeReviews = subscribeToPublishedReviews((liveReviews) => {
+      dispatch(setPublishedReviews(liveReviews || []));
+    });
+
     return () => {
       unsubscribeCategories();
       unsubscribeSpotlight();
       unsubscribeProducts();
       unsubscribeBlogs();
+      unsubscribeReviews();
     };
   }, [dispatch]);
 

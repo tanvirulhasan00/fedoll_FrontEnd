@@ -20,6 +20,7 @@ import {
   type TestimonialItem,
   type ValueProp,
   type SpotlightBanner,
+  type ProductReview,
   fetchUserWishlistFromFirestore,
   saveUserWishlistToFirestore,
 } from "~/firebase";
@@ -29,6 +30,7 @@ export interface HomeState {
   featuredCategories: FeaturedCategory[];
   products: ProductItem[];
   testimonials: TestimonialItem[];
+  publishedReviews: ProductReview[];
   valueProps: ValueProp[];
   spotlightBanner: SpotlightBanner | null;
   spotlightBanners: SpotlightBanner[];
@@ -114,6 +116,7 @@ const initialState: HomeState = {
   featuredCategories: [],
   products: cachedHomeProducts,
   testimonials: initialTestimonials,
+  publishedReviews: [],
   valueProps: initialValueProps,
   spotlightBanner: cachedSpotlightBanners[0] || initialSpotlightBanner,
   spotlightBanners: cachedSpotlightBanners,
@@ -300,6 +303,9 @@ export const homeSlice = createSlice({
         state.spotlightBanners[state.activeSpotlightIndex] ||
         state.spotlightBanners[0];
     },
+    setPublishedReviews: (state, action: PayloadAction<ProductReview[]>) => {
+      state.publishedReviews = action.payload;
+    },
     removeSpotlightBanner: (state, action: PayloadAction<string>) => {
       state.spotlightBanners = state.spotlightBanners.filter(
         (b) => b.id !== action.payload
@@ -333,6 +339,9 @@ export const homeSlice = createSlice({
             }
           }
           state.testimonials = action.payload.testimonials;
+          if (Array.isArray(action.payload.publishedReviews)) {
+            state.publishedReviews = action.payload.publishedReviews;
+          }
           state.valueProps = action.payload.valueProps;
           state.spotlightBanner = action.payload.spotlightBanner;
           if (
@@ -440,6 +449,7 @@ export const {
   prevSpotlightSlide,
   addOrUpdateSpotlightBanner,
   removeSpotlightBanner,
+  setPublishedReviews,
 } = homeSlice.actions;
 
 export default homeSlice.reducer;
