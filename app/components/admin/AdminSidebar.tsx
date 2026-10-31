@@ -1,5 +1,6 @@
-import React, { useState, useEffect } from "react";
+import React from "react";
 import { Link } from "react-router";
+import BrandLogo from "~/components/ui/BrandLogo";
 import {
   ChartBarIcon,
   ShoppingBagIcon,
@@ -22,10 +23,7 @@ import {
   StarIcon,
 } from "@heroicons/react/24/outline";
 import type { AuthUser } from "~/redux/features/auth/authSlice";
-import { useAppSelector } from "~/redux/hooks/hook";
 import {
-  normalizeGoogleDriveImageUrl,
-  extractGoogleDriveFileId,
   getRoleAllowedTabs,
   getRoleConfig,
   normalizeRole,
@@ -124,18 +122,6 @@ export const AdminSidebar: React.FC<AdminSidebarProps> = ({
   const allowedTabs = getRoleAllowedTabs(user?.role);
   const visibleNavItems = navItems.filter((item) => allowedTabs.includes(item.id));
 
-  const { settings } = useAppSelector((state) => state.storeSettings);
-  const [logoLoadError, setLogoLoadError] = useState(false);
-  const customLogoUrl = normalizeGoogleDriveImageUrl(
-    settings?.logoDarkUrl || settings?.logoLightUrl || settings?.logoUrl
-  );
-
-  useEffect(() => {
-    setLogoLoadError(false);
-  }, [settings?.logoDarkUrl, settings?.logoLightUrl, settings?.logoUrl]);
-
-  const hasCustomLogo = Boolean(customLogoUrl && !logoLoadError);
-
   const handleTabClick = (tab: AdminTab) => {
     onSelectTab(tab);
     if (onCloseMobileMenu) onCloseMobileMenu();
@@ -148,40 +134,12 @@ export const AdminSidebar: React.FC<AdminSidebarProps> = ({
       }`}
     >
       {/* Brand Header */}
-      <div className="p-5 border-b border-stone-800/80 flex items-center justify-between">
-        <Link to="/" className="flex items-center gap-2.5">
-          {hasCustomLogo ? (
-            <img
-              src={customLogoUrl!}
-              alt={settings?.storeName || "SilkenDrift"}
-              referrerPolicy="no-referrer"
-              className="size-11 rounded-xl object-contain bg-white/10 p-1.5 border border-stone-700/80 shadow-md"
-              onError={(e) => {
-                const target = e.currentTarget;
-                const fileId = extractGoogleDriveFileId(
-                  settings?.logoDarkUrl || settings?.logoLightUrl || settings?.logoUrl
-                );
-                if (fileId && !target.dataset.triedFallback) {
-                  target.dataset.triedFallback = "true";
-                  target.src = `https://lh3.googleusercontent.com/d/${fileId}`;
-                } else {
-                  setLogoLoadError(true);
-                }
-              }}
-            />
-          ) : (
-            <div className="size-11 rounded-xl flex items-center justify-center bg-gradient-to-tr from-orange-600 to-amber-500 text-white font-sans font-black text-lg shadow-md border border-stone-700/80 shrink-0">
-              S
-            </div>
-          )}
-          <div>
-            <span className="font-bold text-base text-white tracking-wide">
-              {settings?.storeName || "SilkenDrift"}
-            </span>
-            <span className="block text-[10px] text-orange-400 font-semibold uppercase tracking-wider">
-              {roleConfig.shortLabel} Atelier
-            </span>
-          </div>
+      <div className="p-4 border-b border-stone-800/80 flex items-center justify-between">
+        <Link to="/" className="flex flex-col gap-0.5" title="Go to storefront">
+          <BrandLogo variant="dark" className="h-7 sm:h-8 w-auto max-w-[145px]" />
+          <span className="text-[10px] text-orange-400 font-semibold uppercase tracking-wider pl-0.5">
+            {roleConfig.shortLabel} Atelier
+          </span>
         </Link>
 
         <span className="px-2 py-0.5 rounded-full bg-orange-950/80 text-[10px] text-orange-400 font-mono border border-orange-800/60 font-bold">

@@ -5,15 +5,10 @@ import {
   setStoreSettings,
 } from "~/redux/features/storeSettingsSlice";
 import {
-  defaultStoreSettings,
-  normalizeGoogleDriveImageUrl,
-  extractGoogleDriveFileId,
   type StoreGeneralSettings,
 } from "~/firebase";
 
-export const DEFAULT_FAVICON =
-  normalizeGoogleDriveImageUrl(defaultStoreSettings.faviconUrl, 64) ||
-  "/favicon.ico";
+export const DEFAULT_FAVICON = "/favicon.ico";
 
 function setFaviconHref(targetHref: string) {
   if (typeof document === "undefined") return;
@@ -38,46 +33,31 @@ function setFaviconHref(targetHref: string) {
 
 /**
  * Dynamically synchronizes store settings, including setting the browser favicon
- * from a Google Drive share link or custom URL in real time.
+ * from the local public folder asset or custom URL.
  */
 export function updateBrowserFavicon(rawUrl?: string | null) {
   if (typeof document === "undefined") return;
 
-  if (!rawUrl || !rawUrl.trim()) {
+  // Enforce local public favicon over Google Drive URLs
+  if (
+    !rawUrl ||
+    !rawUrl.trim() ||
+    rawUrl.includes("drive.google.com") ||
+    rawUrl.includes("googleusercontent.com") ||
+    rawUrl.includes("favicon.ico")
+  ) {
     setFaviconHref(DEFAULT_FAVICON);
     return;
   }
 
-  const fileId = extractGoogleDriveFileId(rawUrl);
-  // If it's a Google Drive link, the direct lh3 CDN endpoint with =w64 provides instant HTTP 200 + CORS
-  const primaryUrl = fileId
-    ? `https://lh3.googleusercontent.com/d/${fileId}=w64`
-    : normalizeGoogleDriveImageUrl(rawUrl, 64).trim();
-
-  const fallbackUrl = fileId
-    ? `https://drive.google.com/thumbnail?id=${fileId}&sz=w64`
-    : "";
-
-  // Pre-load icon to verify image validity before swapping the browser tab icon
+  const primaryUrl = rawUrl.trim();
   const img = new Image();
   img.referrerPolicy = "no-referrer";
   img.onload = () => {
     setFaviconHref(primaryUrl);
   };
   img.onerror = () => {
-    if (fallbackUrl) {
-      const fallbackImg = new Image();
-      fallbackImg.referrerPolicy = "no-referrer";
-      fallbackImg.onload = () => {
-        setFaviconHref(fallbackUrl);
-      };
-      fallbackImg.onerror = () => {
-        setFaviconHref(DEFAULT_FAVICON);
-      };
-      fallbackImg.src = fallbackUrl;
-    } else {
-      setFaviconHref(DEFAULT_FAVICON);
-    }
+    setFaviconHref(DEFAULT_FAVICON);
   };
   img.src = primaryUrl;
 }

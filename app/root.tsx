@@ -19,12 +19,9 @@ import StoreSettingsSync from "~/components/main/Utilities/StoreSettingsSync";
 import {
   defaultStoreSettings,
   fetchStoreSettings,
-  normalizeGoogleDriveImageUrl,
 } from "~/firebase";
 
-const DEFAULT_FAVICON =
-  normalizeGoogleDriveImageUrl(defaultStoreSettings.faviconUrl) ||
-  "/favicon.ico";
+const DEFAULT_FAVICON = "/favicon.ico";
 
 export async function loader() {
   const settings = await fetchStoreSettings();

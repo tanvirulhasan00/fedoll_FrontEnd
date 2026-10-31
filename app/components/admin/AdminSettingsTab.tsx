@@ -62,24 +62,29 @@ export const AdminSettingsTab: React.FC<AdminSettingsTabProps> = ({
     setFaviconLoadError(false);
   }, [form.faviconUrl]);
 
-  // Derived normalized URLs for Google Drive and standard links
-  const normalizedLightLogo =
-    normalizeGoogleDriveImageUrl(form.logoLightUrl || form.logoUrl) ||
-    "/silken-drift-logo-light.png";
-  const lightLogoDriveId = extractGoogleDriveFileId(
-    form.logoLightUrl || form.logoUrl
-  );
+  // Derived normalized URLs for local public assets and custom links
+  const normalizedLightLogo = isUrlFieldsMuted
+    ? "/silken-drift-logo-light.png"
+    : normalizeGoogleDriveImageUrl(form.logoLightUrl || form.logoUrl) ||
+      "/silken-drift-logo-light.png";
+  const lightLogoDriveId = isUrlFieldsMuted
+    ? null
+    : extractGoogleDriveFileId(form.logoLightUrl || form.logoUrl);
 
-  const normalizedDarkLogo =
-    normalizeGoogleDriveImageUrl(form.logoDarkUrl || form.logoUrl) ||
-    "/silken-drift-logo-dark.png";
-  const darkLogoDriveId = extractGoogleDriveFileId(
-    form.logoDarkUrl || form.logoUrl
-  );
+  const normalizedDarkLogo = isUrlFieldsMuted
+    ? "/silken-drift-logo-dark.png"
+    : normalizeGoogleDriveImageUrl(form.logoDarkUrl || form.logoUrl) ||
+      "/silken-drift-logo-dark.png";
+  const darkLogoDriveId = isUrlFieldsMuted
+    ? null
+    : extractGoogleDriveFileId(form.logoDarkUrl || form.logoUrl);
 
-  const normalizedFavicon =
-    normalizeGoogleDriveImageUrl(form.faviconUrl) || "/favicon.ico";
-  const faviconDriveId = extractGoogleDriveFileId(form.faviconUrl);
+  const normalizedFavicon = isUrlFieldsMuted
+    ? "/favicon.ico"
+    : normalizeGoogleDriveImageUrl(form.faviconUrl) || "/favicon.ico";
+  const faviconDriveId = isUrlFieldsMuted
+    ? null
+    : extractGoogleDriveFileId(form.faviconUrl);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -87,10 +92,18 @@ export const AdminSettingsTab: React.FC<AdminSettingsTabProps> = ({
     try {
       const sanitized: StoreGeneralSettings = {
         ...form,
-        logoLightUrl: form.logoLightUrl?.trim() || "/silken-drift-logo-light.png",
-        logoDarkUrl: form.logoDarkUrl?.trim() || "/silken-drift-logo-dark.png",
-        logoUrl: form.logoUrl?.trim() || "/silken-drift-logo.png",
-        faviconUrl: form.faviconUrl?.trim() || "/favicon.ico",
+        logoLightUrl: isUrlFieldsMuted
+          ? "/silken-drift-logo-light.png"
+          : form.logoLightUrl?.trim() || "/silken-drift-logo-light.png",
+        logoDarkUrl: isUrlFieldsMuted
+          ? "/silken-drift-logo-dark.png"
+          : form.logoDarkUrl?.trim() || "/silken-drift-logo-dark.png",
+        logoUrl: isUrlFieldsMuted
+          ? "/silken-drift-logo.png"
+          : form.logoUrl?.trim() || "/silken-drift-logo.png",
+        faviconUrl: isUrlFieldsMuted
+          ? "/favicon.ico"
+          : form.faviconUrl?.trim() || "/favicon.ico",
       };
       await saveStoreSettings(sanitized);
       dispatch(setStoreSettings(sanitized));

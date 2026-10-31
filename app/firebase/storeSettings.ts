@@ -50,6 +50,19 @@ import { sanitizeForFirestore } from "./firestore";
 const LOCAL_STORAGE_STORE_KEY = "fedoll_store_general_settings_v1";
 let memoryCachedSettings: StoreGeneralSettings | null = null;
 
+function sanitizeBrandAssetUrl(url?: string, defaultPath: string = ""): string {
+  if (!url || typeof url !== "string") return defaultPath;
+  const trimmed = url.trim();
+  if (
+    trimmed.includes("drive.google.com") ||
+    trimmed.includes("googleusercontent.com") ||
+    trimmed === ""
+  ) {
+    return defaultPath;
+  }
+  return trimmed;
+}
+
 export const fetchStoreSettings = async (): Promise<StoreGeneralSettings> => {
   if (memoryCachedSettings) {
     return memoryCachedSettings;
@@ -63,7 +76,31 @@ export const fetchStoreSettings = async (): Promise<StoreGeneralSettings> => {
       const merged: StoreGeneralSettings = {
         ...defaultStoreSettings,
         ...data,
+        logoLightUrl: sanitizeBrandAssetUrl(data.logoLightUrl, "/silken-drift-logo-light.png"),
+        logoDarkUrl: sanitizeBrandAssetUrl(data.logoDarkUrl, "/silken-drift-logo-dark.png"),
+        logoUrl: sanitizeBrandAssetUrl(data.logoUrl, "/silken-drift-logo.png"),
+        faviconUrl: sanitizeBrandAssetUrl(data.faviconUrl, "/favicon.ico"),
       };
+
+      // Automatically migrate legacy Google Drive URLs in Firestore to public assets
+      if (
+        data.logoLightUrl?.includes("google") ||
+        data.logoDarkUrl?.includes("google") ||
+        data.faviconUrl?.includes("google")
+      ) {
+        setDoc(
+          docRef,
+          sanitizeForFirestore({
+            logoLightUrl: merged.logoLightUrl,
+            logoDarkUrl: merged.logoDarkUrl,
+            logoUrl: merged.logoUrl,
+            faviconUrl: merged.faviconUrl,
+            updatedAt: serverTimestamp(),
+          }),
+          { merge: true }
+        ).catch((e) => console.warn("Could not update sanitized store settings in Firestore:", e));
+      }
+
       memoryCachedSettings = merged;
       return merged;
     }
@@ -84,7 +121,15 @@ export const fetchStoreSettings = async (): Promise<StoreGeneralSettings> => {
     try {
       const raw = localStorage.getItem(LOCAL_STORAGE_STORE_KEY);
       if (raw) {
-        const merged = { ...defaultStoreSettings, ...JSON.parse(raw) };
+        const parsed = JSON.parse(raw);
+        const merged: StoreGeneralSettings = {
+          ...defaultStoreSettings,
+          ...parsed,
+          logoLightUrl: sanitizeBrandAssetUrl(parsed.logoLightUrl, "/silken-drift-logo-light.png"),
+          logoDarkUrl: sanitizeBrandAssetUrl(parsed.logoDarkUrl, "/silken-drift-logo-dark.png"),
+          logoUrl: sanitizeBrandAssetUrl(parsed.logoUrl, "/silken-drift-logo.png"),
+          faviconUrl: sanitizeBrandAssetUrl(parsed.faviconUrl, "/favicon.ico"),
+        };
         memoryCachedSettings = merged;
         return merged;
       }

@@ -17,11 +17,10 @@ import {
   CheckBadgeIcon,
   ChevronDownIcon,
 } from "@heroicons/react/24/outline";
-import React, { useMemo, useState, useEffect } from "react";
+import React, { useMemo, useState } from "react";
 import { useAppSelector } from "~/redux/hooks/hook";
 import { Link } from "react-router";
 import NewsLetter from "./Newsletter";
-import { normalizeGoogleDriveImageUrl, extractGoogleDriveFileId } from "~/firebase";
 import BrandLogo, { NavbarLogoSkeleton } from "~/components/ui/BrandLogo";
 
 const TRUST_PILLARS = [
@@ -112,8 +111,6 @@ const Footer = () => {
   const { categories } = useAppSelector((state) => state.products);
   const { settings, loading: settingsLoading, initialized: settingsInitialized } =
     useAppSelector((state) => state.storeSettings);
-  const [logoLightError, setLogoLightError] = useState(false);
-  const [logoDarkError, setLogoDarkError] = useState(false);
 
   // Accordion state for compact mobile view
   const [openMobileSections, setOpenMobileSections] = useState<Record<string, boolean>>({
@@ -128,20 +125,6 @@ const Footer = () => {
       [key]: !prev[key],
     }));
   };
-
-  useEffect(() => {
-    setLogoLightError(false);
-    setLogoDarkError(false);
-  }, [settings?.logoLightUrl, settings?.logoDarkUrl, settings?.logoUrl]);
-
-  const customLogoLightUrl = normalizeGoogleDriveImageUrl(
-    settings?.logoLightUrl || settings?.logoUrl
-  );
-  const customLogoDarkUrl = normalizeGoogleDriveImageUrl(
-    settings?.logoDarkUrl || settings?.logoUrl
-  );
-  const hasCustomLogoLight = Boolean(customLogoLightUrl && !logoLightError);
-  const hasCustomLogoDark = Boolean(customLogoDarkUrl && !logoDarkError);
 
   const dynamicShopLinks = useMemo(() => {
     const links = [{ name: "All Products", href: "/products" }];
@@ -217,65 +200,7 @@ const Footer = () => {
                 {settingsLoading || !settingsInitialized ? (
                   <NavbarLogoSkeleton className="h-12 sm:h-14" />
                 ) : (
-                  <>
-                    {hasCustomLogoLight ? (
-                      <img
-                        src={customLogoLightUrl!}
-                        alt={
-                          settings?.storeName
-                            ? `${settings.storeName} - Export Quality Clothes`
-                            : "SilkenDrift - Export Quality Clothes"
-                        }
-                        className="h-12 sm:h-14 max-h-16 w-auto max-w-[280px] object-contain rounded-md transition-opacity group-hover:opacity-90 dark:hidden"
-                        referrerPolicy="no-referrer"
-                        onError={(e) => {
-                          const target = e.currentTarget;
-                          const fileId = extractGoogleDriveFileId(
-                            settings?.logoLightUrl || settings?.logoUrl
-                          );
-                          if (fileId && !target.dataset.triedFallback) {
-                            target.dataset.triedFallback = "true";
-                            target.src = `https://lh3.googleusercontent.com/d/${fileId}`;
-                          } else {
-                            setLogoLightError(true);
-                          }
-                        }}
-                      />
-                    ) : (
-                      <div className="dark:hidden">
-                        <BrandLogo variant="light" className="h-12 sm:h-14 w-auto" />
-                      </div>
-                    )}
-
-                    {hasCustomLogoDark ? (
-                      <img
-                        src={customLogoDarkUrl!}
-                        alt={
-                          settings?.storeName
-                            ? `${settings.storeName} - Export Quality Clothes`
-                            : "SilkenDrift - Export Quality Clothes"
-                        }
-                        className="h-12 sm:h-14 max-h-16 w-auto max-w-[280px] object-contain rounded-md transition-opacity group-hover:opacity-90 hidden dark:block"
-                        referrerPolicy="no-referrer"
-                        onError={(e) => {
-                          const target = e.currentTarget;
-                          const fileId = extractGoogleDriveFileId(
-                            settings?.logoDarkUrl || settings?.logoUrl
-                          );
-                          if (fileId && !target.dataset.triedFallback) {
-                            target.dataset.triedFallback = "true";
-                            target.src = `https://lh3.googleusercontent.com/d/${fileId}`;
-                          } else {
-                            setLogoDarkError(true);
-                          }
-                        }}
-                      />
-                    ) : (
-                      <div className="hidden dark:block">
-                        <BrandLogo variant="dark" className="h-12 sm:h-14 w-auto" />
-                      </div>
-                    )}
-                  </>
+                  <BrandLogo className="h-12 sm:h-14 w-auto max-w-[280px]" />
                 )}
               </Link>
               <p className="mt-3 sm:mt-4 text-xs sm:text-sm text-gray-600 dark:text-neutral-400 leading-relaxed max-w-sm">
