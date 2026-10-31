@@ -9,23 +9,13 @@ import {
   MegaphoneIcon,
   PhotoIcon,
   GlobeAltIcon,
-  ArrowTopRightOnSquareIcon,
   CheckCircleIcon,
-  ExclamationTriangleIcon,
   ArrowPathIcon,
-  SparklesIcon,
-  LockClosedIcon,
-  LockOpenIcon,
 } from "@heroicons/react/24/outline";
 import { toast } from "sonner";
 import type { StoreGeneralSettings } from "~/firebase";
-import {
-  saveStoreSettings,
-  extractGoogleDriveFileId,
-  normalizeGoogleDriveImageUrl,
-} from "~/firebase";
+import { saveStoreSettings } from "~/firebase";
 import { useAppDispatch } from "~/redux/hooks/hook";
-import BrandLogo from "~/components/ui/BrandLogo";
 import { setStoreSettings } from "~/redux/features/storeSettingsSlice";
 import { Spinner } from "~/components/ui/spinner";
 
@@ -41,50 +31,10 @@ export const AdminSettingsTab: React.FC<AdminSettingsTabProps> = ({
   const dispatch = useAppDispatch();
   const [form, setForm] = useState<StoreGeneralSettings>(initialSettings);
   const [isSaving, setIsSaving] = useState(false);
-  const [isUrlFieldsMuted, setIsUrlFieldsMuted] = useState(true);
-  const [logoLightLoadError, setLogoLightLoadError] = useState(false);
-  const [logoDarkLoadError, setLogoDarkLoadError] = useState(false);
-  const [faviconLoadError, setFaviconLoadError] = useState(false);
 
   useEffect(() => {
     setForm(initialSettings);
   }, [initialSettings]);
-
-  useEffect(() => {
-    setLogoLightLoadError(false);
-  }, [form.logoLightUrl]);
-
-  useEffect(() => {
-    setLogoDarkLoadError(false);
-  }, [form.logoDarkUrl]);
-
-  useEffect(() => {
-    setFaviconLoadError(false);
-  }, [form.faviconUrl]);
-
-  // Derived normalized URLs for local public assets and custom links
-  const normalizedLightLogo = isUrlFieldsMuted
-    ? "/silken-drift-logo-light.png"
-    : normalizeGoogleDriveImageUrl(form.logoLightUrl || form.logoUrl) ||
-      "/silken-drift-logo-light.png";
-  const lightLogoDriveId = isUrlFieldsMuted
-    ? null
-    : extractGoogleDriveFileId(form.logoLightUrl || form.logoUrl);
-
-  const normalizedDarkLogo = isUrlFieldsMuted
-    ? "/silken-drift-logo-dark.png"
-    : normalizeGoogleDriveImageUrl(form.logoDarkUrl || form.logoUrl) ||
-      "/silken-drift-logo-dark.png";
-  const darkLogoDriveId = isUrlFieldsMuted
-    ? null
-    : extractGoogleDriveFileId(form.logoDarkUrl || form.logoUrl);
-
-  const normalizedFavicon = isUrlFieldsMuted
-    ? "/favicon.ico"
-    : normalizeGoogleDriveImageUrl(form.faviconUrl) || "/favicon.ico";
-  const faviconDriveId = isUrlFieldsMuted
-    ? null
-    : extractGoogleDriveFileId(form.faviconUrl);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -92,18 +42,10 @@ export const AdminSettingsTab: React.FC<AdminSettingsTabProps> = ({
     try {
       const sanitized: StoreGeneralSettings = {
         ...form,
-        logoLightUrl: isUrlFieldsMuted
-          ? "/silken-drift-logo-light.png"
-          : form.logoLightUrl?.trim() || "/silken-drift-logo-light.png",
-        logoDarkUrl: isUrlFieldsMuted
-          ? "/silken-drift-logo-dark.png"
-          : form.logoDarkUrl?.trim() || "/silken-drift-logo-dark.png",
-        logoUrl: isUrlFieldsMuted
-          ? "/silken-drift-logo.png"
-          : form.logoUrl?.trim() || "/silken-drift-logo.png",
-        faviconUrl: isUrlFieldsMuted
-          ? "/favicon.ico"
-          : form.faviconUrl?.trim() || "/favicon.ico",
+        logoLightUrl: "/silken-drift-logo-light.png",
+        logoDarkUrl: "/silken-drift-logo-dark.png",
+        logoUrl: "/silken-drift-logo.png",
+        faviconUrl: "/favicon.ico",
       };
       await saveStoreSettings(sanitized);
       dispatch(setStoreSettings(sanitized));
@@ -125,7 +67,7 @@ export const AdminSettingsTab: React.FC<AdminSettingsTabProps> = ({
           <span>Store Settings &amp; Brand Profile</span>
         </h2>
         <p className="text-xs text-gray-500 dark:text-neutral-400 mt-0.5">
-          General business metadata, visual brand assets (light/dark logos &amp; favicon), contact lines, currency, and storefront ribbons.
+          General business metadata, contact lines, currency, social profiles, and storefront ribbons.
         </p>
       </div>
 
@@ -134,9 +76,9 @@ export const AdminSettingsTab: React.FC<AdminSettingsTabProps> = ({
         className="bg-white dark:bg-neutral-900 p-6 sm:p-8 rounded-3xl border border-stone-200/80 dark:border-neutral-800 shadow-xs space-y-8 text-xs"
       >
         {/* ==================================================================== */}
-        {/* Brand Assets: Light Logo, Dark Logo, and Favicon with Google Drive Support */}
+        {/* Brand Identity & Visual Assets (Permanently served from public/) */}
         {/* ==================================================================== */}
-        <div className="space-y-5">
+        <div className="space-y-4">
           <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-gray-100 dark:border-neutral-800 pb-3">
             <div>
               <h3 className="font-bold uppercase tracking-wider text-gray-900 dark:text-white flex items-center gap-1.5 text-sm">
@@ -144,425 +86,99 @@ export const AdminSettingsTab: React.FC<AdminSettingsTabProps> = ({
                 <span>Brand Identity: Logos &amp; Favicon</span>
               </h3>
               <p className="text-[11px] text-gray-500 dark:text-neutral-400 mt-0.5">
-                Fixed official SilkenDrift logos (light &amp; dark mode) and browser tab favicon.
+                Official SilkenDrift logos and favicon served directly from the project&apos;s <code className="font-mono text-orange-600 dark:text-orange-400">public/</code> directory.
               </p>
             </div>
-            <div className="flex items-center gap-2">
-              <button
-                type="button"
-                onClick={() => setIsUrlFieldsMuted(!isUrlFieldsMuted)}
-                className="flex items-center gap-1.5 px-3 py-1.5 bg-stone-100 dark:bg-neutral-800 hover:bg-stone-200 dark:hover:bg-neutral-700 border border-stone-200/80 dark:border-neutral-700 rounded-xl text-[11px] font-semibold text-stone-700 dark:text-neutral-300 transition cursor-pointer"
-              >
-                {isUrlFieldsMuted ? (
-                  <>
-                    <LockClosedIcon className="size-3.5 text-stone-500" />
-                    <span>URL Fields Muted</span>
-                  </>
-                ) : (
-                  <>
-                    <LockOpenIcon className="size-3.5 text-orange-600" />
-                    <span>URL Fields Unlocked</span>
-                  </>
-                )}
-              </button>
-              <div className="flex items-center gap-1.5 px-3 py-1.5 bg-emerald-50 dark:bg-emerald-950/40 border border-emerald-200/70 dark:border-emerald-800/60 rounded-xl text-[11px] font-semibold text-emerald-800 dark:text-emerald-300 w-fit">
-                <CheckCircleIcon className="size-3.5 shrink-0 text-emerald-600 dark:text-emerald-400" />
-                <span>Fixed Assets Active</span>
-              </div>
+            <div className="flex items-center gap-1.5 px-3 py-1.5 bg-emerald-50 dark:bg-emerald-950/40 border border-emerald-200/70 dark:border-emerald-800/60 rounded-xl text-[11px] font-semibold text-emerald-800 dark:text-emerald-300 w-fit">
+              <CheckCircleIcon className="size-3.5 shrink-0 text-emerald-600 dark:text-emerald-400" />
+              <span>Served from public/ folder</span>
             </div>
           </div>
 
-          {/* Fixed Assets Status Banner */}
-          <div className="p-4 bg-stone-50 dark:bg-neutral-800/60 border border-stone-200/80 dark:border-neutral-700/80 rounded-2xl flex items-start gap-3">
-            <div className="size-8 rounded-xl bg-orange-100 dark:bg-orange-950/60 flex items-center justify-center shrink-0 text-orange-600 dark:text-orange-400">
-              <SparklesIcon className="size-4.5" />
-            </div>
-            <div className="space-y-1 text-gray-600 dark:text-neutral-300 leading-relaxed text-xs">
-              <p className="font-bold text-gray-900 dark:text-white">
-                Official Brand Assets &amp; Favicon Configured:
-              </p>
-              <p className="text-[11px] text-gray-500 dark:text-neutral-400">
-                Your storefront is permanently linked to the official SilkenDrift logos (<code className="font-mono text-orange-600 dark:text-orange-400">/silken-drift-logo-light.png</code> &amp; <code className="font-mono text-orange-600 dark:text-orange-400">/silken-drift-logo-dark.png</code>) and browser favicon (<code className="font-mono text-orange-600 dark:text-orange-400">/favicon.ico</code>). Custom URL inputs below are muted to prevent accidental breakage.
-              </p>
-            </div>
-          </div>
-
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-            {/* Field 1: Store Logo URL (Light Mode) */}
-            <div className="space-y-3 p-5 bg-stone-50/70 dark:bg-neutral-800/40 rounded-2xl border border-stone-200/70 dark:border-neutral-700/60">
-              <div className="flex items-center justify-between">
-                <div>
-                  <div className="flex items-center gap-2">
-                    <label className="block font-bold text-gray-900 dark:text-white text-xs">
-                      1. Store Logo URL (Light Mode)
-                    </label>
-                    {isUrlFieldsMuted && (
-                      <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md bg-stone-200/80 dark:bg-neutral-700 text-[10px] font-semibold text-stone-600 dark:text-neutral-300">
-                        <LockClosedIcon className="size-2.5" />
-                        Muted
-                      </span>
-                    )}
-                  </div>
-                  <p className="text-[10px] text-gray-500 dark:text-neutral-400">
-                    Shown in the main navigation on white/light backgrounds.
-                  </p>
-                </div>
-                {!isUrlFieldsMuted && form.logoLightUrl && (
-                  <button
-                    type="button"
-                    onClick={() => {
-                      setForm({ ...form, logoLightUrl: "" });
-                      setLogoLightLoadError(false);
-                    }}
-                    className="text-[10px] text-gray-500 hover:text-red-500 transition cursor-pointer"
-                  >
-                    Reset
-                  </button>
-                )}
-              </div>
-
-              <div className="relative">
-                <input
-                  type="text"
-                  disabled={isUrlFieldsMuted}
-                  readOnly={isUrlFieldsMuted}
-                  value={isUrlFieldsMuted ? (form.logoLightUrl || "/silken-drift-logo-light.png") : (form.logoLightUrl || "")}
-                  onChange={(e) => {
-                    setForm({ ...form, logoLightUrl: e.target.value });
-                    setLogoLightLoadError(false);
-                  }}
-                  placeholder="/silken-drift-logo-light.png"
-                  className={`w-full px-3 py-2.5 rounded-xl font-mono text-[11px] transition ${
-                    isUrlFieldsMuted
-                      ? "bg-stone-100 dark:bg-neutral-900/90 text-stone-500 dark:text-neutral-400 border border-dashed border-stone-300 dark:border-neutral-700 cursor-not-allowed select-none opacity-80"
-                      : "bg-white dark:bg-neutral-800 border border-gray-200 dark:border-neutral-700 focus:outline-none focus:ring-2 focus:ring-orange-600"
-                  }`}
-                />
-                {isUrlFieldsMuted && (
-                  <div className="absolute right-3 top-1/2 -translate-y-1/2 flex items-center gap-1 text-[10px] font-semibold text-stone-500 dark:text-neutral-400 bg-stone-200/70 dark:bg-neutral-800 px-2 py-0.5 rounded-md pointer-events-none">
-                    <LockClosedIcon className="size-3" />
-                    <span>Fixed Asset</span>
-                  </div>
-                )}
-              </div>
-
-              {/* Google Drive Status Notification */}
-              {!isUrlFieldsMuted && lightLogoDriveId && (
-                <div className="flex items-center gap-1.5 text-[11px] text-emerald-700 dark:text-emerald-400 font-medium">
-                  <CheckCircleIcon className="size-4 shrink-0" />
-                  <span>Google Drive link detected (File ID: {lightLogoDriveId.slice(0, 8)}...)</span>
-                </div>
-              )}
-
-              {/* Light Logo Preview */}
-              <div className="space-y-2 pt-1">
-                <div className="flex items-center justify-between text-[11px] font-semibold text-gray-600 dark:text-neutral-400">
-                  <span>Light Mode Live Preview</span>
-                  {normalizedLightLogo && (
-                    <a
-                      href={normalizedLightLogo}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="inline-flex items-center gap-1 text-orange-600 dark:text-orange-400 hover:underline text-[10px]"
-                    >
-                      <span>Open image in new tab</span>
-                      <ArrowTopRightOnSquareIcon className="size-3" />
-                    </a>
-                  )}
-                </div>
-
-                <div className="p-4 bg-white border border-gray-200 rounded-2xl flex flex-col items-center justify-center min-h-[110px] shadow-2xs">
-                  <span className="text-[9px] uppercase font-bold text-gray-400 mb-2 tracking-wider">
-                    Light Surface Preview
-                  </span>
-                  <img
-                    src={normalizedLightLogo}
-                    alt="Store logo preview (light)"
-                    referrerPolicy="no-referrer"
-                    className="h-12 sm:h-14 max-h-16 w-auto max-w-full object-contain"
-                    onLoad={() => setLogoLightLoadError(false)}
-                    onError={(e) => {
-                      const target = e.currentTarget;
-                      const fileId = lightLogoDriveId;
-                      if (fileId && !target.dataset.triedFallback) {
-                        target.dataset.triedFallback = "true";
-                        target.src = `https://lh3.googleusercontent.com/d/${fileId}`;
-                      } else {
-                        target.src = "/silken-drift-logo-light.png";
-                      }
-                    }}
-                  />
-                </div>
-
-                {logoLightLoadError && (
-                  <div className="p-2.5 bg-rose-50 dark:bg-rose-950/40 border border-rose-200 dark:border-rose-900 rounded-xl text-rose-700 dark:text-rose-400 flex items-start gap-2 text-[10px]">
-                    <ExclamationTriangleIcon className="size-4 shrink-0 mt-0.5" />
-                    <span>
-                      Could not load light logo preview. Using official fallback <code className="font-mono">/silken-drift-logo-light.png</code>.
-                    </span>
-                  </div>
-                )}
-                <p className="text-[10px] text-gray-400 dark:text-neutral-500">
-                  Rendered on daytime headers and bright surfaces.
-                </p>
-              </div>
-            </div>
-
-            {/* Field 2: Store Logo URL (Dark Mode & Footer) */}
-            <div className="space-y-3 p-5 bg-stone-50/70 dark:bg-neutral-800/40 rounded-2xl border border-stone-200/70 dark:border-neutral-700/60">
-              <div className="flex items-center justify-between">
-                <div>
-                  <div className="flex items-center gap-2">
-                    <label className="block font-bold text-gray-900 dark:text-white text-xs">
-                      2. Store Logo URL (Dark Mode &amp; Footer)
-                    </label>
-                    {isUrlFieldsMuted && (
-                      <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md bg-stone-200/80 dark:bg-neutral-700 text-[10px] font-semibold text-stone-600 dark:text-neutral-300">
-                        <LockClosedIcon className="size-2.5" />
-                        Muted
-                      </span>
-                    )}
-                  </div>
-                  <p className="text-[10px] text-gray-500 dark:text-neutral-400">
-                    Shown in dark mode navigation and the dark footer.
-                  </p>
-                </div>
-                {!isUrlFieldsMuted && form.logoDarkUrl && (
-                  <button
-                    type="button"
-                    onClick={() => {
-                      setForm({ ...form, logoDarkUrl: "" });
-                      setLogoDarkLoadError(false);
-                    }}
-                    className="text-[10px] text-gray-500 hover:text-red-500 transition cursor-pointer"
-                  >
-                    Reset
-                  </button>
-                )}
-              </div>
-
-              <div className="relative">
-                <input
-                  type="text"
-                  disabled={isUrlFieldsMuted}
-                  readOnly={isUrlFieldsMuted}
-                  value={isUrlFieldsMuted ? (form.logoDarkUrl || "/silken-drift-logo-dark.png") : (form.logoDarkUrl || "")}
-                  onChange={(e) => {
-                    setForm({ ...form, logoDarkUrl: e.target.value });
-                    setLogoDarkLoadError(false);
-                  }}
-                  placeholder="/silken-drift-logo-dark.png"
-                  className={`w-full px-3 py-2.5 rounded-xl font-mono text-[11px] transition ${
-                    isUrlFieldsMuted
-                      ? "bg-stone-100 dark:bg-neutral-900/90 text-stone-500 dark:text-neutral-400 border border-dashed border-stone-300 dark:border-neutral-700 cursor-not-allowed select-none opacity-80"
-                      : "bg-white dark:bg-neutral-800 border border-gray-200 dark:border-neutral-700 focus:outline-none focus:ring-2 focus:ring-orange-600"
-                  }`}
-                />
-                {isUrlFieldsMuted && (
-                  <div className="absolute right-3 top-1/2 -translate-y-1/2 flex items-center gap-1 text-[10px] font-semibold text-stone-500 dark:text-neutral-400 bg-stone-200/70 dark:bg-neutral-800 px-2 py-0.5 rounded-md pointer-events-none">
-                    <LockClosedIcon className="size-3" />
-                    <span>Fixed Asset</span>
-                  </div>
-                )}
-              </div>
-
-              {/* Google Drive Status Notification */}
-              {!isUrlFieldsMuted && darkLogoDriveId && (
-                <div className="flex items-center gap-1.5 text-[11px] text-emerald-700 dark:text-emerald-400 font-medium">
-                  <CheckCircleIcon className="size-4 shrink-0" />
-                  <span>Google Drive link detected (File ID: {darkLogoDriveId.slice(0, 8)}...)</span>
-                </div>
-              )}
-
-              {/* Dark Logo Preview */}
-              <div className="space-y-2 pt-1">
-                <div className="flex items-center justify-between text-[11px] font-semibold text-gray-600 dark:text-neutral-400">
-                  <span>Dark Mode &amp; Footer Live Preview</span>
-                  {normalizedDarkLogo && (
-                    <a
-                      href={normalizedDarkLogo}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="inline-flex items-center gap-1 text-orange-600 dark:text-orange-400 hover:underline text-[10px]"
-                    >
-                      <span>Open image in new tab</span>
-                      <ArrowTopRightOnSquareIcon className="size-3" />
-                    </a>
-                  )}
-                </div>
-
-                <div className="p-4 bg-[#0c0e12] border border-neutral-800 rounded-2xl flex flex-col items-center justify-center min-h-[110px] shadow-2xs">
-                  <span className="text-[9px] uppercase font-bold text-neutral-500 mb-2 tracking-wider">
-                    Dark Surface &amp; Footer Preview
-                  </span>
-                  <img
-                    src={normalizedDarkLogo}
-                    alt="Store logo preview (dark)"
-                    referrerPolicy="no-referrer"
-                    className="h-12 sm:h-14 max-h-16 w-auto max-w-full object-contain"
-                    onLoad={() => setLogoDarkLoadError(false)}
-                    onError={(e) => {
-                      const target = e.currentTarget;
-                      const fileId = darkLogoDriveId;
-                      if (fileId && !target.dataset.triedFallback) {
-                        target.dataset.triedFallback = "true";
-                        target.src = `https://lh3.googleusercontent.com/d/${fileId}`;
-                      } else {
-                        target.src = "/silken-drift-logo-dark.png";
-                      }
-                    }}
-                  />
-                </div>
-
-                {logoDarkLoadError && (
-                  <div className="p-2.5 bg-rose-50 dark:bg-rose-950/40 border border-rose-200 dark:border-rose-900 rounded-xl text-rose-700 dark:text-rose-400 flex items-start gap-2 text-[10px]">
-                    <ExclamationTriangleIcon className="size-4 shrink-0 mt-0.5" />
-                    <span>
-                      Could not load dark logo preview. Using official fallback <code className="font-mono">/silken-drift-logo-dark.png</code>.
-                    </span>
-                  </div>
-                )}
-                <p className="text-[10px] text-gray-400 dark:text-neutral-500">
-                  Rendered on dark mode navigation and the dark storefront footer.
-                </p>
-              </div>
-            </div>
-          </div>
-
-          {/* Field 3: Store Favicon URL */}
-          <div className="space-y-3 p-5 bg-stone-50/70 dark:bg-neutral-800/40 rounded-2xl border border-stone-200/70 dark:border-neutral-700/60">
-            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            {/* Asset 1: Light Mode Logo */}
+            <div className="space-y-2 p-4 bg-stone-50/70 dark:bg-neutral-800/40 rounded-2xl border border-stone-200/70 dark:border-neutral-700/60 flex flex-col justify-between">
               <div>
-                <div className="flex items-center gap-2">
-                  <label className="block font-bold text-gray-900 dark:text-white text-xs">
-                    3. Store Favicon URL (Browser Tab Icon)
-                  </label>
-                  {isUrlFieldsMuted && (
-                    <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md bg-stone-200/80 dark:bg-neutral-700 text-[10px] font-semibold text-stone-600 dark:text-neutral-300">
-                      <LockClosedIcon className="size-2.5" />
-                      Muted
-                    </span>
-                  )}
+                <div className="flex items-center justify-between">
+                  <span className="font-bold text-gray-900 dark:text-white text-xs">
+                    Light Mode Logo
+                  </span>
+                  <span className="text-[10px] font-mono text-stone-500 dark:text-neutral-400 bg-stone-200/60 dark:bg-neutral-700/60 px-2 py-0.5 rounded">
+                    public/silken-drift-logo-light.png
+                  </span>
                 </div>
-                <p className="text-[10px] text-gray-500 dark:text-neutral-400">
-                  Small square icon displayed on browser tabs, bookmarks, and mobile home screen shortcuts.
+                <p className="text-[10px] text-gray-500 dark:text-neutral-400 mt-0.5">
+                  Navigation logo on white &amp; light surfaces.
                 </p>
               </div>
-              {!isUrlFieldsMuted && form.faviconUrl && (
-                <button
-                  type="button"
-                  onClick={() => {
-                    setForm({ ...form, faviconUrl: "" });
-                    setFaviconLoadError(false);
-                  }}
-                  className="text-[10px] text-gray-500 hover:text-red-500 transition cursor-pointer w-fit"
-                >
-                  Reset to Default Favicon
-                </button>
-              )}
+
+              <div className="p-4 bg-white border border-gray-200 rounded-xl flex items-center justify-center min-h-[90px] shadow-2xs">
+                <img
+                  src="/silken-drift-logo-light.png"
+                  alt="SilkenDrift Light Logo"
+                  className="h-10 w-auto max-w-full object-contain"
+                />
+              </div>
             </div>
 
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 items-center">
-              <div className="space-y-2">
-                <div className="relative">
-                  <input
-                    type="text"
-                    disabled={isUrlFieldsMuted}
-                    readOnly={isUrlFieldsMuted}
-                    value={isUrlFieldsMuted ? (form.faviconUrl || "/favicon.ico") : (form.faviconUrl || "")}
-                    onChange={(e) => {
-                      setForm({ ...form, faviconUrl: e.target.value });
-                      setFaviconLoadError(false);
-                    }}
-                    placeholder="/favicon.ico"
-                    className={`w-full px-3 py-2.5 rounded-xl font-mono text-[11px] transition ${
-                      isUrlFieldsMuted
-                        ? "bg-stone-100 dark:bg-neutral-900/90 text-stone-500 dark:text-neutral-400 border border-dashed border-stone-300 dark:border-neutral-700 cursor-not-allowed select-none opacity-80"
-                        : "bg-white dark:bg-neutral-800 border border-gray-200 dark:border-neutral-700 focus:outline-none focus:ring-2 focus:ring-orange-600"
-                    }`}
-                  />
-                  {isUrlFieldsMuted && (
-                    <div className="absolute right-3 top-1/2 -translate-y-1/2 flex items-center gap-1 text-[10px] font-semibold text-stone-500 dark:text-neutral-400 bg-stone-200/70 dark:bg-neutral-800 px-2 py-0.5 rounded-md pointer-events-none">
-                      <LockClosedIcon className="size-3" />
-                      <span>Fixed Asset</span>
-                    </div>
-                  )}
+            {/* Asset 2: Dark Mode Logo */}
+            <div className="space-y-2 p-4 bg-stone-50/70 dark:bg-neutral-800/40 rounded-2xl border border-stone-200/70 dark:border-neutral-700/60 flex flex-col justify-between">
+              <div>
+                <div className="flex items-center justify-between">
+                  <span className="font-bold text-gray-900 dark:text-white text-xs">
+                    Dark Mode Logo
+                  </span>
+                  <span className="text-[10px] font-mono text-stone-500 dark:text-neutral-400 bg-stone-200/60 dark:bg-neutral-700/60 px-2 py-0.5 rounded">
+                    public/silken-drift-logo-dark.png
+                  </span>
                 </div>
-
-                {!isUrlFieldsMuted && faviconDriveId && (
-                  <div className="flex items-center gap-1.5 text-[11px] text-emerald-700 dark:text-emerald-400 font-medium">
-                    <CheckCircleIcon className="size-4 shrink-0" />
-                    <span>Google Drive link detected (File ID: {faviconDriveId.slice(0, 8)}...)</span>
-                  </div>
-                )}
-                <p className="text-[10px] text-gray-400 dark:text-neutral-500">
-                  Active browser tab icon: <code className="font-mono text-orange-600 dark:text-orange-400">/favicon.ico</code> (32x32px .ico).
+                <p className="text-[10px] text-gray-500 dark:text-neutral-400 mt-0.5">
+                  Dark navigation, admin sidebar &amp; footer.
                 </p>
               </div>
 
-              {/* Favicon Browser Tab Simulation Preview */}
-              <div className="space-y-2">
-                <div className="flex items-center justify-between text-[11px] font-semibold text-gray-600 dark:text-neutral-400">
-                  <span>Browser Tab Simulation Preview</span>
-                  {normalizedFavicon && (
-                    <a
-                      href={normalizedFavicon}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="inline-flex items-center gap-1 text-orange-600 dark:text-orange-400 hover:underline text-[10px]"
-                    >
-                      <span>Open icon in new tab</span>
-                      <ArrowTopRightOnSquareIcon className="size-3" />
-                    </a>
-                  )}
-                </div>
+              <div className="p-4 bg-[#0c0e12] border border-neutral-800 rounded-xl flex items-center justify-center min-h-[90px] shadow-2xs">
+                <img
+                  src="/silken-drift-logo-dark.png"
+                  alt="SilkenDrift Dark Logo"
+                  className="h-10 w-auto max-w-full object-contain"
+                />
+              </div>
+            </div>
 
-                {/* Simulated browser window & tab */}
-                <div className="bg-stone-200/90 dark:bg-neutral-950 p-2 rounded-xl border border-stone-300 dark:border-neutral-800 space-y-1">
-                  <div className="flex items-center gap-1.5 px-1 py-0.5">
-                    <span className="size-2 rounded-full bg-red-400 inline-block" />
-                    <span className="size-2 rounded-full bg-amber-400 inline-block" />
-                    <span className="size-2 rounded-full bg-emerald-400 inline-block" />
-                  </div>
-                  <div className="inline-flex items-center gap-2 px-3 py-1.5 bg-white dark:bg-neutral-850 rounded-t-lg border-t border-x border-stone-300 dark:border-neutral-700 max-w-xs shadow-xs">
-                    {normalizedFavicon ? (
-                      <img
-                        src={normalizedFavicon}
-                        alt="Favicon preview"
-                        referrerPolicy="no-referrer"
-                        className="size-4 rounded-xs object-contain shrink-0"
-                        onLoad={() => setFaviconLoadError(false)}
-                        onError={(e) => {
-                          const target = e.currentTarget;
-                          const fileId = faviconDriveId;
-                          if (fileId && !target.dataset.triedFallback) {
-                            target.dataset.triedFallback = "true";
-                            target.src = `https://lh3.googleusercontent.com/d/${fileId}`;
-                          } else {
-                            target.src = "/favicon.ico";
-                          }
-                        }}
-                      />
-                    ) : (
-                      <span className="size-4 rounded-full bg-orange-600 text-[10px] font-bold text-white flex items-center justify-center shrink-0">
-                        S
-                      </span>
-                    )}
-                    <span className="truncate text-[11px] font-medium text-gray-800 dark:text-neutral-200">
-                      {form.storeName || "SilkenDrift"} | Official Store
-                    </span>
-                    <span className="text-gray-400 text-[10px] ml-auto">&times;</span>
-                  </div>
+            {/* Asset 3: Browser Favicon */}
+            <div className="space-y-2 p-4 bg-stone-50/70 dark:bg-neutral-800/40 rounded-2xl border border-stone-200/70 dark:border-neutral-700/60 flex flex-col justify-between">
+              <div>
+                <div className="flex items-center justify-between">
+                  <span className="font-bold text-gray-900 dark:text-white text-xs">
+                    Browser Tab Favicon
+                  </span>
+                  <span className="text-[10px] font-mono text-stone-500 dark:text-neutral-400 bg-stone-200/60 dark:bg-neutral-700/60 px-2 py-0.5 rounded">
+                    public/favicon.ico
+                  </span>
                 </div>
+                <p className="text-[10px] text-gray-500 dark:text-neutral-400 mt-0.5">
+                  Tab icon, bookmarks, and mobile shortcuts.
+                </p>
+              </div>
 
-                {faviconLoadError && (
-                  <div className="p-2.5 bg-rose-50 dark:bg-rose-950/40 border border-rose-200 dark:border-rose-900 rounded-xl text-rose-700 dark:text-rose-400 flex items-start gap-2 text-[10px]">
-                    <ExclamationTriangleIcon className="size-4 shrink-0 mt-0.5" />
-                    <span>
-                      Could not load favicon preview. If using Google Drive, check that file access is set to <strong>&ldquo;Anyone with the link&rdquo;</strong>.
-                    </span>
-                  </div>
-                )}
+              {/* Simulated browser tab */}
+              <div className="bg-stone-200/90 dark:bg-neutral-950 p-2.5 rounded-xl border border-stone-300 dark:border-neutral-800 space-y-1.5">
+                <div className="flex items-center gap-1.5 px-1">
+                  <span className="size-2 rounded-full bg-red-400 inline-block" />
+                  <span className="size-2 rounded-full bg-amber-400 inline-block" />
+                  <span className="size-2 rounded-full bg-emerald-400 inline-block" />
+                </div>
+                <div className="inline-flex items-center gap-2 px-3 py-1.5 bg-white dark:bg-neutral-900 rounded-t-lg border-t border-x border-stone-300 dark:border-neutral-700 w-full shadow-xs">
+                  <img
+                    src="/favicon.ico"
+                    alt="Favicon"
+                    className="size-4 rounded-xs object-contain shrink-0"
+                  />
+                  <span className="truncate text-[11px] font-medium text-gray-800 dark:text-neutral-200">
+                    {form.storeName || "SilkenDrift"} | Official Store
+                  </span>
+                </div>
               </div>
             </div>
           </div>
