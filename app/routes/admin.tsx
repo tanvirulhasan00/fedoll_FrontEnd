@@ -55,6 +55,7 @@ import AdminReviewsTab from "~/components/admin/AdminReviewsTab";
 import AdminBlogsTab from "~/components/admin/AdminBlogsTab";
 import AdminShippingTab from "~/components/admin/AdminShippingTab";
 import AdminCustomersTab from "~/components/admin/AdminCustomersTab";
+import AdminTeamTab from "~/components/admin/AdminTeamTab";
 import AdminCouponsTab from "~/components/admin/AdminCouponsTab";
 import AdminBannersTab from "~/components/admin/AdminBannersTab";
 import AdminMessagesTab from "~/components/admin/AdminMessagesTab";
@@ -583,6 +584,12 @@ export default function AdminDashboardPage() {
                     />
                   )}
 
+                  {currentTab === "team" && (
+                    <AdminTeamTab
+                      canManage={userRole === "admin" || userRole === "manager"}
+                    />
+                  )}
+
                   {currentTab === "coupons" && (
                     <AdminCouponsTab
                       coupons={coupons}
@@ -627,6 +634,7 @@ export default function AdminDashboardPage() {
                     <AdminSettingsTab
                       settings={storeSettings}
                       onRefresh={loadAllAdminData}
+                      onNavigateTab={(tab) => handleSelectTab(tab)}
                     />
                   )}
                 </>

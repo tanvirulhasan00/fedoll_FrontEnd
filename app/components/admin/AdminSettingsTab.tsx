@@ -11,9 +11,12 @@ import {
   GlobeAltIcon,
   CheckCircleIcon,
   ArrowPathIcon,
+  UserGroupIcon,
+  ArrowTopRightOnSquareIcon,
 } from "@heroicons/react/24/outline";
+import { Link } from "react-router";
 import { toast } from "sonner";
-import type { StoreGeneralSettings } from "~/firebase";
+import type { StoreGeneralSettings, AdminTab } from "~/firebase";
 import { saveStoreSettings } from "~/firebase";
 import { useAppDispatch } from "~/redux/hooks/hook";
 import { setStoreSettings } from "~/redux/features/storeSettingsSlice";
@@ -22,11 +25,13 @@ import { Spinner } from "~/components/ui/spinner";
 interface AdminSettingsTabProps {
   settings: StoreGeneralSettings;
   onRefresh: () => void;
+  onNavigateTab?: (tab: AdminTab) => void;
 }
 
 export const AdminSettingsTab: React.FC<AdminSettingsTabProps> = ({
   settings: initialSettings,
   onRefresh,
+  onNavigateTab,
 }) => {
   const dispatch = useAppDispatch();
   const [form, setForm] = useState<StoreGeneralSettings>(initialSettings);
@@ -353,6 +358,46 @@ export const AdminSettingsTab: React.FC<AdminSettingsTabProps> = ({
           </button>
         </div>
       </form>
+
+      {/* Atelier Team & Brand Story Card */}
+      <div className="bg-white dark:bg-neutral-900 p-6 sm:p-7 rounded-3xl border border-stone-200/80 dark:border-neutral-800 shadow-xs flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+        <div className="flex items-center gap-3.5">
+          <div className="size-11 rounded-2xl bg-orange-50 dark:bg-orange-950/60 border border-orange-100 dark:border-orange-900/40 flex items-center justify-center text-orange-600 dark:text-orange-400 shrink-0">
+            <UserGroupIcon className="size-6" />
+          </div>
+          <div>
+            <h3 className="text-sm font-bold text-gray-900 dark:text-white flex items-center gap-2">
+              <span>Our Atelier Team (About Us)</span>
+              <span className="text-[10px] uppercase font-bold tracking-wider px-2 py-0.5 rounded-full bg-orange-100 dark:bg-orange-950/60 text-orange-700 dark:text-orange-300">
+                Live Storefront
+              </span>
+            </h3>
+            <p className="text-xs text-gray-500 dark:text-neutral-400 mt-0.5">
+              Curate the leadership, fashion designers, patternmakers, and tailors featured in the team section.
+            </p>
+          </div>
+        </div>
+
+        <div className="flex items-center gap-2.5 w-full sm:w-auto">
+          <Link
+            to="/about-us"
+            target="_blank"
+            rel="noreferrer"
+            className="px-3.5 py-2.5 rounded-xl border border-stone-200 dark:border-neutral-700 hover:bg-stone-50 dark:hover:bg-neutral-800 text-xs font-semibold text-stone-700 dark:text-neutral-300 transition flex items-center gap-1.5"
+          >
+            <span>View Public Page</span>
+            <ArrowTopRightOnSquareIcon className="size-3.5 text-stone-400" />
+          </Link>
+          <button
+            type="button"
+            onClick={() => onNavigateTab ? onNavigateTab("team") : undefined}
+            className="px-4 py-2.5 rounded-xl bg-orange-600 hover:bg-orange-700 text-white text-xs font-bold shadow-md shadow-orange-500/20 active:scale-98 transition cursor-pointer flex items-center gap-1.5"
+          >
+            <UserGroupIcon className="size-4" />
+            <span>Manage Our Team</span>
+          </button>
+        </div>
+      </div>
     </div>
   );
 };

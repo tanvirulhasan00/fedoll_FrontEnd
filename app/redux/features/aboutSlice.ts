@@ -8,6 +8,7 @@ import {
   seedAboutDataToFirestore,
   initialAboutData,
   type AboutData,
+  type TeamMember,
 } from "~/firebase";
 
 export interface AboutState {
@@ -67,6 +68,11 @@ export const aboutSlice = createSlice({
       state.loading = false;
       state.error = null;
     },
+    setTeamMembers: (state, action: PayloadAction<TeamMember[]>) => {
+      if (state.data) {
+        state.data.team = action.payload;
+      }
+    },
   },
   extraReducers: (builder) => {
     builder
@@ -98,5 +104,5 @@ export const aboutSlice = createSlice({
   },
 });
 
-export const { setAboutData } = aboutSlice.actions;
+export const { setAboutData, setTeamMembers } = aboutSlice.actions;
 export default aboutSlice.reducer;

@@ -25,6 +25,7 @@ export type AdminTab =
   | "shipping"
   | "customers"
   | "staff"
+  | "team"
   | "coupons"
   | "banners"
   | "messages"
@@ -278,6 +279,7 @@ export const getRoleAllowedTabs = (role?: string | null): AdminTab[] => {
         "shipping",
         "customers",
         "staff",
+        "team",
         "coupons",
         "banners",
         "messages",
@@ -298,6 +300,7 @@ export const getRoleAllowedTabs = (role?: string | null): AdminTab[] => {
         "shipping",
         "customers",
         "staff",
+        "team",
         "coupons",
         "banners",
         "messages",

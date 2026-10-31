@@ -21,6 +21,7 @@ import {
   ArchiveBoxIcon,
   SparklesIcon,
   StarIcon,
+  UserGroupIcon,
 } from "@heroicons/react/24/outline";
 import type { AuthUser } from "~/redux/features/auth/authSlice";
 import {
@@ -94,6 +95,12 @@ export const AdminSidebar: React.FC<AdminSidebarProps> = ({
       label: normalizeRole(user?.role) === "salesman" ? "My Staff Account" : "Staff & App Users",
       icon: ShieldCheckIcon,
       badge: normalizeRole(user?.role) === "salesman" ? undefined : "Roles",
+    },
+    {
+      id: "team",
+      label: "Our Team (About Us)",
+      icon: UserGroupIcon,
+      badge: "About Us",
     },
     { id: "coupons", label: "Coupons & Discounts", icon: TagIcon },
     { id: "banners", label: "Campaign Banners", icon: SparklesIcon, badge: "Slider" },

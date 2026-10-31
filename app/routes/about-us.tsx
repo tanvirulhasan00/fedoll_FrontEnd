@@ -5,7 +5,8 @@ import Topbar from "~/components/main/Home/Topbar";
 import Header from "~/components/main/Home/Header";
 import Footer from "~/components/main/Home/Footer";
 import { useAppDispatch, useAppSelector } from "~/redux/hooks/hook";
-import { fetchAboutData } from "~/redux/features/aboutSlice";
+import { fetchAboutData, setAboutData } from "~/redux/features/aboutSlice";
+import { subscribeToAboutDataFromFirestore } from "~/firebase";
 import {
   SparklesIcon,
   GlobeAmericasIcon,
@@ -38,6 +39,12 @@ export default function AboutUsPage() {
 
   useEffect(() => {
     dispatch(fetchAboutData());
+
+    const unsubscribe = subscribeToAboutDataFromFirestore((liveData) => {
+      dispatch(setAboutData(liveData));
+    });
+
+    return () => unsubscribe();
   }, [dispatch]);
 
   const getPillarIcon = (iconName: string) => {
@@ -247,52 +254,59 @@ export default function AboutUsPage() {
         </section>
 
         {/* The Atelier Team */}
-        <section className="py-16 sm:py-24 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex flex-col md:flex-row md:items-end md:justify-between gap-4 mb-14">
-            <div>
-              <span className="text-xs font-bold uppercase tracking-widest text-orange-600 dark:text-orange-400">
-                Our Team
-              </span>
-              <h2 className="text-3xl sm:text-4xl font-bold tracking-tight text-gray-900 dark:text-white mt-2">
-                The People Behind SilkenDrift
-              </h2>
+        {data?.team && data.team.length > 0 && (
+          <section className="py-16 sm:py-24 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div className="flex flex-col md:flex-row md:items-end md:justify-between gap-4 mb-14">
+              <div>
+                <span className="text-xs font-bold uppercase tracking-widest text-orange-600 dark:text-orange-400">
+                  Our Team
+                </span>
+                <h2 className="text-3xl sm:text-4xl font-bold tracking-tight text-gray-900 dark:text-white mt-2">
+                  The People Behind SilkenDrift
+                </h2>
+              </div>
+              <p className="text-sm text-gray-500 dark:text-neutral-400 max-w-md">
+                A dedicated team of Bangladeshi fashion designers, skilled master tailors,
+                and garment craftsmen based in Dhaka.
+              </p>
             </div>
-            <p className="text-sm text-gray-500 dark:text-neutral-400 max-w-md">
-              A dedicated team of Bangladeshi fashion designers, skilled master tailors,
-              and garment craftsmen based in Dhaka.
-            </p>
-          </div>
 
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-8">
-            {data?.team?.map((member) => (
-              <div
-                key={member.id}
-                className="group rounded-2xl border border-gray-200/90 dark:border-neutral-800 bg-white dark:bg-neutral-900 overflow-hidden shadow-xs hover:shadow-xl transition-all duration-300 flex flex-col"
-              >
-                <div className="relative aspect-4/5 overflow-hidden bg-stone-100 dark:bg-neutral-800">
-                  <img
-                    src={member.avatar}
-                    alt={member.name}
-                    className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
-                  />
-                </div>
-                <div className="p-5 flex-1 flex flex-col justify-between">
-                  <div>
-                    <h3 className="text-base font-bold text-gray-900 dark:text-white">
-                      {member.name}
-                    </h3>
-                    <p className="text-xs text-orange-600 dark:text-orange-400 font-semibold mt-0.5">
-                      {member.role}
-                    </p>
-                    <p className="mt-3 text-xs text-gray-600 dark:text-neutral-400 leading-relaxed">
-                      {member.bio}
-                    </p>
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-8">
+              {data.team.map((member) => (
+                <div
+                  key={member.id}
+                  className="group rounded-2xl border border-gray-200/90 dark:border-neutral-800 bg-white dark:bg-neutral-900 overflow-hidden shadow-xs hover:shadow-xl transition-all duration-300 flex flex-col"
+                >
+                  <div className="relative aspect-4/5 overflow-hidden bg-stone-100 dark:bg-neutral-800">
+                    <img
+                      src={member.avatar}
+                      alt={member.name}
+                      className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
+                      onError={(e) => {
+                        const target = e.currentTarget;
+                        target.src =
+                          "https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=400&q=80";
+                      }}
+                    />
+                  </div>
+                  <div className="p-5 flex-1 flex flex-col justify-between">
+                    <div>
+                      <h3 className="text-base font-bold text-gray-900 dark:text-white">
+                        {member.name}
+                      </h3>
+                      <p className="text-xs text-orange-600 dark:text-orange-400 font-semibold mt-0.5">
+                        {member.role}
+                      </p>
+                      <p className="mt-3 text-xs text-gray-600 dark:text-neutral-400 leading-relaxed">
+                        {member.bio}
+                      </p>
+                    </div>
                   </div>
                 </div>
-              </div>
-            ))}
-          </div>
-        </section>
+              ))}
+            </div>
+          </section>
+        )}
 
         {/* Physical Atelier & Concierge Details */}
         <section className="py-16 bg-stone-900 text-white">

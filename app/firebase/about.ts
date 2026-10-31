@@ -3,10 +3,13 @@ import {
   doc,
   getDoc,
   setDoc,
+  updateDoc,
+  onSnapshot,
   serverTimestamp,
   type DocumentData,
 } from "firebase/firestore";
 import { db } from "./firebase.config";
+import { normalizeGoogleDriveImageUrl } from "./products";
 
 export interface AboutStat {
   label: string;
@@ -268,4 +271,111 @@ export const seedAboutDataToFirestore = async (force: boolean = false) => {
   );
 
   return { success: true, message: "About Us data successfully saved to Firebase Firestore!" };
+};
+
+/**
+ * Save updated team members list to Cloud Firestore with cache synchronization
+ */
+export const saveTeamMembersToFirestore = async (
+  team: TeamMember[]
+): Promise<{ success: boolean; team: TeamMember[] }> => {
+  memoryCachedAboutData = null;
+  const docRef = doc(db, "about_page", "main");
+
+  // Normalize image URLs (convert Google Drive share links to high-speed CDN URLs)
+  const normalizedTeam: TeamMember[] = team.map((member) => ({
+    ...member,
+    name: member.name.trim(),
+    role: member.role.trim(),
+    bio: member.bio.trim(),
+    avatar: normalizeGoogleDriveImageUrl(member.avatar.trim()) || member.avatar.trim(),
+  }));
+
+  try {
+    const snap = await getDoc(docRef);
+    if (!snap.exists()) {
+      await setDoc(docRef, {
+        ...initialAboutData,
+        team: normalizedTeam,
+        updatedAt: serverTimestamp(),
+      });
+    } else {
+      await updateDoc(docRef, {
+        team: normalizedTeam,
+        updatedAt: serverTimestamp(),
+      });
+    }
+  } catch (err) {
+    // If updateDoc fails because doc was missing, fallback to setDoc with merge
+    await setDoc(
+      docRef,
+      {
+        team: normalizedTeam,
+        updatedAt: serverTimestamp(),
+      },
+      { merge: true }
+    );
+  }
+
+  // Update in-browser cache
+  if (typeof window !== "undefined") {
+    try {
+      const raw = localStorage.getItem(LOCAL_STORAGE_ABOUT_KEY);
+      if (raw) {
+        const existing = JSON.parse(raw) as AboutData;
+        existing.team = normalizedTeam;
+        memoryCachedAboutData = existing;
+        localStorage.setItem(LOCAL_STORAGE_ABOUT_KEY, JSON.stringify(existing));
+      } else {
+        const full: AboutData = {
+          ...initialAboutData,
+          team: normalizedTeam,
+        };
+        memoryCachedAboutData = full;
+        localStorage.setItem(LOCAL_STORAGE_ABOUT_KEY, JSON.stringify(full));
+      }
+    } catch {}
+  }
+
+  return { success: true, team: normalizedTeam };
+};
+
+/**
+ * Real-time listener for About Us data changes (including team updates)
+ */
+export const subscribeToAboutDataFromFirestore = (
+  callback: (data: AboutData) => void,
+  onError?: (error: Error) => void
+): (() => void) => {
+  if (typeof window === "undefined") {
+    return () => {};
+  }
+
+  try {
+    const docRef = doc(db, "about_page", "main");
+    const unsubscribe = onSnapshot(
+      docRef,
+      (snap) => {
+        if (snap.exists()) {
+          const data = snap.data() as AboutData;
+          memoryCachedAboutData = data;
+          try {
+            localStorage.setItem(LOCAL_STORAGE_ABOUT_KEY, JSON.stringify(data));
+          } catch {}
+          callback(data);
+        } else {
+          callback(initialAboutData);
+        }
+      },
+      (error) => {
+        console.warn("Realtime about data subscription error:", error);
+        if (onError) onError(error);
+      }
+    );
+
+    return unsubscribe;
+  } catch (err) {
+    console.warn("Could not set up realtime about data subscription:", err);
+    return () => {};
+  }
 };
