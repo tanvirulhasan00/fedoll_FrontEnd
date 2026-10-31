@@ -60,7 +60,6 @@ export const AdminCategoriesTab: React.FC<AdminCategoriesTabProps> = ({
   const [slug, setSlug] = useState("");
   const [tagline, setTagline] = useState("");
   const [image, setImage] = useState("");
-  const [itemCount, setItemCount] = useState(15);
   const [parentId, setParentId] = useState<string | null>(null);
 
   // Synchronize localCategories with incoming props
@@ -83,7 +82,6 @@ export const AdminCategoriesTab: React.FC<AdminCategoriesTabProps> = ({
     setSlug("");
     setTagline("");
     setImage("https://images.unsplash.com/photo-1544441893-675973e31985?auto=format&fit=crop&w=800&q=80");
-    setItemCount(20);
     setParentId(initialParentId);
     setModalOpen(true);
   };
@@ -94,7 +92,6 @@ export const AdminCategoriesTab: React.FC<AdminCategoriesTabProps> = ({
     setSlug(category.slug);
     setTagline(category.tagline);
     setImage(category.image);
-    setItemCount(category.itemCount || 10);
     setParentId(category.parentId || null);
     setModalOpen(true);
   };
@@ -186,13 +183,20 @@ export const AdminCategoriesTab: React.FC<AdminCategoriesTabProps> = ({
       candidateSlug = `${baseSlug}-${counter}`;
     }
 
+    // Real-time calculation of direct assigned garments for accurate count
+    const liveDirectCount = products.filter(
+      (p) =>
+        (p.categoryId && p.categoryId.toLowerCase() === categoryId.toLowerCase()) ||
+        (!p.categoryId && (p.category || "").trim().toLowerCase() === name.trim().toLowerCase())
+    ).length;
+
     const newCategory: ProductCategoryItem = {
       id: categoryId,
       name: name.trim(),
       slug: candidateSlug,
       tagline: tagline.trim(),
       image: normalizedImage,
-      itemCount: Number(itemCount) || 0,
+      itemCount: liveDirectCount,
       parentId: parentId || null,
       level: computedLevel,
     };
@@ -315,8 +319,8 @@ export const AdminCategoriesTab: React.FC<AdminCategoriesTabProps> = ({
 
           const directCount = products.filter(
             (p) =>
-              p.categoryId === cat.id ||
-              (!p.categoryId && p.category?.trim().toLowerCase() === cat.name.trim().toLowerCase())
+              (p.categoryId && p.categoryId.toLowerCase() === cat.id.toLowerCase()) ||
+              (!p.categoryId && (p.category || "").trim().toLowerCase() === cat.name.trim().toLowerCase())
           ).length;
 
           const totalBranchCount = products.filter((p) =>
@@ -411,17 +415,23 @@ export const AdminCategoriesTab: React.FC<AdminCategoriesTabProps> = ({
                   <div className="flex items-center justify-between text-[11px] text-gray-500 dark:text-neutral-400 pt-2 border-t border-gray-100 dark:border-neutral-800">
                     <span>Assigned Garments:</span>
                     <strong className="text-gray-900 dark:text-white font-mono">
-                      {totalBranchCount > 0 ? (
-                        <>
-                          <span>{directCount} direct</span>
-                          {directChildren.length > 0 && totalBranchCount !== directCount && (
+                      {directChildren.length > 0 ? (
+                        totalBranchCount > 0 ? (
+                          <>
+                            <span className={directCount > 0 ? "text-gray-900 dark:text-white" : "text-gray-400 dark:text-neutral-500"}>
+                              {directCount} direct
+                            </span>
                             <span className="text-orange-600 dark:text-orange-400 font-medium ml-1">
                               ({totalBranchCount} in branch)
                             </span>
-                          )}
-                        </>
+                          </>
+                        ) : (
+                          <span className="text-gray-400 dark:text-neutral-500">0 garments</span>
+                        )
                       ) : (
-                        `${cat.itemCount || 0} items`
+                        <span className={directCount > 0 ? "text-gray-900 dark:text-white" : "text-gray-400 dark:text-neutral-500"}>
+                          {directCount} {directCount === 1 ? "garment" : "garments"}
+                        </span>
                       )}
                     </strong>
                   </div>
@@ -566,32 +576,31 @@ export const AdminCategoriesTab: React.FC<AdminCategoriesTabProps> = ({
                       />
                     </div>
 
-                    <div className="grid grid-cols-2 gap-3">
-                      <div>
-                        <label className="block font-semibold text-gray-700 dark:text-neutral-300 mb-1">
-                          URL Slug
+                    <div>
+                      <div className="flex items-center justify-between mb-1">
+                        <label className="block font-semibold text-gray-700 dark:text-neutral-300">
+                          URL Slug *
                         </label>
-                        <input
-                          type="text"
-                          required
-                          value={slug}
-                          onChange={(e) => setSlug(e.target.value)}
-                          placeholder="e.g. knitwear"
-                          className="w-full px-3 py-2 bg-stone-50 dark:bg-neutral-800 border border-gray-200 dark:border-neutral-700 rounded-xl text-gray-900 dark:text-white font-mono focus:outline-none focus:ring-2 focus:ring-orange-600"
-                        />
+                        {editingCategory && (
+                          <span className="text-[10px] font-mono text-gray-500 dark:text-neutral-400">
+                            Assigned Garments: {
+                              products.filter(
+                                (p) =>
+                                  (p.categoryId && p.categoryId.toLowerCase() === editingCategory.id.toLowerCase()) ||
+                                  (!p.categoryId && (p.category || "").trim().toLowerCase() === editingCategory.name.trim().toLowerCase())
+                              ).length
+                            } direct
+                          </span>
+                        )}
                       </div>
-
-                      <div>
-                        <label className="block font-semibold text-gray-700 dark:text-neutral-300 mb-1">
-                          Item Count Display
-                        </label>
-                        <input
-                          type="number"
-                          value={itemCount}
-                          onChange={(e) => setItemCount(Number(e.target.value))}
-                          className="w-full px-3 py-2 bg-stone-50 dark:bg-neutral-800 border border-gray-200 dark:border-neutral-700 rounded-xl text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-orange-600"
-                        />
-                      </div>
+                      <input
+                        type="text"
+                        required
+                        value={slug}
+                        onChange={(e) => setSlug(e.target.value)}
+                        placeholder="e.g. knitwear"
+                        className="w-full px-3 py-2 bg-stone-50 dark:bg-neutral-800 border border-gray-200 dark:border-neutral-700 rounded-xl text-gray-900 dark:text-white font-mono focus:outline-none focus:ring-2 focus:ring-orange-600"
+                      />
                     </div>
 
                     <div>
