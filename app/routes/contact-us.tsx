@@ -250,7 +250,7 @@ export default function ContactUsPage() {
               {pageData?.channels?.map((channel) => (
                 <div
                   key={channel.id}
-                  className="group relative flex flex-col justify-between p-6 rounded-2xl border border-stone-200/80 dark:border-neutral-800 bg-stone-50/50 dark:bg-neutral-900 hover:bg-white dark:hover:bg-neutral-850 hover:border-orange-400 dark:hover:border-orange-500/40 hover:shadow-xl hover:shadow-orange-700/5 transition-all duration-300"
+                  className="group relative flex flex-col justify-between p-6 rounded-2xl border border-stone-200/80 dark:border-neutral-800 bg-stone-50/50 dark:bg-neutral-900 hover:bg-white dark:hover:bg-neutral-800 hover:border-orange-400 dark:hover:border-orange-500/40 hover:shadow-xl hover:shadow-orange-700/5 transition-all duration-300"
                 >
                   <div>
                     <div className="flex items-center justify-between mb-4">

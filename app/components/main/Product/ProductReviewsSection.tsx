@@ -581,7 +581,7 @@ export const ProductReviewsSection: React.FC<ProductReviewsSectionProps> = ({
         {loading ? (
           <div className="py-16 text-center space-y-3">
             <Spinner className="size-7 mx-auto text-orange-600" />
-            <p className="text-xs text-gray-500 font-medium">
+            <p className="text-xs text-gray-500 dark:text-neutral-400 font-medium">
               Loading customer reviews...
             </p>
           </div>
@@ -744,7 +744,7 @@ export const ProductReviewsSection: React.FC<ProductReviewsSectionProps> = ({
                     </div>
 
                     {/* Helpful Button */}
-                    <div className="shrink-0 pt-3 mt-4 border-t border-stone-100 dark:border-neutral-800 flex items-center justify-between text-xs text-gray-400 min-w-0">
+                    <div className="shrink-0 pt-3 mt-4 border-t border-stone-100 dark:border-neutral-800 flex items-center justify-between text-xs text-gray-400 dark:text-neutral-500 min-w-0">
                       <span>Export Quality Certified</span>
                       <button
                         type="button"
@@ -817,7 +817,7 @@ export const ProductReviewsSection: React.FC<ProductReviewsSectionProps> = ({
 
             <form onSubmit={handleSubmitReview} className="space-y-4">
               {/* Star Rating Picker */}
-              <div className="space-y-2 text-center py-2 bg-stone-50/80 dark:bg-neutral-850 rounded-2xl p-4 border border-stone-200/60 dark:border-neutral-800">
+              <div className="space-y-2 text-center py-2 bg-stone-50/80 dark:bg-neutral-950/60 rounded-2xl p-4 border border-stone-200/60 dark:border-neutral-800">
                 <label className="text-xs font-bold text-gray-700 dark:text-neutral-300 uppercase tracking-wider block">
                   Overall Rating
                 </label>
@@ -880,13 +880,13 @@ export const ProductReviewsSection: React.FC<ProductReviewsSectionProps> = ({
               </div>
 
               {/* Attach Customer Photos */}
-              <div className="space-y-2 p-3.5 rounded-2xl bg-stone-50/70 dark:bg-neutral-850 border border-stone-200/60 dark:border-neutral-800">
+              <div className="space-y-2 p-3.5 rounded-2xl bg-stone-50/70 dark:bg-neutral-950/60 border border-stone-200/60 dark:border-neutral-800">
                 <div className="flex items-center justify-between">
                   <label className="text-xs font-bold text-gray-700 dark:text-neutral-300 flex items-center gap-1.5">
                     <CameraIcon className="size-4 text-orange-600 dark:text-orange-400" />
                     <span>Attach Product Photos ({formImages.length}/5)</span>
                   </label>
-                  <span className="text-[11px] text-gray-400 font-medium">Optional</span>
+                  <span className="text-[11px] text-gray-400 dark:text-neutral-500 font-medium">Optional</span>
                 </div>
 
                 {/* File Upload Button / Trigger */}
@@ -894,7 +894,7 @@ export const ProductReviewsSection: React.FC<ProductReviewsSectionProps> = ({
                   <label
                     className={`flex-1 flex items-center justify-center gap-2 px-4 py-2.5 border-2 border-dashed rounded-xl cursor-pointer transition text-xs font-semibold ${
                       isUploadingImages || formImages.length >= 5
-                        ? "bg-stone-100 dark:bg-neutral-800 border-stone-200 dark:border-neutral-700 text-gray-400 cursor-not-allowed"
+                        ? "bg-stone-100 dark:bg-neutral-800 border-stone-200 dark:border-neutral-700 text-gray-400 dark:text-neutral-500 cursor-not-allowed"
                         : "bg-white hover:bg-orange-50/50 dark:bg-neutral-800/80 dark:hover:bg-orange-950/20 border-orange-200 dark:border-orange-900/60 text-orange-700 dark:text-orange-400 hover:border-orange-500"
                     }`}
                   >

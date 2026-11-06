@@ -202,7 +202,7 @@ export default function AboutUsPage() {
             {data?.values?.map((val) => (
               <div
                 key={val.id}
-                className="p-8 rounded-3xl bg-stone-50/60 dark:bg-neutral-900 border border-stone-200/80 dark:border-neutral-800 hover:bg-white dark:hover:bg-neutral-850 hover:shadow-lg transition duration-300 flex items-start gap-5"
+                className="p-8 rounded-3xl bg-stone-50/60 dark:bg-neutral-900 border border-stone-200/80 dark:border-neutral-800 hover:bg-white dark:hover:bg-neutral-800 hover:shadow-lg transition duration-300 flex items-start gap-5"
               >
                 <div className="size-12 rounded-2xl bg-orange-100 dark:bg-orange-950/60 flex items-center justify-center shrink-0">
                   {getPillarIcon(val.icon)}

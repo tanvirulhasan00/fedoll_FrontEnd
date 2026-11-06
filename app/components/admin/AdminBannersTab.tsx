@@ -379,7 +379,7 @@ export const AdminBannersTab: React.FC<AdminBannersTabProps> = ({
   return (
     <div className="space-y-6">
       {/* Top Header Card */}
-      <div className="p-6 sm:p-8 rounded-3xl bg-gradient-to-r from-stone-900 via-stone-850 to-orange-950 text-white shadow-xl border border-stone-800 flex flex-col lg:flex-row lg:items-center justify-between gap-6">
+      <div className="p-6 sm:p-8 rounded-3xl bg-gradient-to-r from-stone-900 via-stone-800 to-orange-950 text-white shadow-xl border border-stone-800 flex flex-col lg:flex-row lg:items-center justify-between gap-6">
         <div>
           <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-orange-500/20 text-orange-400 text-xs font-bold uppercase tracking-wider mb-3 border border-orange-500/30">
             <SparklesIcon className="size-4" />
@@ -493,7 +493,7 @@ export const AdminBannersTab: React.FC<AdminBannersTabProps> = ({
                 <div
                   key={b.id || idx}
                   className={`p-5 sm:p-6 transition-colors duration-150 flex flex-col lg:flex-row items-start lg:items-center justify-between gap-5 ${
-                    active ? "hover:bg-stone-50/80 dark:hover:bg-neutral-850/40" : "bg-stone-50/50 dark:bg-neutral-900/30 opacity-70"
+                    active ? "hover:bg-stone-50/80 dark:hover:bg-neutral-800/40" : "bg-stone-50/50 dark:bg-neutral-900/30 opacity-70"
                   }`}
                 >
                   {/* Left: Sequence + Thumbnail + Info */}

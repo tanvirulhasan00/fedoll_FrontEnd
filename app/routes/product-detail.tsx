@@ -541,7 +541,7 @@ export default function ProductDetailPage() {
                       type="button"
                       onClick={scrollThumbnailsUp}
                       aria-label="Previous image"
-                      className="hidden md:flex size-7 rounded-full bg-stone-100 hover:bg-orange-600 hover:text-white dark:bg-neutral-850 dark:hover:bg-orange-600 dark:hover:text-white text-stone-700 dark:text-neutral-300 items-center justify-center transition-colors cursor-pointer"
+                      className="hidden md:flex size-7 rounded-full bg-stone-100 hover:bg-orange-600 hover:text-white dark:bg-neutral-800 dark:hover:bg-orange-600 dark:hover:text-white text-stone-700 dark:text-neutral-300 items-center justify-center transition-colors cursor-pointer"
                     >
                       <ChevronUpIcon className="size-4" />
                     </button>
@@ -592,7 +592,7 @@ export default function ProductDetailPage() {
                       type="button"
                       onClick={scrollThumbnailsDown}
                       aria-label="Next image"
-                      className="size-8 md:size-7 rounded-full bg-stone-100 hover:bg-orange-600 hover:text-white dark:bg-neutral-850 dark:hover:bg-orange-600 dark:hover:text-white text-stone-700 dark:text-neutral-300 flex items-center justify-center transition-colors cursor-pointer shrink-0"
+                      className="size-8 md:size-7 rounded-full bg-stone-100 hover:bg-orange-600 hover:text-white dark:bg-neutral-800 dark:hover:bg-orange-600 dark:hover:text-white text-stone-700 dark:text-neutral-300 flex items-center justify-center transition-colors cursor-pointer shrink-0"
                     >
                       <ChevronDownIcon className="size-4" />
                     </button>
@@ -600,7 +600,7 @@ export default function ProductDetailPage() {
                 )}
 
                 {/* Main Large Product Photo */}
-                <div className="flex-1 w-full relative rounded-2xl sm:rounded-3xl overflow-hidden bg-stone-100 dark:bg-neutral-850 aspect-4/5 shadow-xs border border-stone-200/80 dark:border-neutral-800">
+                <div className="flex-1 w-full relative rounded-2xl sm:rounded-3xl overflow-hidden bg-stone-100 dark:bg-neutral-900 aspect-4/5 shadow-xs border border-stone-200/80 dark:border-neutral-800">
                   <img
                     src={normalizeGoogleDriveImageUrl(currentMainImage)}
                     alt={`${currentProduct.name} - ${selectedColor}`}
@@ -1066,7 +1066,7 @@ export default function ProductDetailPage() {
                     );
                     setLightboxOpen(true);
                   }}
-                  className="group relative rounded-2xl sm:rounded-3xl overflow-hidden bg-stone-100 dark:bg-neutral-850 border border-stone-200/80 dark:border-neutral-800 aspect-4/3 sm:aspect-16/10 lg:aspect-4/3 shadow-sm hover:shadow-lg transition-all duration-300 cursor-pointer"
+                  className="group relative rounded-2xl sm:rounded-3xl overflow-hidden bg-stone-100 dark:bg-neutral-900 border border-stone-200/80 dark:border-neutral-800 aspect-4/3 sm:aspect-16/10 lg:aspect-4/3 shadow-sm hover:shadow-lg transition-all duration-300 cursor-pointer"
                   title="Click to view full detail"
                 >
                   <img

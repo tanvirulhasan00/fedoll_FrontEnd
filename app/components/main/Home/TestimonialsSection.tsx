@@ -165,7 +165,7 @@ export default function TestimonialsSection() {
           </div>
 
           {/* Premium Empty State Showcase Card */}
-          <div className="max-w-3xl mx-auto p-8 sm:p-12 rounded-3xl bg-white dark:bg-neutral-850 border border-stone-200/80 dark:border-neutral-800 shadow-xs text-center space-y-6">
+          <div className="max-w-3xl mx-auto p-8 sm:p-12 rounded-3xl bg-white dark:bg-neutral-900 border border-stone-200/80 dark:border-neutral-800 shadow-xs text-center space-y-6">
             <div className="mx-auto size-16 sm:size-20 rounded-3xl bg-orange-50 dark:bg-orange-950/40 border border-orange-200/70 dark:border-orange-900/50 flex items-center justify-center text-orange-600 dark:text-orange-400 shadow-xs">
               <ChatBubbleBottomCenterTextIcon className="size-8 sm:size-10" />
             </div>
@@ -285,7 +285,7 @@ export default function TestimonialsSection() {
                   ref={(el) => {
                     cardRefs.current[idx] = el;
                   }}
-                  className="w-[84vw] max-w-[320px] shrink-0 snap-center flex flex-col justify-between p-5 rounded-2xl bg-white dark:bg-neutral-850 border border-gray-200/90 dark:border-neutral-700/80 shadow-xs"
+                  className="w-[84vw] max-w-[320px] shrink-0 snap-center flex flex-col justify-between p-5 rounded-2xl bg-white dark:bg-neutral-900 border border-gray-200/90 dark:border-neutral-800 shadow-xs"
                 >
                   <div className="space-y-3">
                     {/* Star Rating & Counter */}
@@ -364,7 +364,7 @@ export default function TestimonialsSection() {
                             {review.productName}
                           </Link>
                         ) : (
-                          <span className="text-[10px] text-gray-400 block">Verified Purchase</span>
+                          <span className="text-[10px] text-gray-400 dark:text-neutral-500 block">Verified Purchase</span>
                         )}
                       </div>
                     </div>
@@ -414,7 +414,7 @@ export default function TestimonialsSection() {
             return (
               <div
                 key={review.id}
-                className="flex flex-col justify-between p-6 lg:p-7 rounded-3xl bg-white dark:bg-neutral-850 border border-gray-200/90 dark:border-neutral-700/80 shadow-xs hover:shadow-lg transition-all duration-300"
+                className="flex flex-col justify-between p-6 lg:p-7 rounded-3xl bg-white dark:bg-neutral-900 border border-gray-200/90 dark:border-neutral-800 shadow-xs hover:shadow-lg transition-all duration-300"
               >
                 <div className="space-y-3.5">
                   {/* Rating Stars & Date */}

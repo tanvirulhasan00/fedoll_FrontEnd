@@ -116,7 +116,7 @@ export const AdminOverviewTab: React.FC<AdminOverviewTabProps> = ({
   return (
     <div className="space-y-6">
       {/* Top Banner & Quick Actions */}
-      <div className="p-6 rounded-3xl bg-gradient-to-r from-stone-900 via-stone-850 to-orange-950 text-white shadow-md flex flex-col md:flex-row md:items-center justify-between gap-4 border border-stone-800">
+      <div className="p-6 rounded-3xl bg-gradient-to-r from-stone-900 via-stone-800 to-orange-950 text-white shadow-md flex flex-col md:flex-row md:items-center justify-between gap-4 border border-stone-800">
         <div>
           <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-orange-500/20 text-orange-300 text-xs font-semibold mb-2 border border-orange-500/30">
             <ArrowTrendingUpIcon className="size-3.5" />
