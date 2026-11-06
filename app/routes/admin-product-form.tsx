@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useMemo } from "react";
+import React, { useState, useEffect, useMemo, useRef } from "react";
 import { useParams, useNavigate, Link } from "react-router";
 import { useAppDispatch, useAppSelector } from "~/redux/hooks/hook";
 import {
@@ -121,18 +121,45 @@ export default function AdminProductFormPage() {
   const [formVariants, setFormVariants] = useState<ProductVariant[]>([]);
   const [newColorImageUrl, setNewColorImageUrl] = useState<{ [colorIdx: number]: string }>({});
 
+  // Synchronous refs to prevent race conditions or stale closure during rapid clicks
+  const formColorsRef = useRef<FormColorItem[]>(formColors);
+  const formVariantsRef = useRef<ProductVariant[]>(formVariants);
+  const formSizesRef = useRef<string[]>(formSizes);
+
+  useEffect(() => {
+    formColorsRef.current = formColors;
+  }, [formColors]);
+
+  useEffect(() => {
+    formVariantsRef.current = formVariants;
+  }, [formVariants]);
+
+  useEffect(() => {
+    formSizesRef.current = formSizes;
+  }, [formSizes]);
+
   // Helper to generate/sync variant matrix combinations (Color × Size)
   const generateVariantsMatrix = (
     colorsToSync: FormColorItem[],
     sizesToSync: string[],
     basePrice: number,
-    existingVariants: ProductVariant[] = formVariants
+    existingVariants: ProductVariant[] = formVariantsRef.current
   ): ProductVariant[] => {
     const list: ProductVariant[] = [];
     if (!Array.isArray(colorsToSync) || !Array.isArray(sizesToSync)) return list;
 
-    colorsToSync.forEach((colorObj) => {
-      if (!colorObj || !colorObj.name) return;
+    // Filter valid colors with non-empty names and deduplicate by clean name
+    const seenColors = new Set<string>();
+    const validColors: FormColorItem[] = [];
+    colorsToSync.forEach((c) => {
+      if (!c || !c.name) return;
+      const cleanName = (c.name || "").trim().toLowerCase();
+      if (!cleanName || seenColors.has(cleanName)) return;
+      seenColors.add(cleanName);
+      validColors.push(c);
+    });
+
+    validColors.forEach((colorObj) => {
       sizesToSync.forEach((sizeVal) => {
         if (!sizeVal) return;
         const colorNameClean = (colorObj.name || "").trim().toLowerCase();
@@ -145,7 +172,7 @@ export default function AdminProductFormPage() {
         if (found) {
           list.push({
             ...found,
-            color: colorObj.name,
+            color: colorObj.name.trim(),
             colorHex: colorObj.hex || "#111827",
             images:
               colorObj.images && colorObj.images.length > 0
@@ -163,7 +190,7 @@ export default function AdminProductFormPage() {
             id: `var-${slugColor}-${slugSize}-${Math.random()
               .toString(36)
               .slice(2, 6)}`,
-            color: colorObj.name,
+            color: colorObj.name.trim(),
             colorHex: colorObj.hex || "#111827",
             size: sizeVal,
             sku: `FED-${slugColor.slice(0, 3).toUpperCase()}-${sizeVal.toUpperCase()}`,
@@ -259,21 +286,27 @@ export default function AdminProductFormPage() {
                     },
                   ];
             setFormColors(loadedColors);
+            formColorsRef.current = loadedColors;
 
             // Variants
-            if (foundProduct.variants && foundProduct.variants.length > 0) {
-              setFormVariants([...foundProduct.variants]);
-            } else {
-              setFormVariants(
-                generateVariantsMatrix(loadedColors, activeSizes, foundProduct.price, [])
-              );
-            }
+            const loadedVariants =
+              foundProduct.variants && foundProduct.variants.length > 0
+                ? [...foundProduct.variants]
+                : generateVariantsMatrix(loadedColors, activeSizes, foundProduct.price, []);
+            setFormVariants(loadedVariants);
+            formVariantsRef.current = loadedVariants;
+            formSizesRef.current = activeSizes;
           }
         } else {
           // New product mode: initialize initial matrix
-          setFormVariants(
-            generateVariantsMatrix(formColors, formSizes, formPrice, [])
+          const initialVariants = generateVariantsMatrix(
+            formColorsRef.current,
+            formSizesRef.current,
+            formPrice,
+            []
           );
+          setFormVariants(initialVariants);
+          formVariantsRef.current = initialVariants;
         }
       } catch (err) {
         console.warn("Error initializing garment form:", err);
@@ -289,13 +322,25 @@ export default function AdminProductFormPage() {
     };
   }, [id, isEditMode]);
 
-  // Size toggle
+  // Size toggle (fully synchronous via refs)
   const toggleSize = (size: string) => {
-    const updatedSizes = formSizes.includes(size)
-      ? formSizes.filter((s) => s !== size)
-      : [...formSizes, size];
+    const currentSizes = formSizesRef.current;
+    const updatedSizes = currentSizes.includes(size)
+      ? currentSizes.filter((s) => s !== size)
+      : [...currentSizes, size];
+
+    const nextVariants = generateVariantsMatrix(
+      formColorsRef.current,
+      updatedSizes,
+      formPrice,
+      formVariantsRef.current
+    );
+
+    formSizesRef.current = updatedSizes;
+    formVariantsRef.current = nextVariants;
+
     setFormSizes(updatedSizes);
-    setFormVariants(generateVariantsMatrix(formColors, updatedSizes, formPrice, formVariants));
+    setFormVariants(nextVariants);
   };
 
   // Gallery images handlers
@@ -313,36 +358,198 @@ export default function AdminProductFormPage() {
     setFormGalleryImages(formGalleryImages.filter((_, i) => i !== index));
   };
 
-  // Color handlers
-  const handleAddColor = (preset?: { name: string; hex: string }) => {
-    const newColor: FormColorItem = preset
-      ? { name: preset.name, hex: preset.hex, images: [] }
-      : { name: `Color ${formColors.length + 1}`, hex: "#374151", images: [] };
-
-    const updatedColors = [...formColors, newColor];
-    setFormColors(updatedColors);
-    setFormVariants(generateVariantsMatrix(updatedColors, formSizes, formPrice, formVariants));
-  };
-
-  const handleUpdateColor = (index: number, field: "name" | "hex", val: string) => {
-    const updated = [...formColors];
-    updated[index] = { ...updated[index], [field]: val };
-    setFormColors(updated);
-    setFormVariants(generateVariantsMatrix(updated, formSizes, formPrice, formVariants));
-  };
-
-  const handleRemoveColor = (index: number) => {
-    if (formColors.length <= 1) {
+  // Safe color removal by index or clean name (synchronous via refs)
+  const handleRemoveColor = (target: number | string) => {
+    const currentColors = formColorsRef.current;
+    if (currentColors.length <= 1) {
       toast.warning("Products must have at least one color option.");
       return;
     }
-    const colorToRemove = formColors[index]?.name;
-    const updated = formColors.filter((_, i) => i !== index);
-    setFormColors(updated);
-    const cleanedVariants = formVariants.filter(
-      (v) => v.color.toLowerCase() !== colorToRemove?.toLowerCase()
+
+    let colorToRemoveClean = "";
+    let updatedColors: FormColorItem[] = [];
+
+    if (typeof target === "number") {
+      const colorItem = currentColors[target];
+      colorToRemoveClean = (colorItem?.name || "").trim().toLowerCase();
+      updatedColors = currentColors.filter((_, i) => i !== target);
+
+      // Adjust newColorImageUrl indices if removing by index
+      const nextImgUrlMap: { [colorIdx: number]: string } = {};
+      Object.keys(newColorImageUrl).forEach((k) => {
+        const kNum = Number(k);
+        if (kNum < target) {
+          nextImgUrlMap[kNum] = newColorImageUrl[kNum];
+        } else if (kNum > target) {
+          nextImgUrlMap[kNum - 1] = newColorImageUrl[kNum];
+        }
+      });
+      setNewColorImageUrl(nextImgUrlMap);
+    } else {
+      colorToRemoveClean = target.trim().toLowerCase();
+      updatedColors = currentColors.filter(
+        (c) => (c?.name || "").trim().toLowerCase() !== colorToRemoveClean
+      );
+    }
+
+    if (!colorToRemoveClean) return;
+
+    // Filter out all variants of this specific color from matrix
+    const currentVariants = formVariantsRef.current;
+    const cleanedVariants = currentVariants.filter((v) => {
+      const vColorClean = (v?.color || "").trim().toLowerCase();
+      return vColorClean !== colorToRemoveClean;
+    });
+
+    // Regenerate matrix with remaining colors & remaining variants
+    const nextVariants = generateVariantsMatrix(
+      updatedColors,
+      formSizesRef.current,
+      formPrice,
+      cleanedVariants
     );
-    setFormVariants(generateVariantsMatrix(updated, formSizes, formPrice, cleanedVariants));
+
+    // Synchronously update refs first to prevent any race condition
+    formColorsRef.current = updatedColors;
+    formVariantsRef.current = nextVariants;
+
+    // Trigger state re-renders
+    setFormColors(updatedColors);
+    setFormVariants(nextVariants);
+
+    toast.info(`Removed "${colorToRemoveClean}" and its variants from the matrix.`);
+  };
+
+  // Toggle Color Preset (100% synchronous via refs - safely handles rapid 2/3/4+ clicks)
+  const toggleColorPreset = (preset: { name: string; hex: string }) => {
+    const presetNameClean = preset.name.trim().toLowerCase();
+    const currentColors = formColorsRef.current;
+    const isAlreadyActive = currentColors.some(
+      (c) => (c?.name || "").trim().toLowerCase() === presetNameClean
+    );
+
+    if (isAlreadyActive) {
+      // Preset color is already active -> toggle OFF (remove it)
+      if (currentColors.length <= 1) {
+        toast.warning(
+          "Products must have at least one color option. Add another color first before removing this one."
+        );
+        return;
+      }
+      handleRemoveColor(preset.name);
+    } else {
+      // Preset color is inactive -> toggle ON (add it)
+      const newColor: FormColorItem = {
+        name: preset.name,
+        hex: preset.hex,
+        images: [],
+      };
+      const updatedColors = [...currentColors, newColor];
+      const nextVariants = generateVariantsMatrix(
+        updatedColors,
+        formSizesRef.current,
+        formPrice,
+        formVariantsRef.current
+      );
+
+      formColorsRef.current = updatedColors;
+      formVariantsRef.current = nextVariants;
+
+      setFormColors(updatedColors);
+      setFormVariants(nextVariants);
+      toast.success(`Added "${preset.name}" and generated variant combinations.`);
+    }
+  };
+
+  const handleAddColor = (preset?: { name: string; hex: string }) => {
+    if (preset) {
+      toggleColorPreset(preset);
+      return;
+    }
+
+    const currentColors = formColorsRef.current;
+    const newColor: FormColorItem = {
+      name: `Color ${currentColors.length + 1}`,
+      hex: "#374151",
+      images: [],
+    };
+
+    const updatedColors = [...currentColors, newColor];
+    const nextVariants = generateVariantsMatrix(
+      updatedColors,
+      formSizesRef.current,
+      formPrice,
+      formVariantsRef.current
+    );
+
+    formColorsRef.current = updatedColors;
+    formVariantsRef.current = nextVariants;
+
+    setFormColors(updatedColors);
+    setFormVariants(nextVariants);
+    toast.success(`Added "${newColor.name}". Edit its name and hex code below.`);
+  };
+
+  const handleUpdateColor = (index: number, field: "name" | "hex", val: string) => {
+    const currentColors = formColorsRef.current;
+    const oldColor = currentColors[index];
+    const oldNameClean = (oldColor?.name || "").trim().toLowerCase();
+
+    const updated = [...currentColors];
+    updated[index] = { ...updated[index], [field]: val };
+
+    const currentVariants = formVariantsRef.current;
+    let updatedVariants: ProductVariant[] = [];
+
+    if (field === "name") {
+      // Rename color on existing variants so custom SKUs, prices, and stock aren't lost
+      updatedVariants = currentVariants.map((v) => {
+        const vColorClean = (v?.color || "").trim().toLowerCase();
+        if (vColorClean === oldNameClean) {
+          return {
+            ...v,
+            color: val,
+            colorHex: updated[index].hex || v.colorHex,
+          };
+        }
+        return v;
+      });
+    } else {
+      // Hex code changed
+      updatedVariants = currentVariants.map((v) => {
+        const vColorClean = (v?.color || "").trim().toLowerCase();
+        if (vColorClean === oldNameClean) {
+          return { ...v, colorHex: val };
+        }
+        return v;
+      });
+    }
+
+    const nextVariants = generateVariantsMatrix(
+      updated,
+      formSizesRef.current,
+      formPrice,
+      updatedVariants
+    );
+
+    formColorsRef.current = updated;
+    formVariantsRef.current = nextVariants;
+
+    setFormColors(updated);
+    setFormVariants(nextVariants);
+  };
+
+  const handleDeleteVariant = (variantId: string) => {
+    const currentVariants = formVariantsRef.current;
+    const target = currentVariants.find((v) => v.id === variantId);
+    const nextVariants = currentVariants.filter((v) => v.id !== variantId);
+
+    formVariantsRef.current = nextVariants;
+    setFormVariants(nextVariants);
+
+    if (target) {
+      toast.info(`Removed variant combination: ${target.color} (${target.size})`);
+    }
   };
 
   const handleAddColorImage = (colorIdx: number) => {
@@ -1011,27 +1218,46 @@ export default function AdminProductFormPage() {
                   <span className="text-[10px] font-bold text-gray-400 uppercase tracking-wider mr-1">
                     Quick Presets:
                   </span>
-                  {COLOR_PRESETS.map((preset) => (
-                    <button
-                      key={preset.name}
-                      type="button"
-                      onClick={() => handleAddColor(preset)}
-                      className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-stone-50 dark:bg-neutral-800 border border-gray-200 dark:border-neutral-700 text-[11px] font-medium text-gray-700 dark:text-neutral-300 hover:border-orange-500 hover:text-orange-600 transition cursor-pointer"
-                    >
-                      <span
-                        className="size-3 rounded-full border border-black/10 shrink-0"
-                        style={{ backgroundColor: preset.hex }}
-                      />
-                      <span>{preset.name}</span>
-                    </button>
-                  ))}
+                  {COLOR_PRESETS.map((preset) => {
+                    const isActive = formColors.some(
+                      (c) => (c?.name || "").trim().toLowerCase() === preset.name.trim().toLowerCase()
+                    );
+                    return (
+                      <button
+                        key={preset.name}
+                        type="button"
+                        onClick={() => toggleColorPreset(preset)}
+                        className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-[11px] transition cursor-pointer ${
+                          isActive
+                            ? "bg-orange-50 dark:bg-orange-950/50 border border-orange-500 text-orange-700 dark:text-orange-300 font-bold shadow-2xs"
+                            : "bg-stone-50 dark:bg-neutral-800 border border-gray-200 dark:border-neutral-700 text-gray-700 dark:text-neutral-300 hover:border-orange-500 hover:text-orange-600 font-medium"
+                        }`}
+                        title={
+                          isActive
+                            ? `Click to remove "${preset.name}" and its variants`
+                            : `Click to add "${preset.name}" and its variants`
+                        }
+                      >
+                        <span
+                          className="size-3 rounded-full border border-black/10 shrink-0"
+                          style={{ backgroundColor: preset.hex }}
+                        />
+                        <span>{preset.name}</span>
+                        {isActive ? (
+                          <CheckIcon className="size-3 text-orange-600 dark:text-orange-400 stroke-2" />
+                        ) : (
+                          <PlusIcon className="size-2.5 text-gray-400" />
+                        )}
+                      </button>
+                    );
+                  })}
                 </div>
 
                 {/* Colors List */}
                 <div className="space-y-4 pt-2">
                   {formColors.map((colorObj, cIdx) => (
                     <div
-                      key={cIdx}
+                      key={`${colorObj.name}-${cIdx}`}
                       className="rounded-2xl bg-stone-50 dark:bg-neutral-800/40 border border-gray-200 dark:border-neutral-700/80 p-4 space-y-3.5 shadow-2xs"
                     >
                       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-3 border-b border-gray-200 dark:border-neutral-700">
@@ -1068,9 +1294,9 @@ export default function AdminProductFormPage() {
                           {formColors.length > 1 && (
                             <button
                               type="button"
-                              onClick={() => handleRemoveColor(cIdx)}
+                              onClick={() => handleRemoveColor(colorObj.name)}
                               className="p-1.5 rounded-xl text-gray-400 hover:text-red-600 hover:bg-red-50 dark:hover:bg-red-950/40 transition cursor-pointer"
-                              title="Delete color option"
+                              title={`Delete ${colorObj.name} option`}
                             >
                               <TrashIcon className="size-4" />
                             </button>
@@ -1237,64 +1463,84 @@ export default function AdminProductFormPage() {
                         <th className="py-2.5 px-4">Price (BDT ৳)</th>
                         <th className="py-2.5 px-4">Stock Count</th>
                         <th className="py-2.5 px-4 text-center">In Stock</th>
+                        <th className="py-2.5 px-4 text-center">Action</th>
                       </tr>
                     </thead>
                     <tbody className="divide-y divide-gray-100 dark:divide-neutral-800">
-                      {formVariants.map((v) => (
-                        <tr key={v.id} className="hover:bg-stone-50/60 dark:hover:bg-neutral-800/40 transition">
-                          <td className="py-2.5 px-4">
-                            <div className="flex items-center gap-2">
-                              <span
-                                className="size-4 rounded-full border border-gray-300 dark:border-neutral-600 shrink-0 shadow-2xs"
-                                style={{ backgroundColor: v.colorHex || "#000" }}
-                              />
-                              <span className="font-bold text-gray-900 dark:text-white">
-                                {v.color}
-                              </span>
-                              <span className="px-2 py-0.5 rounded-md bg-stone-100 dark:bg-neutral-800 text-[10px] font-bold text-orange-600 dark:text-orange-400">
-                                {v.size}
-                              </span>
-                            </div>
-                          </td>
-
-                          <td className="py-2.5 px-4">
-                            <input
-                              type="text"
-                              value={v.sku || ""}
-                              onChange={(e) => handleUpdateVariant(v.id, "sku", e.target.value)}
-                              placeholder="SKU"
-                              className="w-32 px-2.5 py-1 text-xs font-mono bg-stone-50 dark:bg-neutral-800 border border-gray-200 dark:border-neutral-700 rounded-lg text-gray-800 dark:text-neutral-200 focus:outline-none focus:ring-1 focus:ring-orange-600"
-                            />
-                          </td>
-
-                          <td className="py-2.5 px-4">
-                            <input
-                              type="number"
-                              value={v.price ?? formPrice}
-                              onChange={(e) => handleUpdateVariant(v.id, "price", Number(e.target.value))}
-                              className="w-24 px-2.5 py-1 text-xs bg-stone-50 dark:bg-neutral-800 border border-gray-200 dark:border-neutral-700 rounded-lg text-gray-800 dark:text-neutral-200 focus:outline-none focus:ring-1 focus:ring-orange-600"
-                            />
-                          </td>
-
-                          <td className="py-2.5 px-4">
-                            <input
-                              type="number"
-                              value={v.stockCount}
-                              onChange={(e) => handleUpdateVariant(v.id, "stockCount", Number(e.target.value))}
-                              className="w-20 px-2.5 py-1 text-xs font-bold bg-stone-50 dark:bg-neutral-800 border border-gray-200 dark:border-neutral-700 rounded-lg text-gray-800 dark:text-neutral-200 focus:outline-none focus:ring-1 focus:ring-orange-600"
-                            />
-                          </td>
-
-                          <td className="py-2.5 px-4 text-center">
-                            <input
-                              type="checkbox"
-                              checked={v.inStock && v.stockCount > 0}
-                              onChange={(e) => handleUpdateVariant(v.id, "inStock", e.target.checked)}
-                              className="size-4 rounded text-orange-600 focus:ring-orange-500 cursor-pointer"
-                            />
+                      {formVariants.length === 0 ? (
+                        <tr>
+                          <td colSpan={6} className="py-8 text-center text-xs text-gray-400 italic">
+                            No variant combinations active. Select at least one color and size above, or click &quot;Sync Matrix&quot;.
                           </td>
                         </tr>
-                      ))}
+                      ) : (
+                        formVariants.map((v) => (
+                          <tr key={v.id} className="hover:bg-stone-50/60 dark:hover:bg-neutral-800/40 transition">
+                            <td className="py-2.5 px-4">
+                              <div className="flex items-center gap-2">
+                                <span
+                                  className="size-4 rounded-full border border-gray-300 dark:border-neutral-600 shrink-0 shadow-2xs"
+                                  style={{ backgroundColor: v.colorHex || "#000" }}
+                                />
+                                <span className="font-bold text-gray-900 dark:text-white">
+                                  {v.color}
+                                </span>
+                                <span className="px-2 py-0.5 rounded-md bg-stone-100 dark:bg-neutral-800 text-[10px] font-bold text-orange-600 dark:text-orange-400">
+                                  {v.size}
+                                </span>
+                              </div>
+                            </td>
+
+                            <td className="py-2.5 px-4">
+                              <input
+                                type="text"
+                                value={v.sku || ""}
+                                onChange={(e) => handleUpdateVariant(v.id, "sku", e.target.value)}
+                                placeholder="SKU"
+                                className="w-32 px-2.5 py-1 text-xs font-mono bg-stone-50 dark:bg-neutral-800 border border-gray-200 dark:border-neutral-700 rounded-lg text-gray-800 dark:text-neutral-200 focus:outline-none focus:ring-1 focus:ring-orange-600"
+                              />
+                            </td>
+
+                            <td className="py-2.5 px-4">
+                              <input
+                                type="number"
+                                value={v.price ?? formPrice}
+                                onChange={(e) => handleUpdateVariant(v.id, "price", Number(e.target.value))}
+                                className="w-24 px-2.5 py-1 text-xs bg-stone-50 dark:bg-neutral-800 border border-gray-200 dark:border-neutral-700 rounded-lg text-gray-800 dark:text-neutral-200 focus:outline-none focus:ring-1 focus:ring-orange-600"
+                              />
+                            </td>
+
+                            <td className="py-2.5 px-4">
+                              <input
+                                type="number"
+                                value={v.stockCount}
+                                onChange={(e) => handleUpdateVariant(v.id, "stockCount", Number(e.target.value))}
+                                className="w-20 px-2.5 py-1 text-xs font-bold bg-stone-50 dark:bg-neutral-800 border border-gray-200 dark:border-neutral-700 rounded-lg text-gray-800 dark:text-neutral-200 focus:outline-none focus:ring-1 focus:ring-orange-600"
+                              />
+                            </td>
+
+                            <td className="py-2.5 px-4 text-center">
+                              <input
+                                type="checkbox"
+                                checked={v.inStock && v.stockCount > 0}
+                                onChange={(e) => handleUpdateVariant(v.id, "inStock", e.target.checked)}
+                                className="size-4 rounded text-orange-600 focus:ring-orange-500 cursor-pointer"
+                              />
+                            </td>
+
+                            <td className="py-2.5 px-4 text-center">
+                              <button
+                                type="button"
+                                onClick={() => handleDeleteVariant(v.id)}
+                                className="p-1.5 rounded-lg text-gray-400 hover:text-red-600 hover:bg-red-50 dark:hover:bg-red-950/40 transition cursor-pointer"
+                                title={`Delete ${v.color} (${v.size}) variant`}
+                              >
+                                <TrashIcon className="size-3.5" />
+                              </button>
+                            </td>
+                          </tr>
+                        ))
+                      )}
                     </tbody>
                   </table>
                 </div>
