@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useMemo } from "react";
+import React, { useState, useEffect, useMemo, useRef } from "react";
 import {
   CreditCardIcon,
   ShieldCheckIcon,
@@ -260,6 +260,118 @@ export const AdminPaymentsTab: React.FC<AdminPaymentsTabProps> = ({ orders = [],
   const copyToClipboard = (text: string, label: string) => {
     navigator.clipboard.writeText(text);
     toast.success(`${label} copied to clipboard!`);
+  };
+
+  const printIframeRef = useRef<HTMLIFrameElement | null>(null);
+
+  const handlePrintSlip = () => {
+    if (!selectedPayment) return;
+
+    const formattedDate = formatDate(selectedPayment.paymentExecuteTime || selectedPayment.createdAt);
+
+    const slipHtml = `<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <title>Payment Slip - ${selectedPayment.orderNumber}</title>
+  <style>
+    @page { size: A5 landscape; margin: 8mm 10mm; }
+    * { box-sizing: border-box; -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; }
+    body { margin: 0; padding: 0; background: #fff; color: #1c1917; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; font-size: 11px; line-height: 1.35; }
+    .slip { border: 1.5px solid #1c1917; padding: 12px 16px; border-radius: 6px; }
+    .header { display: flex; justify-content: space-between; align-items: flex-start; border-bottom: 1.5px solid #1c1917; padding-bottom: 8px; margin-bottom: 10px; }
+    .brand { font-size: 16px; font-weight: 900; letter-spacing: 1.5px; text-transform: uppercase; margin: 0; }
+    .brand-sub { font-size: 9px; color: #57534e; margin: 1px 0 0 0; }
+    .slip-type { text-align: right; }
+    .type-title { font-size: 12px; font-weight: 800; text-transform: uppercase; color: #ea580c; margin: 0; }
+    .grid { display: table; width: 100%; margin-bottom: 10px; }
+    .col { display: table-cell; width: 50%; vertical-align: top; padding-right: 8px; }
+    .box { background: #fafaf9; border: 1px solid #e7e5e4; border-radius: 6px; padding: 8px 10px; font-size: 10.5px; }
+    .box-title { font-size: 9px; font-weight: 800; text-transform: uppercase; color: #78716c; margin-bottom: 4px; border-bottom: 1px solid #e7e5e4; padding-bottom: 2px; }
+    .line { margin: 2px 0; }
+    .amount-box { text-align: right; background: #f5f5f4; border: 1px solid #d6d3d1; padding: 8px 12px; border-radius: 6px; margin-top: 8px; }
+    .amount { font-size: 16px; font-weight: 900; font-family: monospace; color: #059669; }
+    .footer { text-align: center; font-size: 9px; color: #78716c; margin-top: 8px; border-top: 1px dashed #d6d3d1; padding-top: 6px; }
+  </style>
+</head>
+<body>
+  <div class="slip">
+    <div class="header">
+      <div>
+        <h1 class="brand">FEDOLL ATELIER</h1>
+        <p class="brand-sub">Official Payment &amp; Transaction Verification Slip</p>
+      </div>
+      <div class="slip-type">
+        <div class="type-title">Transaction Receipt</div>
+        <div style="font-family:monospace; font-weight:700; font-size:11px;">#${selectedPayment.orderNumber}</div>
+        <div style="font-size:9px; color:#78716c;">${formattedDate}</div>
+      </div>
+    </div>
+    <div class="grid">
+      <div class="col">
+        <div class="box">
+          <div class="box-title">Customer Information</div>
+          <div class="line"><strong>${selectedPayment.customer?.name || "Customer"}</strong></div>
+          <div class="line">Phone: <strong>${selectedPayment.customer?.phone || "N/A"}</strong></div>
+          ${selectedPayment.customer?.email ? `<div class="line">Email: ${selectedPayment.customer.email}</div>` : ""}
+          ${selectedPayment.customer?.customerMsisdn ? `<div class="line" style="color:#be185d;">bKash Payer: <strong>${selectedPayment.customer.customerMsisdn}</strong></div>` : ""}
+          <div class="line">Location: ${selectedPayment.customer?.city || ""}, ${selectedPayment.customer?.district || ""}</div>
+        </div>
+      </div>
+      <div class="col" style="padding-right:0; padding-left:8px;">
+        <div class="box">
+          <div class="box-title">Payment Verification</div>
+          <div class="line">Method: <strong>${selectedPayment.methodTitle}</strong></div>
+          <div class="line">Status: <strong style="color:${selectedPayment.status === "COMPLETED" ? "#059669" : "#d97706"};">${selectedPayment.status}</strong></div>
+          ${selectedPayment.trxId ? `<div class="line">TrxID: <strong style="font-family:monospace;">${selectedPayment.trxId}</strong></div>` : ""}
+          ${selectedPayment.paymentId ? `<div class="line" style="font-size:9px;">Payment ID: <span style="font-family:monospace;">${selectedPayment.paymentId}</span></div>` : ""}
+          <div class="line">Mode: ${selectedPayment.isSandbox ? "Sandbox (Testing)" : "Live Production"}</div>
+        </div>
+      </div>
+    </div>
+    <div class="amount-box">
+      <span style="font-size:11px; font-weight:700; text-transform:uppercase; margin-right:8px;">Settled Amount:</span>
+      <span class="amount">৳${selectedPayment.amount?.toLocaleString()} ${selectedPayment.currency}</span>
+    </div>
+    <div class="footer">
+      Generated by Store Admin Payment Desk • Official Merchant Audit Record
+    </div>
+  </div>
+</body>
+</html>`;
+
+    try {
+      let iframe = printIframeRef.current;
+      if (!iframe) {
+        iframe = document.createElement("iframe");
+        iframe.style.position = "fixed";
+        iframe.style.right = "0";
+        iframe.style.bottom = "0";
+        iframe.style.width = "0";
+        iframe.style.height = "0";
+        iframe.style.border = "0";
+        document.body.appendChild(iframe);
+        printIframeRef.current = iframe;
+      }
+
+      const doc = iframe.contentWindow?.document;
+      if (doc) {
+        doc.open();
+        doc.write(slipHtml);
+        doc.close();
+
+        setTimeout(() => {
+          iframe?.contentWindow?.focus();
+          iframe?.contentWindow?.print();
+          toast.success("Printing payment slip...");
+        }, 250);
+      } else {
+        window.print();
+      }
+    } catch (err) {
+      console.warn("Iframe print error:", err);
+      window.print();
+    }
   };
 
   // Payment Status Update inside Modal
@@ -1406,7 +1518,7 @@ export const AdminPaymentsTab: React.FC<AdminPaymentsTabProps> = ({ orders = [],
 
                           <button
                             type="button"
-                            onClick={() => window.print()}
+                            onClick={handlePrintSlip}
                             className="px-3.5 py-2 rounded-xl border border-stone-200 dark:border-neutral-700 hover:bg-stone-100 dark:hover:bg-neutral-800 text-xs font-semibold text-gray-700 dark:text-neutral-200 transition cursor-pointer flex items-center gap-1.5"
                           >
                             <PrinterIcon className="size-4" />

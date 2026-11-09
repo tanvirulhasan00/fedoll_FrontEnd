@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useMemo } from "react";
+import React, { useState, useEffect, useMemo, useRef } from "react";
 import { Link, useNavigate, useSearchParams } from "react-router";
 import type { Route } from "./+types/checkout";
 import Topbar from "~/components/main/Home/Topbar";
@@ -16,6 +16,7 @@ import {
   defaultPaymentSettings,
   getOrderById,
   recordCodPaymentInitiated,
+  formatPaymentTimestamp,
   loginWithEmail,
   registerWithEmail,
   signInWithGoogle,
@@ -99,6 +100,8 @@ export default function CheckoutPage() {
   const { items, totalQuantity, totalAmount } = useAppSelector(
     (state) => state.cart
   );
+  const storeSettings = useAppSelector((state) => state.storeSettings?.settings);
+  const printIframeRef = useRef<HTMLIFrameElement | null>(null);
 
   // Dynamic Shipping & Coupon Settings
   const [shippingSettings, setShippingSettings] = useState<ShippingSettings>(defaultShippingSettings);
@@ -627,15 +630,377 @@ export default function CheckoutPage() {
     toast.success("Tracking number copied to clipboard!");
   };
 
+  const generateReceiptHtml = (order: Order) => {
+    const formattedDate = formatPaymentTimestamp(order.createdAt, "Just now");
+    const isBkash = order.paymentMethod === "bkash" || !!order.paymentDetails;
+    const isPaid = order.paymentStatus === "paid";
+    const storeName = storeSettings?.storeName || "SilkenDrift";
+    const supportPhone = storeSettings?.contactPhone || "+880 1712-345678";
+    const supportEmail = storeSettings?.contactEmail || "support@silkendrift.com";
+    const officeAddress = storeSettings?.headquartersAddress || "Sector 3, Uttara Model Town, Dhaka 1230, Bangladesh";
+
+    return `<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <title>Receipt - Order #${order.orderNumber}</title>
+  <style>
+    @page {
+      size: A4 portrait;
+      margin: 10mm 15mm;
+    }
+    * {
+      box-sizing: border-box;
+      -webkit-print-color-adjust: exact !important;
+      print-color-adjust: exact !important;
+    }
+    body {
+      margin: 0;
+      padding: 0;
+      background: #ffffff;
+      color: #1c1917;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+      font-size: 12px;
+      line-height: 1.4;
+    }
+    .receipt-container {
+      max-width: 720px;
+      margin: 0 auto;
+      padding: 10px;
+    }
+    .header-table {
+      width: 100%;
+      border-bottom: 2px solid #1c1917;
+      padding-bottom: 12px;
+      margin-bottom: 16px;
+    }
+    .brand-title {
+      font-size: 24px;
+      font-weight: 900;
+      letter-spacing: 2px;
+      text-transform: uppercase;
+      color: #1c1917;
+      margin: 0;
+    }
+    .brand-sub {
+      font-size: 11px;
+      color: #57534e;
+      margin: 2px 0 0 0;
+    }
+    .receipt-badge-box {
+      text-align: right;
+    }
+    .receipt-type {
+      font-size: 14px;
+      font-weight: 900;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+      color: #ea580c;
+      margin: 0;
+    }
+    .order-number {
+      font-size: 14px;
+      font-weight: 800;
+      font-family: monospace;
+      margin: 3px 0 0 0;
+    }
+    .order-date {
+      font-size: 11px;
+      color: #78716c;
+      margin: 2px 0 0 0;
+    }
+    .info-grid {
+      display: table;
+      width: 100%;
+      margin-bottom: 16px;
+    }
+    .info-col {
+      display: table-cell;
+      width: 50%;
+      vertical-align: top;
+      padding-right: 10px;
+    }
+    .info-box {
+      background: #fafaf9;
+      border: 1px solid #e7e5e4;
+      border-radius: 8px;
+      padding: 10px 12px;
+    }
+    .box-title {
+      font-size: 10px;
+      font-weight: 800;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      color: #78716c;
+      margin-bottom: 6px;
+      border-bottom: 1px solid #e7e5e4;
+      padding-bottom: 3px;
+    }
+    .info-line {
+      margin: 2px 0;
+    }
+    .payment-box {
+      border-radius: 8px;
+      padding: 10px 12px;
+      margin-bottom: 16px;
+      font-size: 11px;
+    }
+    .bkash-box {
+      background: #fdf2f8;
+      border: 1.5px solid #fbcfe8;
+      color: #831843;
+    }
+    .cod-box {
+      background: #f0fdf4;
+      border: 1.5px solid #bbf7d0;
+      color: #14532d;
+    }
+    .items-table {
+      width: 100%;
+      border-collapse: collapse;
+      margin-bottom: 16px;
+    }
+    .items-table th {
+      background: #f5f5f4;
+      border-top: 1px solid #d6d3d1;
+      border-bottom: 1px solid #d6d3d1;
+      padding: 8px 10px;
+      text-align: left;
+      font-size: 10px;
+      font-weight: 800;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      color: #44403c;
+    }
+    .items-table td {
+      padding: 8px 10px;
+      border-bottom: 1px solid #e7e5e4;
+      vertical-align: middle;
+    }
+    .items-table .num-col {
+      text-align: right;
+      font-family: monospace;
+    }
+    .totals-table {
+      width: 280px;
+      margin-left: auto;
+      border-collapse: collapse;
+      margin-bottom: 16px;
+    }
+    .totals-table td {
+      padding: 4px 8px;
+      font-size: 12px;
+    }
+    .totals-table .amount {
+      text-align: right;
+      font-family: monospace;
+      font-weight: 700;
+    }
+    .grand-total-row {
+      border-top: 2px solid #1c1917;
+      border-bottom: 2px solid #1c1917;
+      font-size: 14px !important;
+      font-weight: 900 !important;
+    }
+    .grand-total-row td {
+      padding: 8px !important;
+    }
+    .footer-note {
+      text-align: center;
+      font-size: 10px;
+      color: #78716c;
+      border-top: 1px dashed #d6d3d1;
+      padding-top: 12px;
+      margin-top: 16px;
+    }
+  </style>
+</head>
+<body>
+  <div class="receipt-container">
+    <table class="header-table">
+      <tr>
+        <td>
+          <h1 class="brand-title">${storeName}</h1>
+          <p class="brand-sub">Premium Garments &amp; Atelier Fashion</p>
+          <p class="brand-sub">${officeAddress} • Tel: ${supportPhone} • ${supportEmail}</p>
+        </td>
+        <td class="receipt-badge-box">
+          <div class="receipt-type">Official Customer Receipt</div>
+          <div class="order-number">Order #${order.orderNumber}</div>
+          <div class="order-date">${formattedDate}</div>
+        </td>
+      </tr>
+    </table>
+
+    <div class="info-grid">
+      <div class="info-col">
+        <div class="info-box">
+          <div class="box-title">Billed &amp; Shipped To</div>
+          <div class="info-line"><strong>${order.shippingAddress.fullName || order.customerName}</strong></div>
+          <div class="info-line">Phone: <strong>${order.shippingAddress.phoneNumber}</strong></div>
+          <div class="info-line">Email: ${order.customerEmail}</div>
+          <div class="info-line">Address: ${order.shippingAddress.streetAddress}, ${order.shippingAddress.city}, ${order.shippingAddress.district}</div>
+          ${order.shippingAddress.notes ? `<div class="info-line" style="margin-top:4px; font-style:italic; color:#78716c;">Note: "${order.shippingAddress.notes}"</div>` : ""}
+        </div>
+      </div>
+      <div class="info-col" style="padding-right:0; padding-left:10px;">
+        <div class="info-box">
+          <div class="box-title">Order &amp; Courier Details</div>
+          <div class="info-line">Order Status: <strong style="text-transform:uppercase;">${order.orderStatus}</strong></div>
+          <div class="info-line">Consignment Tracking: <strong>${order.trackingNumber}</strong></div>
+          <div class="info-line">Courier Service: <strong>${order.courierName && order.courierName !== "Pending Assignment" && order.courierName !== "Unassigned" ? order.courierName : "Atelier Dispatch"}</strong></div>
+          <div class="info-line">Estimated Delivery: ${order.estimatedDeliveryDate}</div>
+          <div class="info-line">Payment Status: <strong style="text-transform:uppercase; color:${isPaid ? "#059669" : "#d97706"};">${order.paymentStatus} (${order.paymentMethod.toUpperCase()})</strong></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Payment Verification Banner -->
+    ${
+      isBkash && order.paymentDetails
+        ? `<div class="payment-box bkash-box">
+            <table style="width:100%;">
+              <tr>
+                <td>
+                  <strong style="color:#be185d; font-size:12px;">bKash Online Payment Verified (PAID)</strong>
+                  <div style="margin-top:3px;">TrxID: <strong style="font-family:monospace; font-size:12px;">${order.paymentDetails.trxID || "Confirmed"}</strong> • Payment ID: <span style="font-family:monospace;">${order.paymentDetails.paymentId}</span></div>
+                  <div>Payer Wallet: <strong style="font-family:monospace;">${order.paymentDetails.customerMsisdn || order.customerPhone}</strong> ${order.paymentDetails.isSandbox ? "(Sandbox Test)" : ""}</div>
+                </td>
+                <td style="text-align:right; font-size:14px; font-weight:900; color:#be185d; font-family:monospace;">
+                  ৳${(order.paymentDetails.amount || order.totalAmount).toLocaleString()} BDT
+                </td>
+              </tr>
+            </table>
+          </div>`
+        : `<div class="payment-box cod-box">
+            <table style="width:100%;">
+              <tr>
+                <td>
+                  <strong style="font-size:12px;">Cash on Delivery (COD)</strong>
+                  <div style="margin-top:2px;">Amount to collect by delivery courier rider on arrival.</div>
+                </td>
+                <td style="text-align:right; font-size:14px; font-weight:900; color:#14532d; font-family:monospace;">
+                  ৳${order.totalAmount.toLocaleString()} BDT
+                </td>
+              </tr>
+            </table>
+          </div>`
+    }
+
+    <!-- Items Table -->
+    <table class="items-table">
+      <thead>
+        <tr>
+          <th style="width:45%;">Item Description</th>
+          <th style="width:15%;">Size</th>
+          <th class="num-col" style="width:15%;">Unit Price</th>
+          <th class="num-col" style="width:10%;">Qty</th>
+          <th class="num-col" style="width:15%;">Total</th>
+        </tr>
+      </thead>
+      <tbody>
+        ${order.items
+          .map(
+            (item) => `
+          <tr>
+            <td><strong>${item.name}</strong></td>
+            <td>${item.size || "Standard"}</td>
+            <td class="num-col">৳${item.price.toLocaleString()}</td>
+            <td class="num-col">${item.quantity}</td>
+            <td class="num-col"><strong>৳${(item.price * item.quantity).toLocaleString()}</strong></td>
+          </tr>`
+          )
+          .join("")}
+      </tbody>
+    </table>
+
+    <!-- Totals Table -->
+    <table class="totals-table">
+      <tr>
+        <td>Subtotal:</td>
+        <td class="amount">৳${order.subtotal.toLocaleString()}</td>
+      </tr>
+      ${
+        order.discount > 0
+          ? `<tr>
+        <td style="color:#059669;">Discount:</td>
+        <td class="amount" style="color:#059669;">-৳${order.discount.toLocaleString()}</td>
+      </tr>`
+          : ""
+      }
+      <tr>
+        <td>Delivery Fee:</td>
+        <td class="amount">${order.shippingFee === 0 ? "FREE" : `৳${order.shippingFee}`}</td>
+      </tr>
+      <tr class="grand-total-row">
+        <td>Total:</td>
+        <td class="amount" style="color:#ea580c;">৳${order.totalAmount.toLocaleString()}</td>
+      </tr>
+      <tr>
+        <td colspan="2" style="text-align:right; font-size:10px; color:#78716c; padding-top:4px;">
+          ${isPaid ? "Paid Online in Full via bKash" : "Payable Cash on Delivery upon inspection"}
+        </td>
+      </tr>
+    </table>
+
+    <div class="footer-note">
+      <p style="margin:0 0 3px 0;"><strong>Thank you for choosing ${storeName}!</strong></p>
+      <p style="margin:0;">For order tracking or inquiries, visit ${supportEmail} or call ${supportPhone}. 7-day exchange applicable for unused garments with tags intact.</p>
+    </div>
+  </div>
+</body>
+</html>`;
+  };
+
+  const handlePrintReceipt = () => {
+    if (!completedOrder) return;
+
+    try {
+      const htmlContent = generateReceiptHtml(completedOrder);
+      let iframe = printIframeRef.current;
+      if (!iframe) {
+        iframe = document.createElement("iframe");
+        iframe.style.position = "fixed";
+        iframe.style.right = "0";
+        iframe.style.bottom = "0";
+        iframe.style.width = "0";
+        iframe.style.height = "0";
+        iframe.style.border = "0";
+        document.body.appendChild(iframe);
+        printIframeRef.current = iframe;
+      }
+
+      const doc = iframe.contentWindow?.document;
+      if (doc) {
+        doc.open();
+        doc.write(htmlContent);
+        doc.close();
+
+        setTimeout(() => {
+          iframe?.contentWindow?.focus();
+          iframe?.contentWindow?.print();
+          toast.success("Printing order receipt...");
+        }, 250);
+      } else {
+        window.print();
+      }
+    } catch (err) {
+      console.warn("Iframe print error, falling back to window.print():", err);
+      window.print();
+    }
+  };
+
   return (
     <div className="min-h-screen bg-stone-50/60 dark:bg-neutral-950 font-sans text-gray-900 dark:text-neutral-100 flex flex-col selection:bg-orange-500/20 selection:text-orange-900">
-      <Topbar />
-      <Header />
+      <div className="print:hidden">
+        <Topbar />
+        <Header />
+      </div>
 
       <main className="flex-1 py-8 sm:py-12">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           {/* Breadcrumb / Stepper Navigation */}
-          <div className="mb-8 flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-6 border-b border-stone-200 dark:border-neutral-800">
+          <div className="print:hidden mb-8 flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-6 border-b border-stone-200 dark:border-neutral-800">
             <div>
               <div className="inline-flex items-center gap-2 text-xs font-bold uppercase tracking-wider text-orange-600 dark:text-orange-400 mb-1">
                 <TruckIcon className="size-4" />
@@ -687,9 +1052,9 @@ export default function CheckoutPage() {
               STATE 1: ORDER CONFIRMED RECEIPT SCREEN
               ====================================================================== */}
           {completedOrder ? (
-            <div className="max-w-3xl mx-auto bg-white dark:bg-neutral-900 rounded-3xl border border-stone-200/80 dark:border-neutral-800 shadow-xl p-6 sm:p-10 space-y-8">
+            <div id="order-receipt-print-area" className="max-w-3xl mx-auto bg-white dark:bg-neutral-900 rounded-3xl border border-stone-200/80 dark:border-neutral-800 shadow-xl p-6 sm:p-10 space-y-8 print:p-0 print:border-none print:shadow-none print:max-w-none print:dark:bg-white print:dark:text-black">
               <div className="text-center space-y-4">
-                <div className="size-20 rounded-full bg-emerald-100 dark:bg-emerald-950/60 text-emerald-600 dark:text-emerald-400 mx-auto flex items-center justify-center ring-8 ring-emerald-50 dark:ring-emerald-950/30 animate-bounce">
+                <div className="print:hidden size-20 rounded-full bg-emerald-100 dark:bg-emerald-950/60 text-emerald-600 dark:text-emerald-400 mx-auto flex items-center justify-center ring-8 ring-emerald-50 dark:ring-emerald-950/30 animate-bounce">
                   <CheckCircleIcon className="size-12" />
                 </div>
 
@@ -936,7 +1301,7 @@ export default function CheckoutPage() {
               </div>
 
               {/* Cancellation Policy Advisory Warning */}
-              <div className="p-4 rounded-2xl bg-amber-50/90 dark:bg-amber-950/40 border border-amber-200/90 dark:border-amber-800/80 text-xs text-amber-900 dark:text-amber-200 flex items-start gap-3">
+              <div className="print:hidden p-4 rounded-2xl bg-amber-50/90 dark:bg-amber-950/40 border border-amber-200/90 dark:border-amber-800/80 text-xs text-amber-900 dark:text-amber-200 flex items-start gap-3">
                 <ExclamationTriangleIcon className="size-5 text-amber-600 dark:text-amber-400 shrink-0 mt-0.5" />
                 <div className="space-y-1">
                   <div className="flex flex-wrap items-center gap-2">
@@ -961,7 +1326,7 @@ export default function CheckoutPage() {
               </div>
 
               {/* Action Buttons */}
-              <div className="flex flex-col sm:flex-row gap-3 pt-4">
+              <div className="print:hidden flex flex-col sm:flex-row gap-3 pt-4">
                 <Link
                   to={`/track-order?tracking=${completedOrder.orderNumber}`}
                   className="flex-1 py-3 px-4 rounded-xl bg-orange-600 hover:bg-orange-700 active:scale-98 text-white font-bold text-xs shadow-md flex items-center justify-center gap-2 transition cursor-pointer text-center"
@@ -979,7 +1344,7 @@ export default function CheckoutPage() {
 
                 <button
                   type="button"
-                  onClick={() => window.print()}
+                  onClick={handlePrintReceipt}
                   className="py-3 px-4 rounded-xl border border-stone-300 dark:border-neutral-700 text-gray-700 dark:text-neutral-300 hover:bg-stone-50 dark:hover:bg-neutral-800 font-semibold text-xs transition cursor-pointer flex items-center justify-center gap-1.5"
                 >
                   <PrinterIcon className="size-4" />
@@ -1719,7 +2084,9 @@ export default function CheckoutPage() {
         </div>
       </main>
 
-      <Footer />
+      <div className="print:hidden">
+        <Footer />
+      </div>
     </div>
   );
 }
