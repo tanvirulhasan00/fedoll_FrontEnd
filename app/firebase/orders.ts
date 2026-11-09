@@ -82,6 +82,19 @@ export interface OrderReturnRequest {
   inspectionResult?: string;
 }
 
+export interface BkashPaymentDetails {
+  gateway: "bkash";
+  paymentId: string;
+  trxID?: string;
+  transactionStatus?: string;
+  amount?: number;
+  currency?: string;
+  customerMsisdn?: string;
+  paymentExecuteTime?: string;
+  merchantInvoiceNumber?: string;
+  isSandbox: boolean;
+}
+
 export interface Order {
   id: string;
   orderNumber: string; // e.g. "FED-839201"
@@ -107,6 +120,11 @@ export interface Order {
   trackingTimeline: OrderTrackingTimelineStep[];
   cancellationRequest?: OrderCancellationRequest;
   returnRequest?: OrderReturnRequest;
+  paymentDetails?: BkashPaymentDetails;
+  paymentError?: string;
+  bkashPaymentId?: string;
+  notes?: string;
+  updatedAt?: string;
 }
 
 export interface CreateOrderInput {
@@ -124,6 +142,8 @@ export interface CreateOrderInput {
   paymentMethod: PaymentMethod;
   paymentStatus?: "pending" | "paid";
   notes?: string;
+  paymentDetails?: BkashPaymentDetails;
+  bkashPaymentId?: string;
 }
 
 const LOCAL_STORAGE_KEY = "fedoll_customer_orders_v1";
@@ -296,12 +316,14 @@ export const createOrderInFirestore = async (
     totalAmount: input.totalAmount,
     paymentMethod: input.paymentMethod,
     paymentStatus: input.paymentStatus || (input.paymentMethod === "cod" ? "pending" : "paid"),
-    orderStatus: "confirmed",
+    orderStatus: input.paymentMethod === "bkash" && input.paymentStatus !== "paid" ? "placed" : "confirmed",
     courierName,
     courierTrackingUrl: "",
     estimatedDeliveryDate,
     createdAt: now.toISOString(),
     trackingTimeline: buildInitialTrackingTimeline(now.toISOString(), courierName),
+    paymentDetails: input.paymentDetails,
+    bkashPaymentId: input.bkashPaymentId,
   };
 
   // Primary Firestore Persistence
@@ -903,5 +925,175 @@ export const deleteOrderInFirestore = async (orderId: string): Promise<boolean> 
   localStorage.setItem(LOCAL_STORAGE_KEY, JSON.stringify(filtered));
   return true;
 };
+
+/**
+ * Look up an order by its bKash paymentId
+ */
+export const findOrderByPaymentId = async (
+  paymentId: string
+): Promise<Order | null> => {
+  if (!paymentId) return null;
+
+  try {
+    const ordersCol = collection(db, "orders");
+    const q = query(ordersCol, where("bkashPaymentId", "==", paymentId));
+    const snap = await getDocs(q);
+
+    if (!snap.empty) {
+      const docSnap = snap.docs[0];
+      return { id: docSnap.id, ...(docSnap.data() as DocumentData) } as Order;
+    }
+  } catch (err) {
+    console.warn("Could not find order by bkashPaymentId in Firestore:", err);
+  }
+
+  // Check local orders fallback
+  const local = getLocalOrders().find((o) => o.bkashPaymentId === paymentId);
+  return local || null;
+};
+
+/**
+ * Look up an order by orderNumber (e.g. FED-123456)
+ */
+export const findOrderByOrderNumber = async (
+  orderNumber: string
+): Promise<Order | null> => {
+  if (!orderNumber) return null;
+
+  try {
+    const ordersCol = collection(db, "orders");
+    const q = query(ordersCol, where("orderNumber", "==", orderNumber));
+    const snap = await getDocs(q);
+
+    if (!snap.empty) {
+      const docSnap = snap.docs[0];
+      return { id: docSnap.id, ...(docSnap.data() as DocumentData) } as Order;
+    }
+  } catch (err) {
+    console.warn("Could not find order by orderNumber in Firestore:", err);
+  }
+
+  const local = getLocalOrders().find((o) => o.orderNumber === orderNumber);
+  return local || null;
+};
+
+/**
+ * Link an active bKash paymentId to an order
+ */
+export const updateOrderBkashPaymentId = async (
+  orderId: string,
+  paymentId: string
+): Promise<void> => {
+  try {
+    const docRef = doc(db, "orders", orderId);
+    await updateDoc(docRef, {
+      bkashPaymentId: paymentId,
+      updatedAt: serverTimestamp(),
+    });
+  } catch (err) {
+    console.warn("Could not set bkashPaymentId in Firestore:", err);
+  }
+
+  const local = getLocalOrders();
+  const existing = local.find((o) => o.id === orderId);
+  if (existing) {
+    existing.bkashPaymentId = paymentId;
+    saveLocalOrder(existing);
+  }
+};
+
+/**
+ * Mark order as paid via bKash and attach verification details
+ */
+export const updateOrderPaymentSuccess = async (
+  orderId: string,
+  details: BkashPaymentDetails
+): Promise<Order | null> => {
+  const existing = await getOrderById(orderId);
+  if (!existing) return null;
+
+  const nowIso = new Date().toISOString();
+  const updatedTimeline = existing.trackingTimeline.map((step) => {
+    if (step.status === "confirmed") {
+      return {
+        ...step,
+        completed: true,
+        isCurrent: true,
+        description: `bKash Payment Verified (TrxID: ${details.trxID || "Confirmed"}). Order approved for atelier packing.`,
+      };
+    }
+    return step;
+  });
+
+  const updatePayload = {
+    paymentStatus: "paid" as const,
+    orderStatus: "confirmed" as const,
+    paymentDetails: details,
+    paymentError: undefined,
+    trackingTimeline: updatedTimeline,
+  };
+
+  try {
+    const docRef = doc(db, "orders", orderId);
+    await updateDoc(
+      docRef,
+      sanitizeForFirestore({
+        ...updatePayload,
+        updatedAt: serverTimestamp(),
+      })
+    );
+  } catch (err) {
+    console.warn("Could not update payment success in Firestore:", err);
+  }
+
+  const updatedResult: Order = {
+    ...existing,
+    ...updatePayload,
+    updatedAt: nowIso,
+  };
+
+  saveLocalOrder(updatedResult);
+  return updatedResult;
+};
+
+/**
+ * Record a payment failure or cancellation on an order
+ */
+export const updateOrderPaymentFailed = async (
+  orderId: string,
+  errorReason: string
+): Promise<Order | null> => {
+  const existing = await getOrderById(orderId);
+  if (!existing) return null;
+
+  const nowIso = new Date().toISOString();
+  const updatePayload = {
+    paymentStatus: "pending" as const,
+    paymentError: errorReason,
+  };
+
+  try {
+    const docRef = doc(db, "orders", orderId);
+    await updateDoc(
+      docRef,
+      sanitizeForFirestore({
+        ...updatePayload,
+        updatedAt: serverTimestamp(),
+      })
+    );
+  } catch (err) {
+    console.warn("Could not record payment failure in Firestore:", err);
+  }
+
+  const updatedResult: Order = {
+    ...existing,
+    ...updatePayload,
+    updatedAt: nowIso,
+  };
+
+  saveLocalOrder(updatedResult);
+  return updatedResult;
+};
+
 
 

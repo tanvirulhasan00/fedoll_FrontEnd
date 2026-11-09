@@ -35,4 +35,7 @@ export default [
   route("dashboard", "routes/admin.tsx", { id: "dashboard-alias" }),
   route("deshboard", "routes/admin.tsx", { id: "deshboard-alias" }),
   route("api/generate-blog", "routes/api.generate-blog.ts"),
+  route("api/bkash/create-payment", "routes/api.bkash.create-payment.ts"),
+  route("api/bkash/callback", "routes/api.bkash.callback.ts"),
+  route("api/bkash/test-connection", "routes/api.bkash.test-connection.ts"),
 ] satisfies RouteConfig;

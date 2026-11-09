@@ -13,6 +13,7 @@ import {
   ArrowPathIcon,
   UserGroupIcon,
   ArrowTopRightOnSquareIcon,
+  CreditCardIcon,
 } from "@heroicons/react/24/outline";
 import { Link } from "react-router";
 import { toast } from "sonner";
@@ -358,6 +359,35 @@ export const AdminSettingsTab: React.FC<AdminSettingsTabProps> = ({
           </button>
         </div>
       </form>
+
+      {/* Payment Gateway Settings Quick Link Card */}
+      <div className="bg-white dark:bg-neutral-900 p-6 sm:p-7 rounded-3xl border border-stone-200/80 dark:border-neutral-800 shadow-xs flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+        <div className="flex items-center gap-3.5">
+          <div className="size-11 rounded-2xl bg-pink-50 dark:bg-pink-950/60 border border-pink-100 dark:border-pink-900/40 flex items-center justify-center text-[#E2136E] shrink-0">
+            <CreditCardIcon className="size-6" />
+          </div>
+          <div>
+            <h3 className="text-sm font-bold text-gray-900 dark:text-white flex items-center gap-2">
+              <span>Payment Gateways (bKash &amp; COD)</span>
+              <span className="text-[10px] uppercase font-bold tracking-wider px-2 py-0.5 rounded-full bg-pink-100 dark:bg-pink-950/60 text-pink-700 dark:text-pink-300">
+                Official Gateway
+              </span>
+            </h3>
+            <p className="text-xs text-gray-500 dark:text-neutral-400 mt-0.5">
+              Switch between bKash Developer Sandbox and Live Production mode, and configure App Key, App Secret, and passwords.
+            </p>
+          </div>
+        </div>
+
+        <button
+          type="button"
+          onClick={() => onNavigateTab ? onNavigateTab("payments") : undefined}
+          className="px-4 py-2.5 rounded-xl bg-orange-600 hover:bg-orange-700 text-white text-xs font-bold shadow-md shadow-orange-500/20 active:scale-98 transition cursor-pointer flex items-center gap-1.5 shrink-0"
+        >
+          <CreditCardIcon className="size-4" />
+          <span>Configure Payment Gateways</span>
+        </button>
+      </div>
 
       {/* Atelier Team & Brand Story Card */}
       <div className="bg-white dark:bg-neutral-900 p-6 sm:p-7 rounded-3xl border border-stone-200/80 dark:border-neutral-800 shadow-xs flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">

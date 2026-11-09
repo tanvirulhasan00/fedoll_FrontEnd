@@ -22,6 +22,10 @@ import {
   updateOrderStatusInFirestore,
   deleteOrderInFirestore,
   reviewOrderCancellationInFirestore,
+  findPaymentByOrderId,
+  updatePaymentRecordStatus,
+  recordCodPaymentInitiated,
+  formatPaymentTimestamp,
 } from "~/firebase";
 import { Spinner } from "~/components/ui/spinner";
 import OrderPackagingStickerModal from "./OrderPackagingStickerModal";
@@ -151,6 +155,25 @@ export const AdminOrdersTab: React.FC<AdminOrdersTabProps> = ({
         trackingNumber: trackingDraft.trim(),
         note: statusNoteDraft.trim() || undefined,
       });
+
+      // Synchronize status with payments collection
+      try {
+        const existingPay = await findPaymentByOrderId(selectedOrder.id);
+        if (existingPay) {
+          await updatePaymentRecordStatus(
+            existingPay.id,
+            paymentDraft === "paid" ? "COMPLETED" : "PENDING"
+          );
+        } else if (paymentDraft === "paid") {
+          const newPay = await recordCodPaymentInitiated({
+            ...selectedOrder,
+            paymentStatus: "paid",
+          });
+          await updatePaymentRecordStatus(newPay.id, "COMPLETED");
+        }
+      } catch (paySyncErr) {
+        console.warn("Could not sync payment status update:", paySyncErr);
+      }
 
       toast.success(`Order #${selectedOrder.orderNumber} updated to "${statusDraft.toUpperCase()}"!`);
       if (updated) setSelectedOrder(updated);
@@ -415,12 +438,20 @@ export const AdminOrdersTab: React.FC<AdminOrdersTabProps> = ({
                       <span
                         className={`text-[10px] font-bold capitalize ${
                           o.paymentStatus === "paid"
-                            ? "text-emerald-600"
-                            : "text-amber-600"
+                            ? "text-emerald-600 dark:text-emerald-400"
+                            : "text-amber-600 dark:text-amber-400"
                         }`}
                       >
                         {o.paymentStatus}
                       </span>
+                      {o.paymentDetails?.trxID && (
+                        <span
+                          className="block font-mono text-[9px] text-[#E2136E] font-bold truncate max-w-[120px]"
+                          title={`bKash TrxID: ${o.paymentDetails.trxID}`}
+                        >
+                          TrxID: {o.paymentDetails.trxID}
+                        </span>
+                      )}
                     </td>
 
                     <td className="py-3.5 px-4">
@@ -830,6 +861,67 @@ export const AdminOrdersTab: React.FC<AdminOrdersTabProps> = ({
                             </span>
                           </div>
                         </div>
+
+                        {/* bKash Verification Box (if online payment) */}
+                        {selectedOrder.paymentDetails && (
+                          <div className="p-3.5 bg-pink-50/70 dark:bg-pink-950/20 border border-pink-200 dark:border-pink-900/40 rounded-xl space-y-2 text-xs">
+                            <div className="flex items-center justify-between">
+                              <span className="font-bold text-[#E2136E] flex items-center gap-1.5">
+                                <span className="size-2 rounded-full bg-[#E2136E]" />
+                                <span>bKash Tokenized Payment Verified</span>
+                              </span>
+                              <span
+                                className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${
+                                  selectedOrder.paymentDetails.isSandbox
+                                    ? "bg-amber-100 text-amber-800 dark:bg-amber-950/60 dark:text-amber-300"
+                                    : "bg-emerald-100 text-emerald-800 dark:bg-emerald-950/60 dark:text-emerald-300"
+                                }`}
+                              >
+                                {selectedOrder.paymentDetails.isSandbox ? "Sandbox Simulator" : "Live Merchant"}
+                              </span>
+                            </div>
+
+                            <div className="grid grid-cols-2 gap-2 text-[11px] pt-1 border-t border-pink-100 dark:border-pink-900/30">
+                              <div>
+                                <span className="text-gray-400 text-[10px] uppercase font-bold block">
+                                  Transaction ID (TrxID)
+                                </span>
+                                <span className="font-mono font-bold text-gray-900 dark:text-white">
+                                  {selectedOrder.paymentDetails.trxID}
+                                </span>
+                              </div>
+                              <div>
+                                <span className="text-gray-400 text-[10px] uppercase font-bold block">
+                                  Payment ID
+                                </span>
+                                <span
+                                  className="font-mono text-gray-700 dark:text-neutral-300 truncate block"
+                                  title={selectedOrder.paymentDetails.paymentId}
+                                >
+                                  {selectedOrder.paymentDetails.paymentId}
+                                </span>
+                              </div>
+                              <div>
+                                <span className="text-gray-400 text-[10px] uppercase font-bold block">
+                                  Customer Wallet
+                                </span>
+                                <span className="font-mono text-gray-800 dark:text-neutral-200">
+                                  {selectedOrder.paymentDetails.customerMsisdn || selectedOrder.customerPhone}
+                                </span>
+                              </div>
+                              <div>
+                                <span className="text-gray-400 text-[10px] uppercase font-bold block">
+                                  Payment Time
+                                </span>
+                                <span className="font-mono text-gray-800 dark:text-neutral-200">
+                                  {formatPaymentTimestamp(
+                                    selectedOrder.paymentDetails.paymentExecuteTime || selectedOrder.createdAt
+                                  )}
+                                </span>
+                              </div>
+                            </div>
+                          </div>
+                        )}
                       </div>
 
                       {/* Status Update Form */}

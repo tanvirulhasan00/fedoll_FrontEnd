@@ -62,6 +62,7 @@ import AdminMessagesTab from "~/components/admin/AdminMessagesTab";
 import AdminNewsletterTab from "~/components/admin/AdminNewsletterTab";
 import AdminLegalTab from "~/components/admin/AdminLegalTab";
 import AdminSettingsTab from "~/components/admin/AdminSettingsTab";
+import AdminPaymentsTab from "~/components/admin/AdminPaymentsTab";
 import { AdminDashboardSkeleton } from "~/components/main/Skeletons";
 import { setStoreSettings as setReduxStoreSettings } from "~/redux/features/storeSettingsSlice";
 import {
@@ -113,6 +114,7 @@ export default function AdminDashboardPage() {
     "returns",
     "blogs",
     "shipping",
+    "payments",
     "customers",
     "staff",
     "coupons",
@@ -569,6 +571,13 @@ export default function AdminDashboardPage() {
                     <AdminShippingTab
                       shippingProviders={shippingProviders}
                       shippingSettings={shippingSettings}
+                      onRefresh={loadAllAdminData}
+                    />
+                  )}
+
+                  {currentTab === "payments" && (
+                    <AdminPaymentsTab
+                      orders={orders}
                       onRefresh={loadAllAdminData}
                     />
                   )}

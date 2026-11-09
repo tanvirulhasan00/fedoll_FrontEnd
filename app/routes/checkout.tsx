@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useMemo } from "react";
-import { Link, useNavigate } from "react-router";
+import { Link, useNavigate, useSearchParams } from "react-router";
 import type { Route } from "./+types/checkout";
 import Topbar from "~/components/main/Home/Topbar";
 import Header from "~/components/main/Home/Header";
@@ -12,6 +12,10 @@ import {
   updateUserProfileInFirestore,
   fetchShippingSettings,
   fetchCouponsFromFirestore,
+  fetchPaymentSettings,
+  defaultPaymentSettings,
+  getOrderById,
+  recordCodPaymentInitiated,
   loginWithEmail,
   registerWithEmail,
   signInWithGoogle,
@@ -20,6 +24,7 @@ import {
   type Order,
   type PaymentMethod,
   type ShippingSettings,
+  type PaymentGatewaySettings,
   type CouponItem,
   defaultShippingSettings,
 } from "~/firebase";
@@ -88,6 +93,7 @@ const BANGLADESH_DISTRICTS = [
 
 export default function CheckoutPage() {
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
   const dispatch = useAppDispatch();
   const { user, isAuthenticated } = useAppSelector((state) => state.auth);
   const { items, totalQuantity, totalAmount } = useAppSelector(
@@ -96,6 +102,7 @@ export default function CheckoutPage() {
 
   // Dynamic Shipping & Coupon Settings
   const [shippingSettings, setShippingSettings] = useState<ShippingSettings>(defaultShippingSettings);
+  const [paymentSettings, setPaymentSettings] = useState<PaymentGatewaySettings>(defaultPaymentSettings);
   const [coupons, setCoupons] = useState<CouponItem[]>([]);
 
   // Promo Code State
@@ -126,6 +133,41 @@ export default function CheckoutPage() {
   // Order Submission State
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [completedOrder, setCompletedOrder] = useState<Order | null>(null);
+
+  // Check URL parameters for bKash return callback
+  useEffect(() => {
+    const paymentStatus = searchParams.get("paymentStatus");
+    const orderId = searchParams.get("orderId");
+    const trxID = searchParams.get("trxID");
+    const reason = searchParams.get("reason");
+
+    if (orderId && paymentStatus === "success") {
+      getOrderById(orderId).then((ord) => {
+        if (ord) {
+          setCompletedOrder(ord);
+          dispatch(clearCart());
+          toast.success(
+            `🎉 bKash Payment Verified! Transaction ID: ${trxID || ord.paymentDetails?.trxID || "Confirmed"}`
+          );
+        }
+      });
+    } else if (paymentStatus === "cancelled") {
+      toast.info(
+        "bKash payment was cancelled. Your order remains pending. You can retry with bKash or pay via Cash on Delivery."
+      );
+    } else if (paymentStatus === "failed") {
+      toast.error(
+        `bKash payment was not completed: ${reason || "Transaction was declined."}`
+      );
+    }
+  }, [searchParams, dispatch]);
+
+  // Load Payment settings from Firestore
+  useEffect(() => {
+    fetchPaymentSettings().then((res) => {
+      if (res) setPaymentSettings(res);
+    });
+  }, []);
 
   // Check for remembered email from localStorage
   useEffect(() => {
@@ -496,7 +538,7 @@ export default function CheckoutPage() {
         shippingFee: standardDeliveryFee,
         totalAmount: finalTotalAmount,
         paymentMethod,
-        paymentStatus: paymentMethod === "cod" ? "pending" : "paid",
+        paymentStatus: paymentMethod === "cod" ? "pending" : (paymentMethod === "bkash" ? "pending" : "paid"),
         notes: deliveryNotes.trim(),
       });
 
@@ -523,6 +565,49 @@ export default function CheckoutPage() {
         } catch (profileErr) {
           console.warn("Could not save address to profile:", profileErr);
         }
+      }
+
+      // If customer chose bKash, initiate official bKash Tokenized Checkout
+      if (paymentMethod === "bkash") {
+        toast.loading("Connecting to bKash Gateway...", { id: "bkash-init" });
+        try {
+          const res = await fetch("/api/bkash/create-payment", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              orderId: newOrder.id,
+              orderNumber: newOrder.orderNumber,
+              amount: newOrder.totalAmount,
+              payerReference: cleanPhone,
+            }),
+          });
+
+          const data = await res.json();
+          toast.dismiss("bkash-init");
+
+          if (data.success && data.bkashURL) {
+            dispatch(clearCart());
+            // Redirect customer directly to bKash Hosted PGW
+            window.location.href = data.bkashURL;
+            return;
+          } else {
+            throw new Error(data.error || "Failed to initiate bKash payment window.");
+          }
+        } catch (bkashErr: any) {
+          toast.dismiss("bkash-init");
+          toast.error(
+            bkashErr?.message || "Could not connect to bKash. You can retry or choose Cash on Delivery."
+          );
+          setIsSubmitting(false);
+          return;
+        }
+      }
+
+      // Record COD payment in payments table
+      try {
+        await recordCodPaymentInitiated(newOrder);
+      } catch (payErr) {
+        console.warn("Could not record COD payment:", payErr);
       }
 
       setCompletedOrder(newOrder);
@@ -695,6 +780,88 @@ export default function CheckoutPage() {
                   </p>
                 </div>
               </div>
+
+              {/* bKash Payment Details Card */}
+              {completedOrder.paymentDetails && (
+                <div className="p-4 sm:p-5 rounded-2xl bg-gradient-to-br from-pink-50/80 to-white dark:from-neutral-900 dark:to-neutral-950 border border-pink-200 dark:border-pink-900/60 text-xs space-y-3 shadow-xs">
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-2.5">
+                      <div className="size-8 rounded-xl bg-[#E2136E] text-white flex items-center justify-center font-black text-xs font-mono shadow-xs">
+                        ৳
+                      </div>
+                      <div>
+                        <h4 className="font-bold text-gray-900 dark:text-white flex items-center gap-2">
+                          <span>bKash Payment Verified</span>
+                          <span
+                            className={`text-[9px] font-bold px-2 py-0.5 rounded-full ${
+                              completedOrder.paymentDetails.isSandbox
+                                ? "bg-amber-100 dark:bg-amber-950/60 text-amber-800 dark:text-amber-300"
+                                : "bg-emerald-100 dark:bg-emerald-950/60 text-emerald-800 dark:text-emerald-300"
+                            }`}
+                          >
+                            {completedOrder.paymentDetails.isSandbox ? "Sandbox Simulator" : "Live Merchant"}
+                          </span>
+                        </h4>
+                        <span className="text-[10px] text-pink-700 dark:text-pink-400 font-medium">
+                          Official bKash Tokenized Checkout (PGW)
+                        </span>
+                      </div>
+                    </div>
+                    <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full bg-emerald-100 dark:bg-emerald-950/70 text-emerald-800 dark:text-emerald-300 text-[11px] font-bold">
+                      <CheckCircleIcon className="size-3.5" />
+                      <span>Paid</span>
+                    </span>
+                  </div>
+
+                  <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 pt-2.5 border-t border-pink-100 dark:border-neutral-800 text-[11px]">
+                    <div>
+                      <span className="text-gray-400 text-[10px] uppercase font-bold block">
+                        Transaction ID (TrxID)
+                      </span>
+                      <div className="flex items-center gap-1 font-mono font-bold text-gray-900 dark:text-white mt-0.5">
+                        <span>{completedOrder.paymentDetails.trxID || "Confirmed"}</span>
+                        {completedOrder.paymentDetails.trxID && (
+                          <button
+                            type="button"
+                            onClick={() => copyTracking(completedOrder.paymentDetails!.trxID!)}
+                            className="text-stone-400 hover:text-stone-700 dark:hover:text-white p-0.5 cursor-pointer"
+                            title="Copy TrxID"
+                          >
+                            <DocumentDuplicateIcon className="size-3" />
+                          </button>
+                        )}
+                      </div>
+                    </div>
+                    <div>
+                      <span className="text-gray-400 text-[10px] uppercase font-bold block">
+                        bKash Payment ID
+                      </span>
+                      <span
+                        className="font-mono text-gray-700 dark:text-neutral-300 truncate block mt-0.5"
+                        title={completedOrder.paymentDetails.paymentId}
+                      >
+                        {completedOrder.paymentDetails.paymentId}
+                      </span>
+                    </div>
+                    <div>
+                      <span className="text-gray-400 text-[10px] uppercase font-bold block">
+                        bKash Wallet
+                      </span>
+                      <span className="font-mono text-gray-900 dark:text-white font-semibold mt-0.5 block">
+                        {completedOrder.paymentDetails.customerMsisdn || completedOrder.customerPhone}
+                      </span>
+                    </div>
+                    <div>
+                      <span className="text-gray-400 text-[10px] uppercase font-bold block">
+                        Paid Amount
+                      </span>
+                      <span className="font-mono font-bold text-orange-600 dark:text-orange-400 text-xs mt-0.5 block">
+                        ৳{(completedOrder.paymentDetails.amount || completedOrder.totalAmount).toLocaleString()} BDT
+                      </span>
+                    </div>
+                  </div>
+                </div>
+              )}
 
               {/* Items Purchased List */}
               <div className="space-y-3">
@@ -1256,24 +1423,37 @@ export default function CheckoutPage() {
                         </p>
                       </button>
 
-                      {/* bKash / Nagad */}
-                      <button
-                        type="button"
-                        onClick={() => setPaymentMethod("bkash")}
-                        className={`p-4 rounded-2xl border text-left transition cursor-pointer flex flex-col justify-between ${
-                          paymentMethod === "bkash"
-                            ? "border-orange-600 bg-orange-50/50 dark:bg-orange-950/20 text-orange-950 dark:text-orange-200 ring-2 ring-orange-600/30"
-                            : "border-stone-200 dark:border-neutral-700 bg-white dark:bg-neutral-800 text-gray-700 dark:text-neutral-300 hover:border-stone-400"
-                        }`}
-                      >
-                        <div className="flex items-center justify-between w-full mb-1">
-                          <span className="font-bold text-xs">bKash / Nagad</span>
-                          <span className="text-[10px] text-pink-600 font-extrabold">Instant</span>
-                        </div>
-                        <p className="text-[11px] text-gray-500 dark:text-neutral-400 leading-snug">
-                          Instant digital payment with zero gateway fees.
-                        </p>
-                      </button>
+                      {/* bKash Official Gateway */}
+                      {paymentSettings.bkash.enabled && (
+                        <button
+                          type="button"
+                          onClick={() => setPaymentMethod("bkash")}
+                          className={`p-4 rounded-2xl border text-left transition cursor-pointer flex flex-col justify-between ${
+                            paymentMethod === "bkash"
+                              ? "border-[#E2136E] bg-pink-50/50 dark:bg-pink-950/20 text-pink-950 dark:text-pink-200 ring-2 ring-[#E2136E]/30"
+                              : "border-stone-200 dark:border-neutral-700 bg-white dark:bg-neutral-800 text-gray-700 dark:text-neutral-300 hover:border-pink-300"
+                          }`}
+                        >
+                          <div className="flex items-center justify-between w-full mb-1">
+                            <span className="font-bold text-xs flex items-center gap-1.5">
+                              <span className="font-black text-[#E2136E] font-mono text-sm tracking-tight">bKash</span>
+                              <span>Payment</span>
+                            </span>
+                            <span
+                              className={`text-[10px] font-extrabold px-1.5 py-0.5 rounded ${
+                                paymentSettings.bkash.isSandbox
+                                  ? "bg-amber-100 dark:bg-amber-950/60 text-amber-800 dark:text-amber-300"
+                                  : "text-[#E2136E] bg-pink-100 dark:bg-pink-950/60"
+                              }`}
+                            >
+                              {paymentSettings.bkash.isSandbox ? "Sandbox" : "Instant"}
+                            </span>
+                          </div>
+                          <p className="text-[11px] text-gray-500 dark:text-neutral-400 leading-snug">
+                            Official bKash OTP &amp; PIN checkout with instant verification.
+                          </p>
+                        </button>
+                      )}
 
                       {/* Credit/Debit Card */}
                       <button
@@ -1297,14 +1477,31 @@ export default function CheckoutPage() {
 
                     {/* bKash instructions if selected */}
                     {paymentMethod === "bkash" && (
-                      <div className="p-4 rounded-2xl bg-pink-50/60 dark:bg-pink-950/20 border border-pink-200 dark:border-pink-900/40 text-xs text-pink-950 dark:text-pink-200 space-y-1">
-                        <div className="font-bold flex items-center gap-1.5">
-                          <span>bKash Merchant Payment Details:</span>
+                      <div className="p-4 rounded-2xl bg-pink-50/70 dark:bg-pink-950/25 border border-pink-200 dark:border-pink-900/50 text-xs text-pink-950 dark:text-pink-200 space-y-2">
+                        <div className="flex items-center justify-between">
+                          <div className="font-bold flex items-center gap-2">
+                            <span className="size-2 rounded-full bg-[#E2136E]" />
+                            <span>bKash Tokenized Checkout (Online PGW)</span>
+                          </div>
+                          {paymentSettings.bkash.isSandbox && (
+                            <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-amber-100 dark:bg-amber-950/60 text-amber-800 dark:text-amber-300">
+                              Developer Sandbox Active
+                            </span>
+                          )}
                         </div>
+
                         <p className="text-[11px] text-pink-900/80 dark:text-pink-300/80 leading-relaxed">
-                          Merchant Account: <strong className="font-mono">01712-345678</strong> (SilkenDrift Apparel).
-                          You can also choose to pay with bKash directly to the courier rider upon delivery.
+                          You will be redirected to the official bKash secure payment page to authenticate with your bKash mobile number, OTP, and PIN. Your order will be automatically confirmed with a verified TrxID.
                         </p>
+
+                        {paymentSettings.bkash.isSandbox && (
+                          <div className="mt-2 p-2.5 rounded-xl bg-white/70 dark:bg-neutral-900/70 border border-pink-200/60 dark:border-pink-900/40 text-[10px] space-y-1 text-gray-700 dark:text-neutral-300 font-mono">
+                            <div className="font-sans font-bold text-amber-700 dark:text-amber-400">
+                              🧪 Sandbox Test Simulation:
+                            </div>
+                            <div>Wallet: <strong>01770618575</strong> | OTP: <strong>123456</strong> | PIN: <strong>12121</strong></div>
+                          </div>
+                        )}
                       </div>
                     )}
                   </div>
@@ -1468,17 +1665,34 @@ export default function CheckoutPage() {
                     type="submit"
                     form="checkout-main-form"
                     disabled={isSubmitting}
-                    className="w-full py-4 px-4 rounded-2xl bg-orange-600 hover:bg-orange-700 active:scale-98 disabled:opacity-50 text-white font-black text-sm shadow-lg hover:shadow-orange-600/30 transition flex items-center justify-center gap-2 cursor-pointer"
+                    className={`w-full py-4 px-4 rounded-2xl active:scale-98 disabled:opacity-50 text-white font-black text-sm shadow-lg transition flex items-center justify-center gap-2 cursor-pointer ${
+                      paymentMethod === "bkash"
+                        ? "bg-[#E2136E] hover:bg-[#C2105D] shadow-pink-600/30"
+                        : "bg-orange-600 hover:bg-orange-700 shadow-orange-600/30"
+                    }`}
                   >
                     {isSubmitting ? (
                       <>
                         <Spinner className="size-4 text-white animate-spin" />
-                        <span>Securing Order &amp; Generating Tracking...</span>
+                        <span>
+                          {paymentMethod === "bkash"
+                            ? "Connecting to bKash Gateway..."
+                            : "Securing Order & Generating Tracking..."}
+                        </span>
                       </>
                     ) : (
                       <>
-                        <ShieldCheckIcon className="size-5" />
-                        <span>Confirm &amp; Place Order • ৳{finalTotalAmount.toLocaleString()}</span>
+                        {paymentMethod === "bkash" ? (
+                          <>
+                            <span className="font-bold text-white text-base font-mono">৳</span>
+                            <span>Pay with bKash • ৳{finalTotalAmount.toLocaleString()}</span>
+                          </>
+                        ) : (
+                          <>
+                            <ShieldCheckIcon className="size-5" />
+                            <span>Confirm &amp; Place Order • ৳{finalTotalAmount.toLocaleString()}</span>
+                          </>
+                        )}
                       </>
                     )}
                   </button>

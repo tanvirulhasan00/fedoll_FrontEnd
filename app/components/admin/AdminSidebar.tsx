@@ -22,6 +22,7 @@ import {
   SparklesIcon,
   StarIcon,
   UserGroupIcon,
+  CreditCardIcon,
 } from "@heroicons/react/24/outline";
 import type { AuthUser } from "~/redux/features/auth/authSlice";
 import {
@@ -89,6 +90,7 @@ export const AdminSidebar: React.FC<AdminSidebarProps> = ({
       badge: blogsCount > 0 ? `${blogsCount}` : undefined,
     },
     { id: "shipping", label: "Shipping & Couriers", icon: TruckIcon, badge: "Logistics" },
+    { id: "payments", label: "Payment Gateways", icon: CreditCardIcon, badge: "bKash" },
     { id: "customers", label: "Shoppers & Customers", icon: UsersIcon },
     {
       id: "staff",

@@ -23,6 +23,7 @@ export type AdminTab =
   | "reviews"
   | "blogs"
   | "shipping"
+  | "payments"
   | "customers"
   | "staff"
   | "team"
@@ -277,6 +278,7 @@ export const getRoleAllowedTabs = (role?: string | null): AdminTab[] => {
         "reviews",
         "blogs",
         "shipping",
+        "payments",
         "customers",
         "staff",
         "team",
@@ -298,6 +300,7 @@ export const getRoleAllowedTabs = (role?: string | null): AdminTab[] => {
         "reviews",
         "blogs",
         "shipping",
+        "payments",
         "customers",
         "staff",
         "team",

@@ -415,7 +415,7 @@ export const OrderPackagingStickerModal: React.FC<OrderPackagingStickerModalProp
       `
           : `
         <div class="cod-title" style="color: #000;">PREPAID PARCEL • DO NOT COLLECT CASH</div>
-        <div class="cod-amount" style="font-size: 15px;">৳ 0 (PAID VIA ${(order.paymentMethod || "ONLINE").toUpperCase()})</div>
+        <div class="cod-amount" style="font-size: 15px;">৳ 0 (PAID VIA ${(order.paymentMethod || "ONLINE").toUpperCase()}${order.paymentDetails?.trxID ? ` • TrxID: ${order.paymentDetails.trxID}` : ""})</div>
         <div class="cod-subtext">Package is fully paid for. Zero cash collection required.</div>
       `
       }
@@ -847,7 +847,7 @@ export const OrderPackagingStickerModal: React.FC<OrderPackagingStickerModalProp
                               PREPAID PARCEL • DO NOT COLLECT CASH
                             </div>
                             <div className="text-base font-black font-mono text-black leading-tight my-0.5">
-                              ৳ 0 (PAID VIA {(order.paymentMethod || "ONLINE").toUpperCase()})
+                              ৳ 0 (PAID VIA {(order.paymentMethod || "ONLINE").toUpperCase()}{order.paymentDetails?.trxID ? ` • TrxID: ${order.paymentDetails.trxID}` : ""})
                             </div>
                             <div className="text-[8px] font-bold text-gray-700 uppercase">
                               Package is fully paid. Zero cash collection required.

@@ -16,3 +16,5 @@ export * from "./wishlist";
 export * from "./stock";
 export * from "./roles";
 export * from "./reviews";
+export * from "./paymentSettings";
+export * from "./payments";
