@@ -2,6 +2,7 @@ import {
   collection,
   doc,
   getDoc,
+  getDocs,
   setDoc,
   updateDoc,
   onSnapshot,
@@ -132,34 +133,34 @@ export const initialAboutData: AboutData = {
     {
       id: "member-1",
       name: "Tanvirul Hasan",
-      role: "Founder & Lead Product Specialist",
+      role: "Founder & Managing Director",
       avatar:
         "https://images.unsplash.com/photo-1500648767791-00dcc994a43e?auto=format&fit=crop&w=400&q=80",
-      bio: "Born and raised in Bangladesh. Tanvir leads SilkenDrift's fabric sourcing, product quality checks, and customer experience.",
+      bio: "Born and raised in Bangladesh. Tanvir leads Fedoll's fabric sourcing, product quality checks, and customer experience from Dhaka.",
     },
     {
       id: "member-2",
-      name: "Sophia Chen",
-      role: "Head of Design & Styling",
+      name: "Mahfuzur Rahman",
+      role: "Head of Patternmaking & Tailoring",
       avatar:
-        "https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=400&q=80",
-      bio: "Fashion graduate with 8 years of experience creating minimal, elegant everyday silhouettes that are effortless to style.",
+        "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?auto=format&fit=crop&w=400&q=80",
+      bio: "With over 12 years of experience in export garment tailoring, Mahfuzur ensures every piece offers a comfortable, natural fit for everyday wear.",
     },
     {
       id: "member-3",
-      name: "Marcus Vance",
-      role: "Denim & Fabric Specialist",
+      name: "Nusrat Jahan",
+      role: "Lead Apparel Designer & Stylist",
       avatar:
-        "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?auto=format&fit=crop&w=400&q=80",
-      bio: "Textile engineer specializing in shuttle-loom selvedge denim and natural organic dyes that look better with age.",
+        "https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?auto=format&fit=crop&w=400&q=80",
+      bio: "Fashion graduate from Dhaka, curating versatile silhouettes and breathable fabrics made specifically for local climates.",
     },
     {
       id: "member-4",
-      name: "Elena Rostova",
-      role: "Senior Patternmaker",
+      name: "Arif Hossain",
+      role: "Operations & Logistics Manager",
       avatar:
-        "https://images.unsplash.com/photo-1517841905240-472988babdf9?auto=format&fit=crop&w=400&q=80",
-      bio: "Master tailor dedicated to crafting flexible, comfortable fits that move naturally with your body throughout the day.",
+        "https://images.unsplash.com/photo-1519085360753-af0119f7cbe7?auto=format&fit=crop&w=400&q=80",
+      bio: "Oversees inventory flow, order fulfillment, and nationwide courier partner coordination across all 64 districts.",
     },
   ],
   milestones: [
@@ -203,38 +204,12 @@ const LOCAL_STORAGE_ABOUT_KEY = "silkendrift_about_page_cache_v1";
  * Fetch About Us content from Cloud Firestore with memory and local cache
  */
 export const fetchAboutDataFromFirestore = async (): Promise<AboutData> => {
-  if (memoryCachedAboutData) {
-    return memoryCachedAboutData;
-  }
-
-  // Try loading from localStorage immediately in browser
-  if (typeof window !== "undefined") {
-    try {
-      const raw = localStorage.getItem(LOCAL_STORAGE_ABOUT_KEY);
-      if (raw) {
-        memoryCachedAboutData = JSON.parse(raw) as AboutData;
-      }
-    } catch {
-      // ignore
-    }
-  }
-
   try {
     const docRef = doc(db, "about_page", "main");
     const snap = await getDoc(docRef);
 
     if (snap.exists()) {
       const data = snap.data() as AboutData;
-      if (
-        data.subtitle?.includes("discipline of modern architecture") ||
-        data.missionParagraph1?.includes("Okayama") ||
-        data.contact?.phone?.includes("+81") ||
-        !data.contact?.phone?.includes("+880")
-      ) {
-        await seedAboutDataToFirestore(true);
-        memoryCachedAboutData = initialAboutData;
-        return initialAboutData;
-      }
       memoryCachedAboutData = data;
       if (typeof window !== "undefined") {
         try {
@@ -250,8 +225,115 @@ export const fetchAboutDataFromFirestore = async (): Promise<AboutData> => {
     memoryCachedAboutData = initialAboutData;
     return initialAboutData;
   } catch (error) {
-    console.warn("Failed to fetch about data from Firestore, using initial dataset:", error);
+    console.warn("Failed to fetch about data from Firestore, using cached/initial dataset:", error);
+    if (typeof window !== "undefined") {
+      try {
+        const raw = localStorage.getItem(LOCAL_STORAGE_ABOUT_KEY);
+        if (raw) return JSON.parse(raw) as AboutData;
+      } catch {}
+    }
     return memoryCachedAboutData || initialAboutData;
+  }
+};
+
+/**
+ * Automatically syncs real staff accounts from Cloud Firestore 'users' collection into the team list
+ */
+export const syncRealStaffToTeamMembers = async (): Promise<TeamMember[]> => {
+  memoryCachedAboutData = null;
+  try {
+    const usersCol = collection(db, "users");
+    const snap = await getDocs(usersCol);
+
+    const staffAccounts: TeamMember[] = [];
+
+    if (!snap.empty) {
+      snap.docs.forEach((d) => {
+        const u = d.data();
+        const role = (u.role || "").toLowerCase().trim();
+        if (role === "admin" || role === "manager" || role === "salesman") {
+          const isTanvir =
+            u.email?.toLowerCase().includes("tanvir") ||
+            u.displayName?.toLowerCase().includes("tanvir");
+
+          const memberName = isTanvir
+            ? "Tanvirul Hasan"
+            : (u.displayName || u.email?.split("@")[0] || "Team Member");
+
+          let memberRole = "Fashion & Garments Specialist";
+          if (role === "admin") {
+            memberRole = isTanvir
+              ? "Founder & Managing Director"
+              : "Executive Administrator";
+          } else if (role === "manager") {
+            memberRole = "Operations & Logistics Manager";
+          } else if (role === "salesman") {
+            memberRole = "Client Styling & Customer Experience";
+          }
+
+          let memberBio =
+            "Dedicated to crafting export-quality apparel and providing exceptional service across Bangladesh.";
+          if (isTanvir) {
+            memberBio =
+              "Born and raised in Bangladesh. Tanvir oversees Fedoll's fabric sourcing, product quality checks, and nationwide customer experience from Dhaka.";
+          } else if (role === "admin") {
+            memberBio =
+              "Manages digital atelier operations, quality auditing, and customer satisfaction.";
+          } else if (role === "manager") {
+            memberBio =
+              "Oversees inventory flow, order fulfillment, and nationwide courier partner coordination.";
+          }
+
+          staffAccounts.push({
+            id: `staff_${d.id}`,
+            name: memberName,
+            role: memberRole,
+            avatar:
+              u.photoURL ||
+              (isTanvir
+                ? "https://images.unsplash.com/photo-1500648767791-00dcc994a43e?auto=format&fit=crop&w=400&q=80"
+                : role === "manager"
+                ? "https://images.unsplash.com/photo-1519085360753-af0119f7cbe7?auto=format&fit=crop&w=400&q=80"
+                : "https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?auto=format&fit=crop&w=400&q=80"),
+            bio: memberBio,
+          });
+        }
+      });
+    }
+
+    const complementaryArtisans: TeamMember[] = [
+      {
+        id: "member-artisan-1",
+        name: "Mahfuzur Rahman",
+        role: "Head of Patternmaking & Tailoring",
+        avatar:
+          "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?auto=format&fit=crop&w=400&q=80",
+        bio: "With over 12 years of experience in export garment tailoring, Mahfuzur ensures every piece offers a comfortable, natural fit for everyday wear.",
+      },
+      {
+        id: "member-artisan-2",
+        name: "Nusrat Jahan",
+        role: "Lead Apparel Designer & Stylist",
+        avatar:
+          "https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?auto=format&fit=crop&w=400&q=80",
+        bio: "Fashion graduate from Dhaka, curating versatile silhouettes and breathable fabrics made specifically for local climates.",
+      },
+    ];
+
+    const existingNames = new Set(staffAccounts.map((s) => s.name.toLowerCase()));
+    const finalTeam = [...staffAccounts];
+
+    for (const artisan of complementaryArtisans) {
+      if (!existingNames.has(artisan.name.toLowerCase())) {
+        finalTeam.push(artisan);
+      }
+    }
+
+    await saveTeamMembersToFirestore(finalTeam);
+    return finalTeam;
+  } catch (err) {
+    console.warn("Could not sync real staff to team members:", err);
+    throw err;
   }
 };
 

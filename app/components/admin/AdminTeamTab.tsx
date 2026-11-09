@@ -25,6 +25,7 @@ import {
   subscribeToAboutDataFromFirestore,
   initialAboutData,
   normalizeGoogleDriveImageUrl,
+  syncRealStaffToTeamMembers,
 } from "~/firebase";
 import { useAppDispatch } from "~/redux/hooks/hook";
 import { setTeamMembers as setReduxTeamMembers } from "~/redux/features/aboutSlice";
@@ -42,6 +43,7 @@ export const AdminTeamTab: React.FC<AdminTeamTabProps> = ({ canManage = true }) 
   const [team, setTeam] = useState<TeamMember[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
+  const [isSyncingStaff, setIsSyncingStaff] = useState(false);
 
   // Edit / Add Modal state
   const [modalOpen, setModalOpen] = useState(false);
@@ -232,6 +234,22 @@ export const AdminTeamTab: React.FC<AdminTeamTabProps> = ({ canManage = true }) 
     await persistTeam(reordered, `Reordered ${moved.name} to position #${targetIndex + 1}.`);
   };
 
+  // Automatically sync real staff accounts from Cloud Firestore users collection
+  const handleSyncRealStaff = async () => {
+    setIsSyncingStaff(true);
+    try {
+      const syncedTeam = await syncRealStaffToTeamMembers();
+      setTeam(syncedTeam);
+      dispatch(setReduxTeamMembers(syncedTeam));
+      toast.success("Successfully synced real staff members to Our Team!");
+    } catch (err: unknown) {
+      const error = err as Error;
+      toast.error(error.message || "Failed to sync staff accounts.");
+    } finally {
+      setIsSyncingStaff(false);
+    }
+  };
+
   // Reset or load initial template team
   const handleRestoreInitial = async () => {
     if (
@@ -278,13 +296,26 @@ export const AdminTeamTab: React.FC<AdminTeamTabProps> = ({ canManage = true }) 
         </div>
 
         {canManage && (
-          <div className="flex items-center gap-2 w-full sm:w-auto">
+          <div className="flex flex-wrap items-center gap-2 w-full sm:w-auto">
+            <button
+              type="button"
+              onClick={handleSyncRealStaff}
+              disabled={isSaving || isSyncingStaff}
+              title="Automatically sync registered Admin & Manager accounts from Firestore users"
+              className="px-3.5 py-2.5 rounded-xl border border-stone-300 dark:border-neutral-700 hover:bg-stone-50 dark:hover:bg-neutral-800 text-stone-700 dark:text-neutral-200 font-semibold text-xs transition cursor-pointer flex items-center gap-1.5 disabled:opacity-60 disabled:cursor-not-allowed"
+            >
+              <ArrowPathIcon
+                className={`size-4 ${isSyncingStaff ? "animate-spin text-orange-600 dark:text-orange-400" : ""}`}
+              />
+              <span>{isSyncingStaff ? "Syncing..." : "Sync Real Staff"}</span>
+            </button>
+
             {team.length === 0 && (
               <button
                 type="button"
                 onClick={handleRestoreInitial}
-                disabled={isSaving}
-                className="px-3.5 py-2.5 rounded-xl border border-stone-300 dark:border-neutral-700 hover:bg-stone-50 dark:hover:bg-neutral-800 text-stone-700 dark:text-neutral-200 font-semibold text-xs transition cursor-pointer flex items-center gap-1.5"
+                disabled={isSaving || isSyncingStaff}
+                className="px-3.5 py-2.5 rounded-xl border border-stone-300 dark:border-neutral-700 hover:bg-stone-50 dark:hover:bg-neutral-800 text-stone-700 dark:text-neutral-200 font-semibold text-xs transition cursor-pointer flex items-center gap-1.5 disabled:opacity-60 disabled:cursor-not-allowed"
               >
                 <ArrowPathIcon className="size-4" />
                 <span>Load Template Team</span>
@@ -294,8 +325,8 @@ export const AdminTeamTab: React.FC<AdminTeamTabProps> = ({ canManage = true }) 
             <button
               type="button"
               onClick={handleOpenAdd}
-              disabled={isSaving}
-              className="flex-1 sm:flex-initial px-4 py-2.5 rounded-xl bg-orange-600 hover:bg-orange-700 text-white font-bold text-xs shadow-md shadow-orange-500/20 active:scale-98 transition flex items-center justify-center gap-2 cursor-pointer"
+              disabled={isSaving || isSyncingStaff}
+              className="flex-1 sm:flex-initial px-4 py-2.5 rounded-xl bg-orange-600 hover:bg-orange-700 text-white font-bold text-xs shadow-md shadow-orange-500/20 active:scale-98 transition flex items-center justify-center gap-2 cursor-pointer disabled:opacity-60 disabled:cursor-not-allowed"
             >
               <PlusIcon className="size-4 stroke-2" />
               <span>Add Team Member</span>
@@ -347,17 +378,28 @@ export const AdminTeamTab: React.FC<AdminTeamTabProps> = ({ canManage = true }) 
             <div className="mt-6 flex flex-wrap items-center justify-center gap-3">
               <button
                 type="button"
+                onClick={handleSyncRealStaff}
+                disabled={isSaving || isSyncingStaff}
+                className="px-4 py-2 rounded-xl bg-orange-600 hover:bg-orange-700 text-white text-xs font-bold shadow-md cursor-pointer flex items-center gap-1.5 disabled:opacity-60 disabled:cursor-not-allowed"
+              >
+                <ArrowPathIcon
+                  className={`size-4 ${isSyncingStaff ? "animate-spin" : ""}`}
+                />
+                <span>{isSyncingStaff ? "Syncing Staff..." : "Sync Real Staff"}</span>
+              </button>
+              <button
+                type="button"
                 onClick={handleRestoreInitial}
-                disabled={isSaving}
-                className="px-4 py-2 rounded-xl border border-stone-300 dark:border-neutral-700 hover:bg-stone-100 dark:hover:bg-neutral-800 text-xs font-semibold text-stone-700 dark:text-neutral-300 cursor-pointer"
+                disabled={isSaving || isSyncingStaff}
+                className="px-4 py-2 rounded-xl border border-stone-300 dark:border-neutral-700 hover:bg-stone-100 dark:hover:bg-neutral-800 text-xs font-semibold text-stone-700 dark:text-neutral-300 cursor-pointer disabled:opacity-60 disabled:cursor-not-allowed"
               >
                 Load Default Team
               </button>
               <button
                 type="button"
                 onClick={handleOpenAdd}
-                disabled={isSaving}
-                className="px-4 py-2 rounded-xl bg-orange-600 hover:bg-orange-700 text-white text-xs font-bold shadow-md cursor-pointer flex items-center gap-1.5"
+                disabled={isSaving || isSyncingStaff}
+                className="px-4 py-2 rounded-xl border border-stone-300 dark:border-neutral-700 hover:bg-stone-100 dark:hover:bg-neutral-800 text-stone-700 dark:text-neutral-300 text-xs font-semibold cursor-pointer flex items-center gap-1.5 disabled:opacity-60 disabled:cursor-not-allowed"
               >
                 <PlusIcon className="size-4" />
                 <span>Add Member</span>
