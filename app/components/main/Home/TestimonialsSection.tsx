@@ -200,8 +200,8 @@ export default function TestimonialsSection() {
               </Link>
             </div>
 
-            {/* Trust Assurance Pillars */}
-            <div className="grid grid-cols-1 sm:grid-cols-3 gap-3.5 pt-6 border-t border-gray-100 dark:border-neutral-800 text-left">
+            {/* Trust Assurance Pillars (Hidden on mobile) */}
+            <div className="hidden sm:grid sm:grid-cols-3 gap-3.5 pt-6 border-t border-gray-100 dark:border-neutral-800 text-left">
               <div className="flex items-start gap-3 p-3.5 rounded-2xl bg-stone-50/70 dark:bg-neutral-900/60 border border-stone-200/50 dark:border-neutral-800">
                 <CheckBadgeIcon className="size-4.5 text-emerald-600 dark:text-emerald-400 shrink-0 mt-0.5" />
                 <div>
